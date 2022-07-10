@@ -19,8 +19,9 @@ var __spreadValues = (a, b) => {
 var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 import { genUUID, useGun, useUser, hashObj, gun, currentRoom, hashText, safeHash, user, useAccount, newWorker } from "./useDict.es.js";
 export { addHashedPersonal, addPersonal, addProfileField, auth, brush, createRoom, currentRoom, decFrom, defaultPeer, dictLang, dictRecord, drauu, drauuOptions, draw, encFor, enterRoom, genUUID, generateCerts, getHashedPersonal, getShortHash, gun, gun2, hasPass, hashObj, hashText, isHash, isMine, isPair, issueCert, joinRoom, leave, leaveRoom, letterFilter, listPersonal, loadCanvas, loadRelays, newWorker, parseHashLink, parseLink, pass, peer, recreateRoom, relay, renderStress, rootRoom, safeHash, safeJSONParse, selectedUser, sortDate, soul, submitRoom, unsafeHash, updateProfile, updateRoomProfile, updateState, useAccount, useColor, useDefs, useDictAuthors, useDictLangs, useDictRecordsBy, useDictRecordsFor, useDraw, useGun, useGun2, usePass, usePassLink, useRelay, useRelays, useRoom, useRooms, useUser, useWord, useWords, user } from "./useDict.es.js";
-import { reactive, YAML, markdownIt, lib, JSZip, ref, computed, ms, slugify, Fuse, watchEffect, exports, useMousePressed, onMounted, useMouseInElement, watch, onBeforeUnmount, gunAvatar, useElementBounding, useClamp, getArrow, SEA, DateTree, useNow } from "./vendor.es.js";
+import { reactive, YAML, markdownIt, lib, JSZip, ref, computed, ms, slugify, Fuse, watchEffect, GB, useMousePressed, onMounted, useMouseInElement, watch, onBeforeUnmount, gunAvatar, useElementBounding, useClamp, getArrow, SEA, DateTree } from "./vendor.es.js";
 export { SEA, gunAvatar, mountClass, mountElement, ms, slugify } from "./vendor.es.js";
+export { acceptGift, giftPath, useGift, useGifts } from "./useGifts.es.js";
 function downloadFile(text, fileType, fileName, isBlob = true) {
   const a = document.createElement("a");
   a.download = fileName;
@@ -678,7 +679,7 @@ function useMates(pub) {
 function getFirstEmoji(text, def = "\u{1F44B}") {
   if (!text || typeof text != "string")
     return;
-  let em = exports.break(text)[0];
+  let em = GB.break(text)[0];
   if (isEmoji(em)) {
     return em;
   } else {
@@ -2102,53 +2103,5 @@ const languages = [
     "native": "isiZulu"
   }
 ];
-const giftPath = "#gifts2023";
-function useGift() {
-  const { user: user3 } = useUser();
-  const gift = reactive({
-    from: computed(() => user3 == null ? void 0 : user3.pub),
-    to: "",
-    qn: 0,
-    ql: "",
-    wish: "",
-    date: useNow()
-  });
-  const gun3 = useGun();
-  async function propose() {
-    const { hash, hashed } = await hashObj(gift);
-    gun3.get(giftPath).get(hash).put(hashed);
-    gun3.user().get(giftPath).get(hash).put(true);
-  }
-  return { gift, propose };
-}
-async function acceptGift(hash) {
-  const { user: user3 } = useUser();
-  user3.db.get(giftPath).get(hash).put(true);
-}
-function useGifts() {
-  const { user: user3 } = useUser();
-  const gun3 = useGun();
-  const my = reactive({});
-  const proposed = reactive({});
-  const gifts = reactive({});
-  gun3.get(giftPath).map().once(async (d, k) => {
-    try {
-      const obj = JSON.parse(d);
-      obj.sent = await gun3.user(obj.from).get(giftPath).get(k);
-      obj.received = await gun3.user(obj.to).get(giftPath).get(k);
-      if (d.includes(user3 == null ? void 0 : user3.pub)) {
-        my[k] = obj;
-      }
-      if (obj.sent) {
-        if (!obj.received)
-          proposed[k] = obj;
-        else
-          gifts[k] = obj;
-      }
-    } catch (e) {
-    }
-  });
-  return { my, proposed, gifts };
-}
-export { acceptGift, addPost, base64Extension, base64FileType, base64MimeType, countRating, createMd, detectMimeType, downloadFeed, downloadFile, downloadPost, formatDate, getFirstEmoji, giftPath, isEmoji, langParts, languages, loadFromHash, logEvent, parseMd, parsePost, reactToPost, uploadFeed, uploadText, useBackground, useChat, useGift, useGifts, useGuests, useLog, useMate, useMates, useMd, usePictureUpload, usePost, usePostTimestamp, usePosts, usePrivateChat, usePrivateChatCount, usePrivateChatList, useReaction, useReactions, useSpace, useSvgMouse, useTagList, useUserPosts, useZip };
+export { addPost, base64Extension, base64FileType, base64MimeType, countRating, createMd, detectMimeType, downloadFeed, downloadFile, downloadPost, formatDate, getFirstEmoji, isEmoji, langParts, languages, loadFromHash, logEvent, parseMd, parsePost, reactToPost, uploadFeed, uploadText, useBackground, useChat, useGuests, useLog, useMate, useMates, useMd, usePictureUpload, usePost, usePostTimestamp, usePosts, usePrivateChat, usePrivateChatCount, usePrivateChatList, useReaction, useReactions, useSpace, useSvgMouse, useTagList, useUserPosts, useZip };
 //# sourceMappingURL=index.es.js.map

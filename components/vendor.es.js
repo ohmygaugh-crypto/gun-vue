@@ -7641,7 +7641,7 @@ function getContext() {
   }
   return i2.setupContext || (i2.setupContext = createSetupContext(i2));
 }
-function h$1(type, propsOrChildren, children) {
+function h$2(type, propsOrChildren, children) {
   const l2 = arguments.length;
   if (l2 === 2) {
     if (isObject$3(propsOrChildren) && !isArray$3(propsOrChildren)) {
@@ -8058,11 +8058,11 @@ const [_getNow, skipTimestampCheck] = /* @__PURE__ */ (() => {
   return [_getNow2, skipTimestampCheck2];
 })();
 let cachedNow = 0;
-const p = /* @__PURE__ */ Promise.resolve();
+const p$1 = /* @__PURE__ */ Promise.resolve();
 const reset = () => {
   cachedNow = 0;
 };
-const getNow = () => cachedNow || (p.then(reset), cachedNow = _getNow());
+const getNow = () => cachedNow || (p$1.then(reset), cachedNow = _getNow());
 function addEventListener(el2, event, handler, options) {
   el2.addEventListener(event, handler, options);
 }
@@ -8220,7 +8220,7 @@ function setVarsOnNode(el2, vars) {
 }
 const TRANSITION = "transition";
 const ANIMATION = "animation";
-const Transition = (props, { slots }) => h$1(BaseTransition, resolveTransitionProps(props), slots);
+const Transition = (props, { slots }) => h$2(BaseTransition, resolveTransitionProps(props), slots);
 Transition.displayName = "Transition";
 const DOMTransitionPropsValidators = {
   name: String,
@@ -8240,7 +8240,7 @@ const DOMTransitionPropsValidators = {
   leaveActiveClass: String,
   leaveToClass: String
 };
-Transition.props = /* @__PURE__ */ extend$1({}, BaseTransition.props, DOMTransitionPropsValidators);
+const TransitionPropsValidators = Transition.props = /* @__PURE__ */ extend$1({}, BaseTransition.props, DOMTransitionPropsValidators);
 const callHook = (hook, args = []) => {
   if (isArray$3(hook)) {
     hook.forEach((h2) => h2(...args));
@@ -8460,6 +8460,114 @@ function toMs(s2) {
 function forceReflow() {
   return document.body.offsetHeight;
 }
+const positionMap = /* @__PURE__ */ new WeakMap();
+const newPositionMap = /* @__PURE__ */ new WeakMap();
+const TransitionGroupImpl = {
+  name: "TransitionGroup",
+  props: /* @__PURE__ */ extend$1({}, TransitionPropsValidators, {
+    tag: String,
+    moveClass: String
+  }),
+  setup(props, { slots }) {
+    const instance = getCurrentInstance();
+    const state = useTransitionState();
+    let prevChildren;
+    let children;
+    onUpdated(() => {
+      if (!prevChildren.length) {
+        return;
+      }
+      const moveClass = props.moveClass || `${props.name || "v"}-move`;
+      if (!hasCSSTransform(prevChildren[0].el, instance.vnode.el, moveClass)) {
+        return;
+      }
+      prevChildren.forEach(callPendingCbs);
+      prevChildren.forEach(recordPosition);
+      const movedChildren = prevChildren.filter(applyTranslation);
+      forceReflow();
+      movedChildren.forEach((c2) => {
+        const el2 = c2.el;
+        const style2 = el2.style;
+        addTransitionClass(el2, moveClass);
+        style2.transform = style2.webkitTransform = style2.transitionDuration = "";
+        const cb = el2._moveCb = (e2) => {
+          if (e2 && e2.target !== el2) {
+            return;
+          }
+          if (!e2 || /transform$/.test(e2.propertyName)) {
+            el2.removeEventListener("transitionend", cb);
+            el2._moveCb = null;
+            removeTransitionClass(el2, moveClass);
+          }
+        };
+        el2.addEventListener("transitionend", cb);
+      });
+    });
+    return () => {
+      const rawProps = toRaw(props);
+      const cssTransitionProps = resolveTransitionProps(rawProps);
+      let tag = rawProps.tag || Fragment;
+      prevChildren = children;
+      children = slots.default ? getTransitionRawChildren(slots.default()) : [];
+      for (let i2 = 0; i2 < children.length; i2++) {
+        const child = children[i2];
+        if (child.key != null) {
+          setTransitionHooks(child, resolveTransitionHooks(child, cssTransitionProps, state, instance));
+        } else {
+          warn$3(`<TransitionGroup> children must be keyed.`);
+        }
+      }
+      if (prevChildren) {
+        for (let i2 = 0; i2 < prevChildren.length; i2++) {
+          const child = prevChildren[i2];
+          setTransitionHooks(child, resolveTransitionHooks(child, cssTransitionProps, state, instance));
+          positionMap.set(child, child.el.getBoundingClientRect());
+        }
+      }
+      return createVNode(tag, null, children);
+    };
+  }
+};
+const TransitionGroup = TransitionGroupImpl;
+function callPendingCbs(c2) {
+  const el2 = c2.el;
+  if (el2._moveCb) {
+    el2._moveCb();
+  }
+  if (el2._enterCb) {
+    el2._enterCb();
+  }
+}
+function recordPosition(c2) {
+  newPositionMap.set(c2, c2.el.getBoundingClientRect());
+}
+function applyTranslation(c2) {
+  const oldPos = positionMap.get(c2);
+  const newPos = newPositionMap.get(c2);
+  const dx = oldPos.left - newPos.left;
+  const dy = oldPos.top - newPos.top;
+  if (dx || dy) {
+    const s2 = c2.el.style;
+    s2.transform = s2.webkitTransform = `translate(${dx}px,${dy}px)`;
+    s2.transitionDuration = "0s";
+    return c2;
+  }
+}
+function hasCSSTransform(el2, root, moveClass) {
+  const clone2 = el2.cloneNode();
+  if (el2._vtc) {
+    el2._vtc.forEach((cls) => {
+      cls.split(/\s+/).forEach((c2) => c2 && clone2.classList.remove(c2));
+    });
+  }
+  moveClass.split(/\s+/).forEach((c2) => c2 && clone2.classList.add(c2));
+  clone2.style.display = "none";
+  const container = root.nodeType === 1 ? root : root.parentNode;
+  container.appendChild(clone2);
+  const { hasTransform } = getTransitionInfo(clone2);
+  container.removeChild(clone2);
+  return hasTransform;
+}
 const getModelAssigner = (vnode) => {
   const fn = vnode.props["onUpdate:modelValue"] || false;
   return isArray$3(fn) ? (value) => invokeArrayFns(fn, value) : fn;
@@ -8593,7 +8701,7 @@ const vModelSelect = {
   created(el2, { value, modifiers: { number } }, vnode) {
     const isSetModel = isSet(value);
     addEventListener(el2, "change", () => {
-      const selectedVal = Array.prototype.filter.call(el2.options, (o) => o.selected).map((o) => number ? toNumber(getValue(o)) : getValue(o));
+      const selectedVal = Array.prototype.filter.call(el2.options, (o2) => o2.selected).map((o2) => number ? toNumber(getValue(o2)) : getValue(o2));
       el2._assign(el2.multiple ? isSetModel ? new Set(selectedVal) : selectedVal : selectedVal[0]);
     });
     el2._assign = getModelAssigner(vnode);
@@ -8717,7 +8825,7 @@ const withKeys = (fn, modifiers) => {
       return;
     }
     const eventKey = hyphenate(event.key);
-    if (modifiers.some((k) => k === eventKey || keyNames[k] === eventKey)) {
+    if (modifiers.some((k2) => k2 === eventKey || keyNames[k2] === eventKey)) {
       return fn(event);
     }
   };
@@ -9016,8 +9124,8 @@ function setupDevtoolsPlugin(pluginDescriptor, setupFn) {
 let activePinia;
 const setActivePinia = (pinia) => activePinia = pinia;
 const piniaSymbol = Symbol("pinia");
-function isPlainObject(o) {
-  return o && typeof o === "object" && Object.prototype.toString.call(o) === "[object Object]" && typeof o.toJSON !== "function";
+function isPlainObject(o2) {
+  return o2 && typeof o2 === "object" && Object.prototype.toString.call(o2) === "[object Object]" && typeof o2.toJSON !== "function";
 }
 var MutationType;
 (function(MutationType2) {
@@ -9160,8 +9268,8 @@ function toastMessage(message, type) {
     console.log(piniaMessage);
   }
 }
-function isPinia(o) {
-  return "_a" in o && "install" in o;
+function isPinia(o2) {
+  return "_a" in o2 && "install" in o2;
 }
 function checkClipboardAccess() {
   if (!("clipboard" in navigator)) {
@@ -9815,8 +9923,8 @@ function shouldHydrate(obj) {
   return !isPlainObject(obj) || !obj.hasOwnProperty(skipHydrateSymbol);
 }
 const { assign: assign$4 } = Object;
-function isComputed(o) {
-  return !!(isRef(o) && o.effect);
+function isComputed(o2) {
+  return !!(isRef(o2) && o2.effect);
 }
 function createOptionsStore(id, options, pinia, hot) {
   const { state, actions, getters } = options;
@@ -12688,7 +12796,7 @@ function ensureDirectiveApp$1() {
     },
     render() {
       return this.directives.map((directive) => {
-        return h$1(PrivateTooltipDirective$1, __spreadProps$1(__spreadValues$3({}, directive.options), {
+        return h$2(PrivateTooltipDirective$1, __spreadProps$1(__spreadValues$3({}, directive.options), {
           shown: directive.shown.value || directive.options.shown,
           key: directive.id
         }));
@@ -12847,16 +12955,16 @@ const plugin = {
   install,
   options: config$4
 };
-function t(t2) {
+function t$1(t2) {
   return typeof t2 == "object" && t2 != null && t2.nodeType === 1;
 }
-function e(t2, e2) {
+function e$1(t2, e2) {
   return (!e2 || t2 !== "hidden") && t2 !== "visible" && t2 !== "clip";
 }
-function n(t2, n2) {
+function n$1(t2, n2) {
   if (t2.clientHeight < t2.scrollHeight || t2.clientWidth < t2.scrollWidth) {
     var r2 = getComputedStyle(t2, null);
-    return e(r2.overflowY, n2) || e(r2.overflowX, n2) || function(t3) {
+    return e$1(r2.overflowY, n2) || e$1(r2.overflowX, n2) || function(t3) {
       var e2 = function(t4) {
         if (!t4.ownerDocument || !t4.ownerDocument.defaultView)
           return null;
@@ -12871,35 +12979,35 @@ function n(t2, n2) {
   }
   return false;
 }
-function r(t2, e2, n2, r2, i2, o, l2, d2) {
-  return o < t2 && l2 > e2 || o > t2 && l2 < e2 ? 0 : o <= t2 && d2 <= n2 || l2 >= e2 && d2 >= n2 ? o - t2 - r2 : l2 > e2 && d2 < n2 || o < t2 && d2 > n2 ? l2 - e2 + i2 : 0;
+function r$1(t2, e2, n2, r2, i2, o2, l2, d2) {
+  return o2 < t2 && l2 > e2 || o2 > t2 && l2 < e2 ? 0 : o2 <= t2 && d2 <= n2 || l2 >= e2 && d2 >= n2 ? o2 - t2 - r2 : l2 > e2 && d2 < n2 || o2 < t2 && d2 > n2 ? l2 - e2 + i2 : 0;
 }
 function compute(e2, i2) {
-  var o = window, l2 = i2.scrollMode, d2 = i2.block, u2 = i2.inline, h2 = i2.boundary, a2 = i2.skipOverflowHiddenElements, c2 = typeof h2 == "function" ? h2 : function(t2) {
+  var o2 = window, l2 = i2.scrollMode, d2 = i2.block, u2 = i2.inline, h2 = i2.boundary, a2 = i2.skipOverflowHiddenElements, c2 = typeof h2 == "function" ? h2 : function(t2) {
     return t2 !== h2;
   };
-  if (!t(e2))
+  if (!t$1(e2))
     throw new TypeError("Invalid target");
-  for (var f2 = document.scrollingElement || document.documentElement, s2 = [], p2 = e2; t(p2) && c2(p2); ) {
+  for (var f2 = document.scrollingElement || document.documentElement, s2 = [], p2 = e2; t$1(p2) && c2(p2); ) {
     if ((p2 = p2.parentElement) === f2) {
       s2.push(p2);
       break;
     }
-    p2 != null && p2 === document.body && n(p2) && !n(document.documentElement) || p2 != null && n(p2, a2) && s2.push(p2);
+    p2 != null && p2 === document.body && n$1(p2) && !n$1(document.documentElement) || p2 != null && n$1(p2, a2) && s2.push(p2);
   }
-  for (var m2 = o.visualViewport ? o.visualViewport.width : innerWidth, g = o.visualViewport ? o.visualViewport.height : innerHeight, w2 = window.scrollX || pageXOffset, v2 = window.scrollY || pageYOffset, W2 = e2.getBoundingClientRect(), b2 = W2.height, H = W2.width, y2 = W2.top, E2 = W2.right, M2 = W2.bottom, V2 = W2.left, x2 = d2 === "start" || d2 === "nearest" ? y2 : d2 === "end" ? M2 : y2 + b2 / 2, I2 = u2 === "center" ? V2 + H / 2 : u2 === "end" ? E2 : V2, C2 = [], T2 = 0; T2 < s2.length; T2++) {
-    var k = s2[T2], B = k.getBoundingClientRect(), D2 = B.height, O2 = B.width, R = B.top, X = B.right, Y2 = B.bottom, L2 = B.left;
-    if (l2 === "if-needed" && y2 >= 0 && V2 >= 0 && M2 <= g && E2 <= m2 && y2 >= R && M2 <= Y2 && V2 >= L2 && E2 <= X)
+  for (var m2 = o2.visualViewport ? o2.visualViewport.width : innerWidth, g2 = o2.visualViewport ? o2.visualViewport.height : innerHeight, w2 = window.scrollX || pageXOffset, v2 = window.scrollY || pageYOffset, W2 = e2.getBoundingClientRect(), b2 = W2.height, H2 = W2.width, y2 = W2.top, E2 = W2.right, M2 = W2.bottom, V2 = W2.left, x2 = d2 === "start" || d2 === "nearest" ? y2 : d2 === "end" ? M2 : y2 + b2 / 2, I2 = u2 === "center" ? V2 + H2 / 2 : u2 === "end" ? E2 : V2, C2 = [], T2 = 0; T2 < s2.length; T2++) {
+    var k2 = s2[T2], B2 = k2.getBoundingClientRect(), D2 = B2.height, O2 = B2.width, R2 = B2.top, X2 = B2.right, Y2 = B2.bottom, L2 = B2.left;
+    if (l2 === "if-needed" && y2 >= 0 && V2 >= 0 && M2 <= g2 && E2 <= m2 && y2 >= R2 && M2 <= Y2 && V2 >= L2 && E2 <= X2)
       return C2;
-    var S2 = getComputedStyle(k), j2 = parseInt(S2.borderLeftWidth, 10), q = parseInt(S2.borderTopWidth, 10), z = parseInt(S2.borderRightWidth, 10), A = parseInt(S2.borderBottomWidth, 10), F2 = 0, G2 = 0, J2 = "offsetWidth" in k ? k.offsetWidth - k.clientWidth - j2 - z : 0, K2 = "offsetHeight" in k ? k.offsetHeight - k.clientHeight - q - A : 0;
-    if (f2 === k)
-      F2 = d2 === "start" ? x2 : d2 === "end" ? x2 - g : d2 === "nearest" ? r(v2, v2 + g, g, q, A, v2 + x2, v2 + x2 + b2, b2) : x2 - g / 2, G2 = u2 === "start" ? I2 : u2 === "center" ? I2 - m2 / 2 : u2 === "end" ? I2 - m2 : r(w2, w2 + m2, m2, j2, z, w2 + I2, w2 + I2 + H, H), F2 = Math.max(0, F2 + v2), G2 = Math.max(0, G2 + w2);
+    var S2 = getComputedStyle(k2), j2 = parseInt(S2.borderLeftWidth, 10), q2 = parseInt(S2.borderTopWidth, 10), z2 = parseInt(S2.borderRightWidth, 10), A2 = parseInt(S2.borderBottomWidth, 10), F2 = 0, G2 = 0, J2 = "offsetWidth" in k2 ? k2.offsetWidth - k2.clientWidth - j2 - z2 : 0, K2 = "offsetHeight" in k2 ? k2.offsetHeight - k2.clientHeight - q2 - A2 : 0;
+    if (f2 === k2)
+      F2 = d2 === "start" ? x2 : d2 === "end" ? x2 - g2 : d2 === "nearest" ? r$1(v2, v2 + g2, g2, q2, A2, v2 + x2, v2 + x2 + b2, b2) : x2 - g2 / 2, G2 = u2 === "start" ? I2 : u2 === "center" ? I2 - m2 / 2 : u2 === "end" ? I2 - m2 : r$1(w2, w2 + m2, m2, j2, z2, w2 + I2, w2 + I2 + H2, H2), F2 = Math.max(0, F2 + v2), G2 = Math.max(0, G2 + w2);
     else {
-      F2 = d2 === "start" ? x2 - R - q : d2 === "end" ? x2 - Y2 + A + K2 : d2 === "nearest" ? r(R, Y2, D2, q, A + K2, x2, x2 + b2, b2) : x2 - (R + D2 / 2) + K2 / 2, G2 = u2 === "start" ? I2 - L2 - j2 : u2 === "center" ? I2 - (L2 + O2 / 2) + J2 / 2 : u2 === "end" ? I2 - X + z + J2 : r(L2, X, O2, j2, z + J2, I2, I2 + H, H);
-      var N2 = k.scrollLeft, P2 = k.scrollTop;
-      x2 += P2 - (F2 = Math.max(0, Math.min(P2 + F2, k.scrollHeight - D2 + K2))), I2 += N2 - (G2 = Math.max(0, Math.min(N2 + G2, k.scrollWidth - O2 + J2)));
+      F2 = d2 === "start" ? x2 - R2 - q2 : d2 === "end" ? x2 - Y2 + A2 + K2 : d2 === "nearest" ? r$1(R2, Y2, D2, q2, A2 + K2, x2, x2 + b2, b2) : x2 - (R2 + D2 / 2) + K2 / 2, G2 = u2 === "start" ? I2 - L2 - j2 : u2 === "center" ? I2 - (L2 + O2 / 2) + J2 / 2 : u2 === "end" ? I2 - X2 + z2 + J2 : r$1(L2, X2, O2, j2, z2 + J2, I2, I2 + H2, H2);
+      var N2 = k2.scrollLeft, P2 = k2.scrollTop;
+      x2 += P2 - (F2 = Math.max(0, Math.min(P2 + F2, k2.scrollHeight - D2 + K2))), I2 += N2 - (G2 = Math.max(0, Math.min(N2 + G2, k2.scrollWidth - O2 + J2)));
     }
-    C2.push({ el: k, top: F2, left: G2 });
+    C2.push({ el: k2, top: F2, left: G2 });
   }
   return C2;
 }
@@ -13247,6 +13355,62 @@ function watchPausable(source, cb, options = {}) {
     eventFilter
   }));
   return { stop, pause, resume, isActive };
+}
+function computedAsync(evaluationCallback, initialState, optionsOrRef) {
+  let options;
+  if (isRef(optionsOrRef)) {
+    options = {
+      evaluating: optionsOrRef
+    };
+  } else {
+    options = optionsOrRef || {};
+  }
+  const {
+    lazy = false,
+    evaluating = void 0,
+    onError = noop$2
+  } = options;
+  const started = ref(!lazy);
+  const current = ref(initialState);
+  let counter2 = 0;
+  watchEffect(async (onInvalidate) => {
+    if (!started.value)
+      return;
+    counter2++;
+    const counterAtBeginning = counter2;
+    let hasFinished = false;
+    if (evaluating) {
+      Promise.resolve().then(() => {
+        evaluating.value = true;
+      });
+    }
+    try {
+      const result = await evaluationCallback((cancelCallback) => {
+        onInvalidate(() => {
+          if (evaluating)
+            evaluating.value = false;
+          if (!hasFinished)
+            cancelCallback();
+        });
+      });
+      if (counterAtBeginning === counter2)
+        current.value = result;
+    } catch (e2) {
+      onError(e2);
+    } finally {
+      if (evaluating && counterAtBeginning === counter2)
+        evaluating.value = false;
+      hasFinished = true;
+    }
+  });
+  if (lazy) {
+    return computed(() => {
+      started.value = true;
+      return current.value;
+    });
+  } else {
+    return current;
+  }
 }
 function unrefElement$1(elRef) {
   var _a2;
@@ -14058,6 +14222,105 @@ var SwipeDirection$1;
   SwipeDirection2["LEFT"] = "LEFT";
   SwipeDirection2["NONE"] = "NONE";
 })(SwipeDirection$1 || (SwipeDirection$1 = {}));
+var __defProp$1$1 = Object.defineProperty;
+var __getOwnPropSymbols$1$1 = Object.getOwnPropertySymbols;
+var __hasOwnProp$1$1 = Object.prototype.hasOwnProperty;
+var __propIsEnum$1$1 = Object.prototype.propertyIsEnumerable;
+var __defNormalProp$1$1 = (obj, key, value) => key in obj ? __defProp$1$1(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues$1$1 = (a2, b2) => {
+  for (var prop2 in b2 || (b2 = {}))
+    if (__hasOwnProp$1$1.call(b2, prop2))
+      __defNormalProp$1$1(a2, prop2, b2[prop2]);
+  if (__getOwnPropSymbols$1$1)
+    for (var prop2 of __getOwnPropSymbols$1$1(b2)) {
+      if (__propIsEnum$1$1.call(b2, prop2))
+        __defNormalProp$1$1(a2, prop2, b2[prop2]);
+    }
+  return a2;
+};
+var __objRest$3 = (source, exclude) => {
+  var target2 = {};
+  for (var prop2 in source)
+    if (__hasOwnProp$1$1.call(source, prop2) && exclude.indexOf(prop2) < 0)
+      target2[prop2] = source[prop2];
+  if (source != null && __getOwnPropSymbols$1$1)
+    for (var prop2 of __getOwnPropSymbols$1$1(source)) {
+      if (exclude.indexOf(prop2) < 0 && __propIsEnum$1$1.call(source, prop2))
+        target2[prop2] = source[prop2];
+    }
+  return target2;
+};
+const UNITS = [
+  { max: 6e4, value: 1e3, name: "second" },
+  { max: 276e4, value: 6e4, name: "minute" },
+  { max: 72e6, value: 36e5, name: "hour" },
+  { max: 5184e5, value: 864e5, name: "day" },
+  { max: 24192e5, value: 6048e5, name: "week" },
+  { max: 28512e6, value: 2592e6, name: "month" },
+  { max: Infinity, value: 31536e6, name: "year" }
+];
+const DEFAULT_MESSAGES = {
+  justNow: "just now",
+  past: (n2) => n2.match(/\d/) ? `${n2} ago` : n2,
+  future: (n2) => n2.match(/\d/) ? `in ${n2}` : n2,
+  month: (n2, past) => n2 === 1 ? past ? "last month" : "next month" : `${n2} month${n2 > 1 ? "s" : ""}`,
+  year: (n2, past) => n2 === 1 ? past ? "last year" : "next year" : `${n2} year${n2 > 1 ? "s" : ""}`,
+  day: (n2, past) => n2 === 1 ? past ? "yesterday" : "tomorrow" : `${n2} day${n2 > 1 ? "s" : ""}`,
+  week: (n2, past) => n2 === 1 ? past ? "last week" : "next week" : `${n2} week${n2 > 1 ? "s" : ""}`,
+  hour: (n2) => `${n2} hour${n2 > 1 ? "s" : ""}`,
+  minute: (n2) => `${n2} minute${n2 > 1 ? "s" : ""}`,
+  second: (n2) => `${n2} second${n2 > 1 ? "s" : ""}`
+};
+const DEFAULT_FORMATTER = (date) => date.toISOString().slice(0, 10);
+function useTimeAgo(time, options = {}) {
+  const {
+    controls: exposeControls = false,
+    max: max2,
+    updateInterval = 3e4,
+    messages = DEFAULT_MESSAGES,
+    fullDateFormatter = DEFAULT_FORMATTER
+  } = options;
+  const { abs: abs2, round: round2 } = Math;
+  const _a2 = useNow({ interval: updateInterval, controls: true }), { now: now2 } = _a2, controls = __objRest$3(_a2, ["now"]);
+  function getTimeago(from2, now22) {
+    var _a22;
+    const diff2 = +now22 - +from2;
+    const absDiff = abs2(diff2);
+    if (absDiff < 6e4)
+      return messages.justNow;
+    if (typeof max2 === "number" && absDiff > max2)
+      return fullDateFormatter(new Date(from2));
+    if (typeof max2 === "string") {
+      const unitMax = (_a22 = UNITS.find((i2) => i2.name === max2)) == null ? void 0 : _a22.max;
+      if (unitMax && absDiff > unitMax)
+        return fullDateFormatter(new Date(from2));
+    }
+    for (const unit of UNITS) {
+      if (absDiff < unit.max)
+        return format3(diff2, unit);
+    }
+  }
+  function applyFormat(name, val, isPast) {
+    const formatter = messages[name];
+    if (typeof formatter === "function")
+      return formatter(val, isPast);
+    return formatter.replace("{0}", val.toString());
+  }
+  function format3(diff2, unit) {
+    const val = round2(abs2(diff2) / unit.value);
+    const past = diff2 > 0;
+    const str = applyFormat(unit.name, val, past);
+    return applyFormat(past ? "past" : "future", str, past);
+  }
+  const timeAgo = computed(() => getTimeago(new Date(unref(time)), unref(now2.value)));
+  if (exposeControls) {
+    return __spreadValues$1$1({
+      timeAgo
+    }, controls);
+  } else {
+    return timeAgo;
+  }
+}
 function useTitle(newTitle = null, options = {}) {
   var _a2, _b;
   const {
@@ -14066,8 +14329,8 @@ function useTitle(newTitle = null, options = {}) {
     titleTemplate = "%s"
   } = options;
   const title = ref((_a2 = newTitle != null ? newTitle : document2 == null ? void 0 : document2.title) != null ? _a2 : null);
-  watch(title, (t2, o) => {
-    if (isString$4(t2) && t2 !== o && document2)
+  watch(title, (t2, o2) => {
+    if (isString$4(t2) && t2 !== o2 && document2)
       document2.title = titleTemplate.replace("%s", t2);
   }, { immediate: true });
   if (observe && document2) {
@@ -15767,7 +16030,7 @@ const render$2 = (icon, props) => {
   if (Object.keys(style2).length > 0) {
     componentProps["style"] = style2;
   }
-  return h$1("svg", componentProps);
+  return h$2("svg", componentProps);
 };
 allowSimpleNames$1(true);
 setAPIModule$1("", fetchAPIModule$1);
@@ -16753,7 +17016,7 @@ function createRouterMatcher(routes, globalOptions) {
           location: location2
         });
       name = matcher.record.name;
-      params = assign$2(paramsFromLocation(currentLocation.params, matcher.keys.filter((k) => !k.optional).map((k) => k.name)), location2.params);
+      params = assign$2(paramsFromLocation(currentLocation.params, matcher.keys.filter((k2) => !k2.optional).map((k2) => k2.name)), location2.params);
       path2 = matcher.stringify(params);
     } else if ("path" in location2) {
       path2 = location2.path;
@@ -17179,7 +17442,7 @@ const RouterLinkImpl = /* @__PURE__ */ defineComponent({
     }));
     return () => {
       const children = slots.default && slots.default(link3);
-      return props.custom ? children : h$1("a", {
+      return props.custom ? children : h$2("a", {
         "aria-current": link3.isExactActive ? props.ariaCurrentValue : null,
         href: link3.href,
         onClick: link3.navigate,
@@ -17284,7 +17547,7 @@ const RouterViewImpl = /* @__PURE__ */ defineComponent({
           matchedRoute.instances[currentName] = null;
         }
       };
-      const component = h$1(ViewComponent, assign$2({}, routeProps, attrs, {
+      const component = h$2(ViewComponent, assign$2({}, routeProps, attrs, {
         onVnodeUnmounted,
         ref: viewRef
       }));
@@ -18317,8 +18580,8 @@ function createAutoBuildingObject(format3, specialKeysHandler, key = "", depth =
   if (depth > 32)
     return { key, cache: cache2, target: {}, proxy: () => key };
   const target2 = () => {
-    const k = key + "()";
-    return format3 ? format3(k) : k;
+    const k2 = key + "()";
+    return format3 ? format3(k2) : k2;
   };
   const proxy = new Proxy(target2, {
     get(_2, p2) {
@@ -18335,8 +18598,8 @@ function createAutoBuildingObject(format3, specialKeysHandler, key = "", depth =
         }
       }
       if (p2 === "toString") {
-        const k = key + ".toString()";
-        return () => format3 ? format3(k) : k;
+        const k2 = key + ".toString()";
+        return () => format3 ? format3(k2) : k2;
       }
       if (p2 === Symbol.toPrimitive) {
         return () => format3 ? format3(key) : key;
@@ -18349,8 +18612,8 @@ function createAutoBuildingObject(format3, specialKeysHandler, key = "", depth =
       return cache2[p2].proxy;
     },
     apply(_2, thisArg, args) {
-      const k = `${key}(${args.join(", ")})`;
-      return format3 ? format3(k) : k;
+      const k2 = `${key}(${args.join(", ")})`;
+      return format3 ? format3(k2) : k2;
     }
   });
   return {
@@ -21114,7 +21377,7 @@ function ensureDirectiveApp() {
     },
     render() {
       return this.directives.map((directive) => {
-        return h$1(PrivateTooltipDirective, __spreadProps2(__spreadValues2({}, directive.options), {
+        return h$2(PrivateTooltipDirective, __spreadProps2(__spreadValues2({}, directive.options), {
           shown: directive.shown || directive.options.shown,
           key: directive.id
         }));
@@ -23243,7 +23506,7 @@ const render = (icon, props) => {
   if (Object.keys(style2).length > 0) {
     componentProps["style"] = style2;
   }
-  return h$1("svg", componentProps);
+  return h$2("svg", componentProps);
 };
 allowSimpleNames(true);
 setAPIModule("", fetchAPIModule);
@@ -24170,6 +24433,9 @@ ul {
   --tw-bg-opacity: 1;
   background-color: rgba(60, 60, 60, var(--tw-bg-opacity));
 }
+.bg-transparent {
+  background-color: transparent;
+}
 .dark .dark_bg-dark-50 {
   --tw-bg-opacity: 1;
   background-color: rgba(74, 74, 74, var(--tw-bg-opacity));
@@ -24278,6 +24544,9 @@ ul {
 .rounded-md {
   border-radius: 0.375rem;
 }
+.rounded {
+  border-radius: 0.25rem;
+}
 .rounded-b-xl {
   border-bottom-right-radius: 0.75rem;
   border-bottom-left-radius: 0.75rem;
@@ -24294,6 +24563,9 @@ ul {
 }
 .dark .dark_border {
   border-width: 1px;
+}
+.border-2 {
+  border-width: 2px;
 }
 .border-4 {
   border-width: 4px;
@@ -24440,12 +24712,6 @@ ul {
   flex: 1 1 0%;
 }
 .\\.flex\\.flex-wrap\\.bg-dark-100\\.p-4\\.fixed\\.z-100\\.bottom-0\\.left-1\\.right-1 {
-  -webkit-box-flex: 1;
-  -ms-flex: 1 1 0%;
-  -webkit-flex: 1 1 0%;
-  flex: 1 1 0%;
-}
-.\\.flex\\.gap-2\\.p-2\\.items-center\\.flex-wrap\\.flex-1 {
   -webkit-box-flex: 1;
   -ms-flex: 1 1 0%;
   -webkit-flex: 1 1 0%;
@@ -26791,7 +27057,7 @@ const _sfc_main$2 = defineComponent({
     this.updateStory();
     const [firstVariant] = this.story.variants;
     if (firstVariant.id === "_default") {
-      return h$1(_sfc_main$3, __spreadValues$1({
+      return h$2(_sfc_main$3, __spreadValues$1({
         variant: firstVariant,
         initState: this.initState
       }, this.$attrs), this.$slots);
@@ -26865,7 +27131,7 @@ const RouterLinkStub = defineComponent({
       navigate: async () => {
       }
     });
-    return this.custom ? children : h$1("a", void 0, children);
+    return this.custom ? children : h$2("a", void 0, children);
   }
 });
 const _sfc_main$1 = /* @__PURE__ */ defineComponent({
@@ -27058,7 +27324,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       app = createApp({
         name: "MountStoryVue3",
         render: () => {
-          return h$1(props.story.file.component, {
+          return h$2(props.story.file.component, {
             story: props.story
           });
         }
@@ -27091,12 +27357,12 @@ function getAugmentedNamespace(n2) {
   if (n2.__esModule)
     return n2;
   var a2 = Object.defineProperty({}, "__esModule", { value: true });
-  Object.keys(n2).forEach(function(k) {
-    var d2 = Object.getOwnPropertyDescriptor(n2, k);
-    Object.defineProperty(a2, k, d2.get ? d2 : {
+  Object.keys(n2).forEach(function(k2) {
+    var d2 = Object.getOwnPropertyDescriptor(n2, k2);
+    Object.defineProperty(a2, k2, d2.get ? d2 : {
       enumerable: true,
       get: function() {
-        return n2[k];
+        return n2[k2];
       }
     });
   });
@@ -27116,13 +27382,13 @@ var main$1 = { exports: {} };
       };
       Object.defineProperty(n3, "__esModule", { value: true }), n3.setDefaultDebugCall = n3.createOnigScanner = n3.createOnigString = n3.loadWASM = n3.OnigScanner = n3.OnigString = void 0;
       const i2 = r2(e2(418));
-      let o = null, a2 = false;
+      let o2 = null, a2 = false;
       class f2 {
         constructor(t4) {
           const n4 = t4.length, e3 = f2._utf8ByteLength(t4), r3 = e3 !== n4, i3 = r3 ? new Uint32Array(n4 + 1) : null;
           r3 && (i3[n4] = e3);
-          const o2 = r3 ? new Uint32Array(e3 + 1) : null;
-          r3 && (o2[e3] = n4);
+          const o3 = r3 ? new Uint32Array(e3 + 1) : null;
+          r3 && (o3[e3] = n4);
           const a3 = new Uint8Array(e3);
           let s3 = 0;
           for (let e4 = 0; e4 < n4; e4++) {
@@ -27132,20 +27398,20 @@ var main$1 = { exports: {} };
               const n5 = t4.charCodeAt(e4 + 1);
               n5 >= 56320 && n5 <= 57343 && (u3 = 65536 + (f3 - 55296 << 10) | n5 - 56320, c3 = true);
             }
-            r3 && (i3[e4] = s3, c3 && (i3[e4 + 1] = s3), u3 <= 127 ? o2[s3 + 0] = e4 : u3 <= 2047 ? (o2[s3 + 0] = e4, o2[s3 + 1] = e4) : u3 <= 65535 ? (o2[s3 + 0] = e4, o2[s3 + 1] = e4, o2[s3 + 2] = e4) : (o2[s3 + 0] = e4, o2[s3 + 1] = e4, o2[s3 + 2] = e4, o2[s3 + 3] = e4)), u3 <= 127 ? a3[s3++] = u3 : u3 <= 2047 ? (a3[s3++] = 192 | (1984 & u3) >>> 6, a3[s3++] = 128 | (63 & u3) >>> 0) : u3 <= 65535 ? (a3[s3++] = 224 | (61440 & u3) >>> 12, a3[s3++] = 128 | (4032 & u3) >>> 6, a3[s3++] = 128 | (63 & u3) >>> 0) : (a3[s3++] = 240 | (1835008 & u3) >>> 18, a3[s3++] = 128 | (258048 & u3) >>> 12, a3[s3++] = 128 | (4032 & u3) >>> 6, a3[s3++] = 128 | (63 & u3) >>> 0), c3 && e4++;
+            r3 && (i3[e4] = s3, c3 && (i3[e4 + 1] = s3), u3 <= 127 ? o3[s3 + 0] = e4 : u3 <= 2047 ? (o3[s3 + 0] = e4, o3[s3 + 1] = e4) : u3 <= 65535 ? (o3[s3 + 0] = e4, o3[s3 + 1] = e4, o3[s3 + 2] = e4) : (o3[s3 + 0] = e4, o3[s3 + 1] = e4, o3[s3 + 2] = e4, o3[s3 + 3] = e4)), u3 <= 127 ? a3[s3++] = u3 : u3 <= 2047 ? (a3[s3++] = 192 | (1984 & u3) >>> 6, a3[s3++] = 128 | (63 & u3) >>> 0) : u3 <= 65535 ? (a3[s3++] = 224 | (61440 & u3) >>> 12, a3[s3++] = 128 | (4032 & u3) >>> 6, a3[s3++] = 128 | (63 & u3) >>> 0) : (a3[s3++] = 240 | (1835008 & u3) >>> 18, a3[s3++] = 128 | (258048 & u3) >>> 12, a3[s3++] = 128 | (4032 & u3) >>> 6, a3[s3++] = 128 | (63 & u3) >>> 0), c3 && e4++;
           }
-          this.utf16Length = n4, this.utf8Length = e3, this.utf16Value = t4, this.utf8Value = a3, this.utf16OffsetToUtf8 = i3, this.utf8OffsetToUtf16 = o2;
+          this.utf16Length = n4, this.utf8Length = e3, this.utf16Value = t4, this.utf8Value = a3, this.utf16OffsetToUtf8 = i3, this.utf8OffsetToUtf16 = o3;
         }
         static _utf8ByteLength(t4) {
           let n4 = 0;
           for (let e3 = 0, r3 = t4.length; e3 < r3; e3++) {
             const i3 = t4.charCodeAt(e3);
-            let o2 = i3, a3 = false;
+            let o3 = i3, a3 = false;
             if (i3 >= 55296 && i3 <= 56319 && e3 + 1 < r3) {
               const n5 = t4.charCodeAt(e3 + 1);
-              n5 >= 56320 && n5 <= 57343 && (o2 = 65536 + (i3 - 55296 << 10) | n5 - 56320, a3 = true);
+              n5 >= 56320 && n5 <= 57343 && (o3 = 65536 + (i3 - 55296 << 10) | n5 - 56320, a3 = true);
             }
-            n4 += o2 <= 127 ? 1 : o2 <= 2047 ? 2 : o2 <= 65535 ? 3 : 4, a3 && e3++;
+            n4 += o3 <= 127 ? 1 : o3 <= 2047 ? 2 : o3 <= 65535 ? 3 : 4, a3 && e3++;
           }
           return n4;
         }
@@ -27156,11 +27422,11 @@ var main$1 = { exports: {} };
       }
       class s2 {
         constructor(t4) {
-          if (this.id = ++s2.LAST_ID, !o)
+          if (this.id = ++s2.LAST_ID, !o2)
             throw new Error("Must invoke loadWASM first.");
-          this._onigBinding = o, this.content = t4;
+          this._onigBinding = o2, this.content = t4;
           const n4 = new f2(t4);
-          this.utf16Length = n4.utf16Length, this.utf8Length = n4.utf8Length, this.utf16OffsetToUtf8 = n4.utf16OffsetToUtf8, this.utf8OffsetToUtf16 = n4.utf8OffsetToUtf16, this.utf8Length < 1e4 && !s2._sharedPtrInUse ? (s2._sharedPtr || (s2._sharedPtr = o._omalloc(1e4)), s2._sharedPtrInUse = true, o.HEAPU8.set(n4.utf8Value, s2._sharedPtr), this.ptr = s2._sharedPtr) : this.ptr = n4.createString(o);
+          this.utf16Length = n4.utf16Length, this.utf8Length = n4.utf8Length, this.utf16OffsetToUtf8 = n4.utf16OffsetToUtf8, this.utf8OffsetToUtf16 = n4.utf8OffsetToUtf16, this.utf8Length < 1e4 && !s2._sharedPtrInUse ? (s2._sharedPtr || (s2._sharedPtr = o2._omalloc(1e4)), s2._sharedPtrInUse = true, o2.HEAPU8.set(n4.utf8Value, s2._sharedPtr), this.ptr = s2._sharedPtr) : this.ptr = n4.createString(o2);
         }
         convertUtf8OffsetToUtf16(t4) {
           return this.utf8OffsetToUtf16 ? t4 < 0 ? 0 : t4 > this.utf8Length ? this.utf16Length : this.utf8OffsetToUtf16[t4] : t4;
@@ -27175,23 +27441,23 @@ var main$1 = { exports: {} };
       n3.OnigString = s2, s2.LAST_ID = 0, s2._sharedPtr = 0, s2._sharedPtrInUse = false;
       class u2 {
         constructor(t4) {
-          if (!o)
+          if (!o2)
             throw new Error("Must invoke loadWASM first.");
           const n4 = [], e3 = [];
           for (let r4 = 0, i4 = t4.length; r4 < i4; r4++) {
             const i5 = new f2(t4[r4]);
-            n4[r4] = i5.createString(o), e3[r4] = i5.utf8Length;
+            n4[r4] = i5.createString(o2), e3[r4] = i5.utf8Length;
           }
-          const r3 = o._omalloc(4 * t4.length);
-          o.HEAPU32.set(n4, r3 / 4);
-          const i3 = o._omalloc(4 * t4.length);
-          o.HEAPU32.set(e3, i3 / 4);
-          const a3 = o._createOnigScanner(r3, i3, t4.length);
+          const r3 = o2._omalloc(4 * t4.length);
+          o2.HEAPU32.set(n4, r3 / 4);
+          const i3 = o2._omalloc(4 * t4.length);
+          o2.HEAPU32.set(e3, i3 / 4);
+          const a3 = o2._createOnigScanner(r3, i3, t4.length);
           for (let e4 = 0, r4 = t4.length; e4 < r4; e4++)
-            o._ofree(n4[e4]);
-          o._ofree(i3), o._ofree(r3), a3 === 0 && function(t5) {
+            o2._ofree(n4[e4]);
+          o2._ofree(i3), o2._ofree(r3), a3 === 0 && function(t5) {
             throw new Error(t5.UTF8ToString(t5._getLastOnigError()));
-          }(o), this._onigBinding = o, this._ptr = a3;
+          }(o2), this._onigBinding = o2, this._ptr = a3;
         }
         dispose() {
           this._onigBinding._freeOnigScanner(this._ptr);
@@ -27207,11 +27473,11 @@ var main$1 = { exports: {} };
         }
         _findNextMatchSync(t4, n4, e3, r3) {
           const i3 = this._onigBinding;
-          let o2;
-          if (o2 = e3 ? i3._findNextOnigScannerMatchDbg(this._ptr, t4.id, t4.ptr, t4.utf8Length, t4.convertUtf16OffsetToUtf8(n4), r3) : i3._findNextOnigScannerMatch(this._ptr, t4.id, t4.ptr, t4.utf8Length, t4.convertUtf16OffsetToUtf8(n4), r3), o2 === 0)
+          let o3;
+          if (o3 = e3 ? i3._findNextOnigScannerMatchDbg(this._ptr, t4.id, t4.ptr, t4.utf8Length, t4.convertUtf16OffsetToUtf8(n4), r3) : i3._findNextOnigScannerMatch(this._ptr, t4.id, t4.ptr, t4.utf8Length, t4.convertUtf16OffsetToUtf8(n4), r3), o3 === 0)
             return null;
           const a3 = i3.HEAPU32;
-          let f3 = o2 / 4;
+          let f3 = o3 / 4;
           const s3 = a3[f3++], u3 = a3[f3++];
           let c3 = [];
           for (let n5 = 0; n5 < u3; n5++) {
@@ -27258,7 +27524,7 @@ var main$1 = { exports: {} };
             }
             return t5(n6).then((t6) => e5(t6.instance), r4), {};
           } }).then((t6) => {
-            o = t6, e4();
+            o2 = t6, e4();
           });
         }(n4, e3, r3, a3), l2;
       }, n3.createOnigString = function(t4) {
@@ -27274,9 +27540,9 @@ var main$1 = { exports: {} };
         r2.ready = new Promise(function(t5, r3) {
           n4 = t5, e2 = r3;
         });
-        var i2, o = {};
+        var i2, o2 = {};
         for (i2 in r2)
-          r2.hasOwnProperty(i2) && (o[i2] = r2[i2]);
+          r2.hasOwnProperty(i2) && (o2[i2] = r2[i2]);
         var a2, u2 = false, l2 = "";
         function p2(t5) {
           return r2.locateFile ? r2.locateFile(t5, l2) : l2 + t5;
@@ -27286,39 +27552,39 @@ var main$1 = { exports: {} };
           return typeof readbuffer == "function" ? new Uint8Array(readbuffer(t5)) : (v2(typeof (n5 = read(t5, "binary")) == "object"), n5);
         }, typeof scriptArgs != "undefined" ? scriptArgs : arguments !== void 0 && arguments, typeof onig_print != "undefined" && (typeof console == "undefined" && (console = {}), console.log = onig_print, console.warn = console.error = typeof printErr != "undefined" ? printErr : onig_print);
         var h2 = r2.print || console.log.bind(console), d2 = r2.printErr || console.warn.bind(console);
-        for (i2 in o)
-          o.hasOwnProperty(i2) && (r2[i2] = o[i2]);
-        o = null, r2.arguments && r2.arguments, r2.thisProgram && r2.thisProgram, r2.quit && r2.quit;
-        var g, _2;
-        r2.wasmBinary && (g = r2.wasmBinary), r2.noExitRuntime, typeof WebAssembly != "object" && z("no native wasm support detected");
+        for (i2 in o2)
+          o2.hasOwnProperty(i2) && (r2[i2] = o2[i2]);
+        o2 = null, r2.arguments && r2.arguments, r2.thisProgram && r2.thisProgram, r2.quit && r2.quit;
+        var g2, _2;
+        r2.wasmBinary && (g2 = r2.wasmBinary), r2.noExitRuntime, typeof WebAssembly != "object" && z2("no native wasm support detected");
         var y2 = false;
         function v2(t5, n5) {
-          t5 || z("Assertion failed: " + n5);
+          t5 || z2("Assertion failed: " + n5);
         }
-        var w2, S2, A, b2 = typeof TextDecoder != "undefined" ? new TextDecoder("utf8") : void 0;
+        var w2, S2, A2, b2 = typeof TextDecoder != "undefined" ? new TextDecoder("utf8") : void 0;
         function O2(t5, n5, e3) {
           for (var r3 = n5 + e3, i3 = n5; t5[i3] && !(i3 >= r3); )
             ++i3;
           if (i3 - n5 > 16 && t5.subarray && b2)
             return b2.decode(t5.subarray(n5, i3));
-          for (var o2 = ""; n5 < i3; ) {
+          for (var o3 = ""; n5 < i3; ) {
             var a3 = t5[n5++];
             if (128 & a3) {
               var f2 = 63 & t5[n5++];
               if ((224 & a3) != 192) {
                 var s2 = 63 & t5[n5++];
                 if ((a3 = (240 & a3) == 224 ? (15 & a3) << 12 | f2 << 6 | s2 : (7 & a3) << 18 | f2 << 12 | s2 << 6 | 63 & t5[n5++]) < 65536)
-                  o2 += String.fromCharCode(a3);
+                  o3 += String.fromCharCode(a3);
                 else {
                   var u3 = a3 - 65536;
-                  o2 += String.fromCharCode(55296 | u3 >> 10, 56320 | 1023 & u3);
+                  o3 += String.fromCharCode(55296 | u3 >> 10, 56320 | 1023 & u3);
                 }
               } else
-                o2 += String.fromCharCode((31 & a3) << 6 | f2);
+                o3 += String.fromCharCode((31 & a3) << 6 | f2);
             } else
-              o2 += String.fromCharCode(a3);
+              o3 += String.fromCharCode(a3);
           }
-          return o2;
+          return o3;
         }
         function U2(t5, n5) {
           return t5 ? O2(S2, t5, n5) : "";
@@ -27327,74 +27593,74 @@ var main$1 = { exports: {} };
           return t5 % n5 > 0 && (t5 += n5 - t5 % n5), t5;
         }
         function P2(t5) {
-          w2 = t5, r2.HEAP8 = new Int8Array(t5), r2.HEAP16 = new Int16Array(t5), r2.HEAP32 = A = new Int32Array(t5), r2.HEAPU8 = S2 = new Uint8Array(t5), r2.HEAPU16 = new Uint16Array(t5), r2.HEAPU32 = new Uint32Array(t5), r2.HEAPF32 = new Float32Array(t5), r2.HEAPF64 = new Float64Array(t5);
+          w2 = t5, r2.HEAP8 = new Int8Array(t5), r2.HEAP16 = new Int16Array(t5), r2.HEAP32 = A2 = new Int32Array(t5), r2.HEAPU8 = S2 = new Uint8Array(t5), r2.HEAPU16 = new Uint16Array(t5), r2.HEAPU32 = new Uint32Array(t5), r2.HEAPF32 = new Float32Array(t5), r2.HEAPF64 = new Float64Array(t5);
         }
         typeof TextDecoder != "undefined" && new TextDecoder("utf-16le"), r2.INITIAL_MEMORY;
-        var T2, R = [], E2 = [], M2 = [], L2 = [];
+        var T2, R2 = [], E2 = [], M2 = [], L2 = [];
         function I2() {
           if (r2.preRun)
             for (typeof r2.preRun == "function" && (r2.preRun = [r2.preRun]); r2.preRun.length; )
               N2(r2.preRun.shift());
-          $(R);
+          $2(R2);
         }
         function D2() {
-          $(E2);
+          $2(E2);
         }
         function W2() {
-          $(M2);
+          $2(M2);
         }
         function C2() {
           if (r2.postRun)
             for (typeof r2.postRun == "function" && (r2.postRun = [r2.postRun]); r2.postRun.length; )
-              k(r2.postRun.shift());
-          $(L2);
+              k2(r2.postRun.shift());
+          $2(L2);
         }
         function N2(t5) {
-          R.unshift(t5);
+          R2.unshift(t5);
         }
-        function k(t5) {
+        function k2(t5) {
           L2.unshift(t5);
         }
         E2.push({ func: function() {
           ut();
         } });
-        var B = 0, j2 = null;
+        var B2 = 0, j2 = null;
         function F2(t5) {
-          B++, r2.monitorRunDependencies && r2.monitorRunDependencies(B);
+          B2++, r2.monitorRunDependencies && r2.monitorRunDependencies(B2);
         }
         function V2(t5) {
-          if (B--, r2.monitorRunDependencies && r2.monitorRunDependencies(B), B == 0 && j2) {
+          if (B2--, r2.monitorRunDependencies && r2.monitorRunDependencies(B2), B2 == 0 && j2) {
             var n5 = j2;
             j2 = null, n5();
           }
         }
-        function z(t5) {
+        function z2(t5) {
           r2.onAbort && r2.onAbort(t5), d2(t5 += ""), y2 = true, t5 = "abort(" + t5 + "). Build with -s ASSERTIONS=1 for more info.";
           var n5 = new WebAssembly.RuntimeError(t5);
           throw e2(n5), n5;
         }
-        function q(t5, n5) {
+        function q2(t5, n5) {
           return String.prototype.startsWith ? t5.startsWith(n5) : t5.indexOf(n5) === 0;
         }
         r2.preloadedImages = {}, r2.preloadedAudios = {};
         var Y2 = "data:application/octet-stream;base64,";
         function G2(t5) {
-          return q(t5, Y2);
+          return q2(t5, Y2);
         }
         var J2, K2 = "onig.wasm";
         function Q2(t5) {
           try {
-            if (t5 == K2 && g)
-              return new Uint8Array(g);
+            if (t5 == K2 && g2)
+              return new Uint8Array(g2);
             if (a2)
               return a2(t5);
             throw "both async and sync fetching of the wasm failed";
           } catch (t6) {
-            z(t6);
+            z2(t6);
           }
         }
-        function X() {
-          return g || !u2 || typeof fetch != "function" ? Promise.resolve().then(function() {
+        function X2() {
+          return g2 || !u2 || typeof fetch != "function" ? Promise.resolve().then(function() {
             return Q2(K2);
           }) : fetch(K2, { credentials: "same-origin" }).then(function(t5) {
             if (!t5.ok)
@@ -27413,11 +27679,11 @@ var main$1 = { exports: {} };
           function i3(t6) {
             n5(t6.instance);
           }
-          function o2(n6) {
-            return X().then(function(n7) {
+          function o3(n6) {
+            return X2().then(function(n7) {
               return WebAssembly.instantiate(n7, t5);
             }).then(n6, function(t6) {
-              d2("failed to asynchronously prepare wasm: " + t6), z(t6);
+              d2("failed to asynchronously prepare wasm: " + t6), z2(t6);
             });
           }
           if (F2(), r2.instantiateWasm)
@@ -27426,13 +27692,13 @@ var main$1 = { exports: {} };
             } catch (t6) {
               return d2("Module.instantiateWasm callback failed with error: " + t6), false;
             }
-          return (g || typeof WebAssembly.instantiateStreaming != "function" || G2(K2) || typeof fetch != "function" ? o2(i3) : fetch(K2, { credentials: "same-origin" }).then(function(n6) {
+          return (g2 || typeof WebAssembly.instantiateStreaming != "function" || G2(K2) || typeof fetch != "function" ? o3(i3) : fetch(K2, { credentials: "same-origin" }).then(function(n6) {
             return WebAssembly.instantiateStreaming(n6, t5).then(i3, function(t6) {
-              return d2("wasm streaming compile failed: " + t6), d2("falling back to ArrayBuffer instantiation"), o2(i3);
+              return d2("wasm streaming compile failed: " + t6), d2("falling back to ArrayBuffer instantiation"), o3(i3);
             });
           })).catch(e2), {};
         }
-        function $(t5) {
+        function $2(t5) {
           for (; t5.length > 0; ) {
             var n5 = t5.shift();
             if (typeof n5 != "function") {
@@ -27442,25 +27708,25 @@ var main$1 = { exports: {} };
               n5(r2);
           }
         }
-        function tt(t5, n5, e3) {
+        function tt2(t5, n5, e3) {
           S2.copyWithin(t5, n5, n5 + e3);
         }
-        function nt() {
+        function nt2() {
           return S2.length;
         }
-        function et(t5) {
+        function et2(t5) {
           try {
             return _2.grow(t5 - w2.byteLength + 65535 >>> 16), P2(_2.buffer), 1;
           } catch (t6) {
           }
         }
-        function rt(t5) {
-          var n5 = nt(), e3 = 2147483648;
+        function rt2(t5) {
+          var n5 = nt2(), e3 = 2147483648;
           if (t5 > e3)
             return false;
           for (var r3 = 1; r3 <= 4; r3 *= 2) {
             var i3 = n5 * (1 + 0.2 / r3);
-            if (i3 = Math.min(i3, t5 + 100663296), et(Math.min(e3, x2(Math.max(t5, i3), 65536))))
+            if (i3 = Math.min(i3, t5 + 100663296), et2(Math.min(e3, x2(Math.max(t5, i3), 65536))))
               return true;
           }
           return false;
@@ -27472,30 +27738,30 @@ var main$1 = { exports: {} };
           var e3 = it2.buffers[t5];
           n5 === 0 || n5 === 10 ? ((t5 === 1 ? h2 : d2)(O2(e3, 0)), e3.length = 0) : e3.push(n5);
         }, varargs: void 0, get: function() {
-          return it2.varargs += 4, A[it2.varargs - 4 >> 2];
+          return it2.varargs += 4, A2[it2.varargs - 4 >> 2];
         }, getStr: function(t5) {
           return U2(t5);
         }, get64: function(t5, n5) {
           return t5;
         } };
-        function ot(t5, n5, e3, r3) {
-          for (var i3 = 0, o2 = 0; o2 < e3; o2++) {
-            for (var a3 = A[n5 + 8 * o2 >> 2], f2 = A[n5 + (8 * o2 + 4) >> 2], s2 = 0; s2 < f2; s2++)
+        function ot2(t5, n5, e3, r3) {
+          for (var i3 = 0, o3 = 0; o3 < e3; o3++) {
+            for (var a3 = A2[n5 + 8 * o3 >> 2], f2 = A2[n5 + (8 * o3 + 4) >> 2], s2 = 0; s2 < f2; s2++)
               it2.printChar(t5, S2[a3 + s2]);
             i3 += f2;
           }
-          return A[r3 >> 2] = i3, 0;
+          return A2[r3 >> 2] = i3, 0;
         }
-        function at(t5) {
+        function at2(t5) {
         }
-        var ft, st = { emscripten_get_now: J2, emscripten_memcpy_big: tt, emscripten_resize_heap: rt, fd_write: ot, setTempRet0: at }, ut = (Z2(), r2.___wasm_call_ctors = function() {
+        var ft, st = { emscripten_get_now: J2, emscripten_memcpy_big: tt2, emscripten_resize_heap: rt2, fd_write: ot2, setTempRet0: at2 }, ut = (Z2(), r2.___wasm_call_ctors = function() {
           return (ut = r2.___wasm_call_ctors = r2.asm.__wasm_call_ctors).apply(null, arguments);
         });
         function ct(t5) {
           function e3() {
             ft || (ft = true, r2.calledRun = true, y2 || (D2(), W2(), n4(r2), r2.onRuntimeInitialized && r2.onRuntimeInitialized(), C2()));
           }
-          B > 0 || (I2(), B > 0 || (r2.setStatus ? (r2.setStatus("Running..."), setTimeout(function() {
+          B2 > 0 || (I2(), B2 > 0 || (r2.setStatus ? (r2.setStatus("Running..."), setTimeout(function() {
             setTimeout(function() {
               r2.setStatus("");
             }, 1), e3();
@@ -27537,8 +27803,8 @@ var main$1 = { exports: {} };
       var i2 = n2[r2];
       if (i2 !== void 0)
         return i2.exports;
-      var o = n2[r2] = { exports: {} };
-      return t2[r2].call(o.exports, o, o.exports, e2), o.exports;
+      var o2 = n2[r2] = { exports: {} };
+      return t2[r2].call(o2.exports, o2, o2.exports, e2), o2.exports;
     }(770);
     var t2, n2;
   });
@@ -27584,13 +27850,13 @@ var main = { exports: {} };
       }, n2.p = "", n2(n2.s = 3);
     }([function(e2, t2, n2) {
       Object.defineProperty(t2, "__esModule", { value: true });
-      var r2 = n2(1), i2 = n2(5), o = n2(6), s2 = n2(2), a2 = typeof performance == "undefined" ? function() {
+      var r2 = n2(1), i2 = n2(5), o2 = n2(6), s2 = n2(2), a2 = typeof performance == "undefined" ? function() {
         return Date.now();
       } : function() {
         return performance.now();
       };
-      t2.createGrammar = function(e3, t3, n3, r3, i3, o2) {
-        return new v2(e3, t3, n3, r3, i3, o2);
+      t2.createGrammar = function(e3, t3, n3, r3, i3, o3) {
+        return new v2(e3, t3, n3, r3, i3, o3);
       };
       var c2 = function(e3) {
         this.scopeName = e3;
@@ -27613,28 +27879,28 @@ var main = { exports: {} };
           e4 instanceof c2 ? this._seenFull.has(e4.scopeName) || (this._seenFull.add(e4.scopeName), this.full.push(e4)) : this._seenPartial.has(e4.toKey()) || (this._seenPartial.add(e4.toKey()), this.partial.push(e4));
         }, e3;
       }();
-      function h2(e3, t3, n3, i3, o2) {
+      function h2(e3, t3, n3, i3, o3) {
         for (var s3 = 0, a3 = i3; s3 < a3.length; s3++) {
           var l3 = a3[s3];
           if (!e3.visitedRule.has(l3)) {
             e3.visitedRule.add(l3);
-            var d3 = l3.repository ? r2.mergeObjects({}, o2, l3.repository) : o2;
+            var d3 = l3.repository ? r2.mergeObjects({}, o3, l3.repository) : o3;
             Array.isArray(l3.patterns) && h2(e3, t3, n3, l3.patterns, d3);
-            var g2 = l3.include;
-            if (g2)
-              if (g2 === "$base" || g2 === t3.scopeName)
+            var g3 = l3.include;
+            if (g3)
+              if (g3 === "$base" || g3 === t3.scopeName)
                 f2(e3, t3, t3);
-              else if (g2 === "$self" || g2 === n3.scopeName)
+              else if (g3 === "$self" || g3 === n3.scopeName)
                 f2(e3, t3, n3);
-              else if (g2.charAt(0) === "#")
-                p2(e3, t3, n3, g2.substring(1), d3);
+              else if (g3.charAt(0) === "#")
+                p2(e3, t3, n3, g3.substring(1), d3);
               else {
-                var m3 = g2.indexOf("#");
+                var m3 = g3.indexOf("#");
                 if (m3 >= 0) {
-                  var _3 = g2.substring(0, m3), y3 = g2.substring(m3 + 1);
-                  _3 === t3.scopeName ? p2(e3, t3, t3, y3, d3) : _3 === n3.scopeName ? p2(e3, t3, n3, y3, d3) : e3.add(new u2(_3, g2.substring(m3 + 1)));
+                  var _3 = g3.substring(0, m3), y3 = g3.substring(m3 + 1);
+                  _3 === t3.scopeName ? p2(e3, t3, t3, y3, d3) : _3 === n3.scopeName ? p2(e3, t3, n3, y3, d3) : e3.add(new u2(_3, g3.substring(m3 + 1)));
                 } else
-                  e3.add(new c2(g2));
+                  e3.add(new c2(g3));
               }
           }
         }
@@ -27658,7 +27924,7 @@ var main = { exports: {} };
         var n3 = t3.length;
         return e3.length > n3 && e3.substr(0, n3) === t3 && e3[n3] === ".";
       }
-      function g(e3, t3) {
+      function g2(e3, t3) {
         if (t3.length < e3.length)
           return false;
         var n3 = 0;
@@ -27670,7 +27936,7 @@ var main = { exports: {} };
         });
       }
       function m2(e3, t3, n3, r3, s3) {
-        for (var a3 = o.createMatchers(t3, g), c3 = i2.RuleFactory.getCompiledRuleId(n3, r3, s3.repository), u3 = 0, l3 = a3; u3 < l3.length; u3++) {
+        for (var a3 = o2.createMatchers(t3, g2), c3 = i2.RuleFactory.getCompiledRuleId(n3, r3, s3.repository), u3 = 0, l3 = a3; u3 < l3.length; u3++) {
           var h3 = l3[u3];
           e3.push({ matcher: h3.matcher, ruleId: c3, grammar: s3, priority: h3.priority });
         }
@@ -27683,8 +27949,8 @@ var main = { exports: {} };
       var y2 = function() {
         function e3(t3, n3, r3) {
           if (this._initialLanguage = t3, this._themeProvider = n3, this._cache = /* @__PURE__ */ new Map(), this._defaultMetaData = new _2("", this._initialLanguage, 0, [this._themeProvider.getDefaults()]), this._embeddedLanguages = /* @__PURE__ */ Object.create(null), r3)
-            for (var i3 = Object.keys(r3), o2 = 0, s3 = i3.length; o2 < s3; o2++) {
-              var a3 = i3[o2], c3 = r3[a3];
+            for (var i3 = Object.keys(r3), o3 = 0, s3 = i3.length; o3 < s3; o3++) {
+              var a3 = i3[o3], c3 = r3[a3];
               typeof c3 == "number" && c3 !== 0 ? this._embeddedLanguages[a3] = c3 : console.warn("Invalid embedded language found at scope " + a3 + ": <<" + c3 + ">>");
             }
           var u3 = Object.keys(this._embeddedLanguages).map(function(t4) {
@@ -27736,7 +28002,7 @@ var main = { exports: {} };
         function e3(e4, t3, n3, r3, i3, s3) {
           if (this._scopeMetadataProvider = new y2(t3, i3, n3), this._onigLib = s3, this._rootId = -1, this._lastRuleId = 0, this._ruleId2desc = [null], this._includedGrammars = {}, this._grammarRepository = i3, this._grammar = C2(e4, null), this._injections = null, this._tokenTypeMatchers = [], r3)
             for (var a3 = 0, c3 = Object.keys(r3); a3 < c3.length; a3++)
-              for (var u3 = c3[a3], l3 = 0, h3 = o.createMatchers(u3, g); l3 < h3.length; l3++) {
+              for (var u3 = c3[a3], l3 = 0, h3 = o2.createMatchers(u3, g2); l3 < h3.length; l3++) {
                 var p3 = h3[l3];
                 this._tokenTypeMatchers.push({ matcher: p3.matcher, type: r3[u3] });
               }
@@ -27803,12 +28069,12 @@ var main = { exports: {} };
             r3 = false, t3.reset();
           else {
             r3 = true;
-            var o2 = this._scopeMetadataProvider.getDefaultMetadata(), s3 = o2.themeData[0], a3 = P2.set(0, o2.languageId, o2.tokenType, s3.fontStyle, s3.foreground, s3.background), c3 = this.getRule(this._rootId).getName(null, null), u3 = this._scopeMetadataProvider.getMetadataForScope(c3), l3 = x2.mergeMetadata(a3, null, u3), h3 = new x2(null, c3 === null ? "unknown" : c3, l3);
+            var o3 = this._scopeMetadataProvider.getDefaultMetadata(), s3 = o3.themeData[0], a3 = P2.set(0, o3.languageId, o3.tokenType, s3.fontStyle, s3.foreground, s3.background), c3 = this.getRule(this._rootId).getName(null, null), u3 = this._scopeMetadataProvider.getMetadataForScope(c3), l3 = x2.mergeMetadata(a3, null, u3), h3 = new x2(null, c3 === null ? "unknown" : c3, l3);
             t3 = new I2(null, this._rootId, -1, -1, false, null, h3, h3);
           }
           e4 += "\n";
-          var p3 = this.createOnigString(e4), f3 = p3.content.length, d3 = new T2(n3, e4, this._tokenTypeMatchers), g2 = S2(this, p3, r3, 0, t3, d3, true);
-          return b2(p3), { lineLength: f3, lineTokens: d3, ruleStack: g2 };
+          var p3 = this.createOnigString(e4), f3 = p3.content.length, d3 = new T2(n3, e4, this._tokenTypeMatchers), g3 = S2(this, p3, r3, 0, t3, d3, true);
+          return b2(p3), { lineLength: f3, lineTokens: d3, ruleStack: g3 };
         }, e3;
       }();
       function b2(e3) {
@@ -27817,10 +28083,10 @@ var main = { exports: {} };
       function C2(e3, t3) {
         return (e3 = r2.clone(e3)).repository = e3.repository || {}, e3.repository.$self = { $vscodeTextmateLocation: e3.$vscodeTextmateLocation, patterns: e3.patterns, name: e3.scopeName }, e3.repository.$base = t3 || e3.repository.$self, e3;
       }
-      function w2(e3, t3, n3, r3, i3, o2, s3) {
-        if (o2.length !== 0) {
-          for (var a3 = t3.content, c3 = Math.min(o2.length, s3.length), u3 = [], l3 = s3[0].end, h3 = 0; h3 < c3; h3++) {
-            var p3 = o2[h3];
+      function w2(e3, t3, n3, r3, i3, o3, s3) {
+        if (o3.length !== 0) {
+          for (var a3 = t3.content, c3 = Math.min(o3.length, s3.length), u3 = [], l3 = s3[0].end, h3 = 0; h3 < c3; h3++) {
+            var p3 = o3[h3];
             if (p3 !== null) {
               var f3 = s3[h3];
               if (f3.length !== 0) {
@@ -27829,13 +28095,13 @@ var main = { exports: {} };
                 for (; u3.length > 0 && u3[u3.length - 1].endPos <= f3.start; )
                   i3.produceFromScopes(u3[u3.length - 1].scopes, u3[u3.length - 1].endPos), u3.pop();
                 if (u3.length > 0 ? i3.produceFromScopes(u3[u3.length - 1].scopes, f3.start) : i3.produce(r3, f3.start), p3.retokenizeCapturedWithRuleId) {
-                  var d3 = p3.getName(a3, s3), g2 = r3.contentNameScopesList.push(e3, d3), m3 = p3.getContentName(a3, s3), _3 = g2.push(e3, m3), y3 = r3.push(p3.retokenizeCapturedWithRuleId, f3.start, -1, false, null, g2, _3), v3 = e3.createOnigString(a3.substring(0, f3.end));
+                  var d3 = p3.getName(a3, s3), g3 = r3.contentNameScopesList.push(e3, d3), m3 = p3.getContentName(a3, s3), _3 = g3.push(e3, m3), y3 = r3.push(p3.retokenizeCapturedWithRuleId, f3.start, -1, false, null, g3, _3), v3 = e3.createOnigString(a3.substring(0, f3.end));
                   S2(e3, v3, n3 && f3.start === 0, f3.start, y3, i3, false), b2(v3);
                 } else {
                   var C3 = p3.getName(a3, s3);
                   if (C3 !== null) {
                     var w3 = (u3.length > 0 ? u3[u3.length - 1].scopes : r3.contentNameScopesList).push(e3, C3);
-                    u3.push(new A(w3, f3.end));
+                    u3.push(new A2(w3, f3.end));
                   }
                 }
               }
@@ -27845,14 +28111,14 @@ var main = { exports: {} };
             i3.produceFromScopes(u3[u3.length - 1].scopes, u3[u3.length - 1].endPos), u3.pop();
         }
       }
-      function k(e3) {
+      function k2(e3) {
         for (var t3 = [], n3 = 0, r3 = e3.rules.length; n3 < r3; n3++)
           t3.push("   - " + e3.rules[n3] + ": " + e3.debugRegExps[n3]);
         return t3.join("\n");
       }
-      function R(e3, t3, n3, r3, i3, o2) {
-        var c3 = function(e4, t4, n4, r4, i4, o3) {
-          var c4 = i4.getRule(e4), u4 = c4.compile(e4, i4.endRule, n4, r4 === o3), l4 = 0;
+      function R2(e3, t3, n3, r3, i3, o3) {
+        var c3 = function(e4, t4, n4, r4, i4, o4) {
+          var c4 = i4.getRule(e4), u4 = c4.compile(e4, i4.endRule, n4, r4 === o4), l4 = 0;
           s2.DebugFlags.InDebugMode && (l4 = a2());
           var h4 = u4.scanner.findNextMatchSync(t4, r4);
           if (s2.DebugFlags.InDebugMode) {
@@ -27860,23 +28126,23 @@ var main = { exports: {} };
             p4 > 5 && console.warn("Rule " + c4.debugName + " (" + c4.id + ") matching took " + p4 + " against '" + t4 + "'"), h4 && console.log("matched rule id: " + u4.rules[h4.index] + " from " + h4.captureIndices[0].start + " to " + h4.captureIndices[0].end);
           }
           return h4 ? { captureIndices: h4.captureIndices, matchedRuleId: u4.rules[h4.index] } : null;
-        }(e3, t3, n3, r3, i3, o2), u3 = e3.getInjections();
+        }(e3, t3, n3, r3, i3, o3), u3 = e3.getInjections();
         if (u3.length === 0)
           return c3;
-        var l3 = function(e4, t4, n4, r4, i4, o3, a3) {
-          for (var c4, u4 = Number.MAX_VALUE, l4 = null, h4 = 0, p4 = o3.contentNameScopesList.generateScopes(), f3 = 0, d3 = e4.length; f3 < d3; f3++) {
-            var g2 = e4[f3];
-            if (g2.matcher(p4)) {
-              var m3 = t4.getRule(g2.ruleId).compile(t4, null, r4, i4 === a3), _3 = m3.scanner.findNextMatchSync(n4, i4);
-              if (s2.DebugFlags.InDebugMode && (console.log("  scanning for injections"), console.log(k(m3))), _3) {
+        var l3 = function(e4, t4, n4, r4, i4, o4, a3) {
+          for (var c4, u4 = Number.MAX_VALUE, l4 = null, h4 = 0, p4 = o4.contentNameScopesList.generateScopes(), f3 = 0, d3 = e4.length; f3 < d3; f3++) {
+            var g3 = e4[f3];
+            if (g3.matcher(p4)) {
+              var m3 = t4.getRule(g3.ruleId).compile(t4, null, r4, i4 === a3), _3 = m3.scanner.findNextMatchSync(n4, i4);
+              if (s2.DebugFlags.InDebugMode && (console.log("  scanning for injections"), console.log(k2(m3))), _3) {
                 var y3 = _3.captureIndices[0].start;
-                if (!(y3 >= u4) && (u4 = y3, l4 = _3.captureIndices, c4 = m3.rules[_3.index], h4 = g2.priority, u4 === i4))
+                if (!(y3 >= u4) && (u4 = y3, l4 = _3.captureIndices, c4 = m3.rules[_3.index], h4 = g3.priority, u4 === i4))
                   break;
               }
             }
           }
           return l4 ? { priorityMatch: h4 === -1, captureIndices: l4, matchedRuleId: c4 } : null;
-        }(u3, e3, t3, n3, r3, i3, o2);
+        }(u3, e3, t3, n3, r3, i3, o3);
         if (!l3)
           return c3;
         if (!c3)
@@ -27884,69 +28150,69 @@ var main = { exports: {} };
         var h3 = c3.captureIndices[0].start, p3 = l3.captureIndices[0].start;
         return p3 < h3 || l3.priorityMatch && p3 === h3 ? l3 : c3;
       }
-      function S2(e3, t3, n3, r3, o2, a3, c3) {
+      function S2(e3, t3, n3, r3, o3, a3, c3) {
         var u3 = t3.content.length, l3 = false, h3 = -1;
         if (c3) {
-          var p3 = function(e4, t4, n4, r4, o3, a4) {
-            for (var c4 = o3.beginRuleCapturedEOL ? 0 : -1, u4 = [], l4 = o3; l4; l4 = l4.pop()) {
+          var p3 = function(e4, t4, n4, r4, o4, a4) {
+            for (var c4 = o4.beginRuleCapturedEOL ? 0 : -1, u4 = [], l4 = o4; l4; l4 = l4.pop()) {
               var h4 = l4.getRule(e4);
               h4 instanceof i2.BeginWhileRule && u4.push({ rule: h4, stack: l4 });
             }
             for (var p4 = u4.pop(); p4; p4 = u4.pop()) {
               var f4 = p4.rule.compileWhile(e4, p4.stack.endRule, n4, c4 === r4), d3 = f4.scanner.findNextMatchSync(t4, r4);
-              if (s2.DebugFlags.InDebugMode && (console.log("  scanning for while rule"), console.log(k(f4))), !d3) {
-                s2.DebugFlags.InDebugMode && console.log("  popping " + p4.rule.debugName + " - " + p4.rule.debugWhileRegExp), o3 = p4.stack.pop();
+              if (s2.DebugFlags.InDebugMode && (console.log("  scanning for while rule"), console.log(k2(f4))), !d3) {
+                s2.DebugFlags.InDebugMode && console.log("  popping " + p4.rule.debugName + " - " + p4.rule.debugWhileRegExp), o4 = p4.stack.pop();
                 break;
               }
               if (f4.rules[d3.index] !== -2) {
-                o3 = p4.stack.pop();
+                o4 = p4.stack.pop();
                 break;
               }
               d3.captureIndices && d3.captureIndices.length && (a4.produce(p4.stack, d3.captureIndices[0].start), w2(e4, t4, n4, p4.stack, a4, p4.rule.whileCaptures, d3.captureIndices), a4.produce(p4.stack, d3.captureIndices[0].end), c4 = d3.captureIndices[0].end, d3.captureIndices[0].end > r4 && (r4 = d3.captureIndices[0].end, n4 = false));
             }
-            return { stack: o3, linePos: r4, anchorPosition: c4, isFirstLine: n4 };
-          }(e3, t3, n3, r3, o2, a3);
-          o2 = p3.stack, r3 = p3.linePos, n3 = p3.isFirstLine, h3 = p3.anchorPosition;
+            return { stack: o4, linePos: r4, anchorPosition: c4, isFirstLine: n4 };
+          }(e3, t3, n3, r3, o3, a3);
+          o3 = p3.stack, r3 = p3.linePos, n3 = p3.isFirstLine, h3 = p3.anchorPosition;
         }
         for (; !l3; )
           f3();
         function f3() {
           s2.DebugFlags.InDebugMode && (console.log(""), console.log("@@scanNext " + r3 + ": |" + t3.content.substr(r3).replace(/\n$/, "\\n") + "|"));
-          var c4 = R(e3, t3, n3, r3, o2, h3);
+          var c4 = R2(e3, t3, n3, r3, o3, h3);
           if (!c4)
-            return s2.DebugFlags.InDebugMode && console.log("  no more matches."), a3.produce(o2, u3), void (l3 = true);
+            return s2.DebugFlags.InDebugMode && console.log("  no more matches."), a3.produce(o3, u3), void (l3 = true);
           var p4 = c4.captureIndices, f4 = c4.matchedRuleId, d3 = !!(p4 && p4.length > 0) && p4[0].end > r3;
           if (f4 === -1) {
-            var g2 = o2.getRule(e3);
-            s2.DebugFlags.InDebugMode && console.log("  popping " + g2.debugName + " - " + g2.debugEndRegExp), a3.produce(o2, p4[0].start), o2 = o2.setContentNameScopesList(o2.nameScopesList), w2(e3, t3, n3, o2, a3, g2.endCaptures, p4), a3.produce(o2, p4[0].end);
-            var m3 = o2;
-            if (o2 = o2.pop(), h3 = m3.getAnchorPos(), !d3 && m3.getEnterPos() === r3)
-              return s2.DebugFlags.InDebugMode && console.error("[1] - Grammar is in an endless loop - Grammar pushed & popped a rule without advancing"), o2 = m3, a3.produce(o2, u3), void (l3 = true);
+            var g3 = o3.getRule(e3);
+            s2.DebugFlags.InDebugMode && console.log("  popping " + g3.debugName + " - " + g3.debugEndRegExp), a3.produce(o3, p4[0].start), o3 = o3.setContentNameScopesList(o3.nameScopesList), w2(e3, t3, n3, o3, a3, g3.endCaptures, p4), a3.produce(o3, p4[0].end);
+            var m3 = o3;
+            if (o3 = o3.pop(), h3 = m3.getAnchorPos(), !d3 && m3.getEnterPos() === r3)
+              return s2.DebugFlags.InDebugMode && console.error("[1] - Grammar is in an endless loop - Grammar pushed & popped a rule without advancing"), o3 = m3, a3.produce(o3, u3), void (l3 = true);
           } else {
             var _3 = e3.getRule(f4);
-            a3.produce(o2, p4[0].start);
-            var y3 = o2, v3 = _3.getName(t3.content, p4), b3 = o2.contentNameScopesList.push(e3, v3);
-            if (o2 = o2.push(f4, r3, h3, p4[0].end === u3, null, b3, b3), _3 instanceof i2.BeginEndRule) {
+            a3.produce(o3, p4[0].start);
+            var y3 = o3, v3 = _3.getName(t3.content, p4), b3 = o3.contentNameScopesList.push(e3, v3);
+            if (o3 = o3.push(f4, r3, h3, p4[0].end === u3, null, b3, b3), _3 instanceof i2.BeginEndRule) {
               var C3 = _3;
-              s2.DebugFlags.InDebugMode && console.log("  pushing " + C3.debugName + " - " + C3.debugBeginRegExp), w2(e3, t3, n3, o2, a3, C3.beginCaptures, p4), a3.produce(o2, p4[0].end), h3 = p4[0].end;
-              var k2 = C3.getContentName(t3.content, p4), S3 = b3.push(e3, k2);
-              if (o2 = o2.setContentNameScopesList(S3), C3.endHasBackReferences && (o2 = o2.setEndRule(C3.getEndWithResolvedBackReferences(t3.content, p4))), !d3 && y3.hasSameRuleAs(o2))
-                return s2.DebugFlags.InDebugMode && console.error("[2] - Grammar is in an endless loop - Grammar pushed the same rule without advancing"), o2 = o2.pop(), a3.produce(o2, u3), void (l3 = true);
+              s2.DebugFlags.InDebugMode && console.log("  pushing " + C3.debugName + " - " + C3.debugBeginRegExp), w2(e3, t3, n3, o3, a3, C3.beginCaptures, p4), a3.produce(o3, p4[0].end), h3 = p4[0].end;
+              var k3 = C3.getContentName(t3.content, p4), S3 = b3.push(e3, k3);
+              if (o3 = o3.setContentNameScopesList(S3), C3.endHasBackReferences && (o3 = o3.setEndRule(C3.getEndWithResolvedBackReferences(t3.content, p4))), !d3 && y3.hasSameRuleAs(o3))
+                return s2.DebugFlags.InDebugMode && console.error("[2] - Grammar is in an endless loop - Grammar pushed the same rule without advancing"), o3 = o3.pop(), a3.produce(o3, u3), void (l3 = true);
             } else if (_3 instanceof i2.BeginWhileRule) {
               C3 = _3;
-              s2.DebugFlags.InDebugMode && console.log("  pushing " + C3.debugName), w2(e3, t3, n3, o2, a3, C3.beginCaptures, p4), a3.produce(o2, p4[0].end), h3 = p4[0].end;
-              k2 = C3.getContentName(t3.content, p4), S3 = b3.push(e3, k2);
-              if (o2 = o2.setContentNameScopesList(S3), C3.whileHasBackReferences && (o2 = o2.setEndRule(C3.getWhileWithResolvedBackReferences(t3.content, p4))), !d3 && y3.hasSameRuleAs(o2))
-                return s2.DebugFlags.InDebugMode && console.error("[3] - Grammar is in an endless loop - Grammar pushed the same rule without advancing"), o2 = o2.pop(), a3.produce(o2, u3), void (l3 = true);
+              s2.DebugFlags.InDebugMode && console.log("  pushing " + C3.debugName), w2(e3, t3, n3, o3, a3, C3.beginCaptures, p4), a3.produce(o3, p4[0].end), h3 = p4[0].end;
+              k3 = C3.getContentName(t3.content, p4), S3 = b3.push(e3, k3);
+              if (o3 = o3.setContentNameScopesList(S3), C3.whileHasBackReferences && (o3 = o3.setEndRule(C3.getWhileWithResolvedBackReferences(t3.content, p4))), !d3 && y3.hasSameRuleAs(o3))
+                return s2.DebugFlags.InDebugMode && console.error("[3] - Grammar is in an endless loop - Grammar pushed the same rule without advancing"), o3 = o3.pop(), a3.produce(o3, u3), void (l3 = true);
             } else {
               var P3 = _3;
-              if (s2.DebugFlags.InDebugMode && console.log("  matched " + P3.debugName + " - " + P3.debugMatchRegExp), w2(e3, t3, n3, o2, a3, P3.captures, p4), a3.produce(o2, p4[0].end), o2 = o2.pop(), !d3)
-                return s2.DebugFlags.InDebugMode && console.error("[4] - Grammar is in an endless loop - Grammar is not advancing, nor is it pushing/popping"), o2 = o2.safePop(), a3.produce(o2, u3), void (l3 = true);
+              if (s2.DebugFlags.InDebugMode && console.log("  matched " + P3.debugName + " - " + P3.debugMatchRegExp), w2(e3, t3, n3, o3, a3, P3.captures, p4), a3.produce(o3, p4[0].end), o3 = o3.pop(), !d3)
+                return s2.DebugFlags.InDebugMode && console.error("[4] - Grammar is in an endless loop - Grammar is not advancing, nor is it pushing/popping"), o3 = o3.safePop(), a3.produce(o3, u3), void (l3 = true);
             }
           }
           p4[0].end > r3 && (r3 = p4[0].end, n3 = false);
         }
-        return o2;
+        return o3;
       }
       t2.Grammar = v2;
       var P2 = function() {
@@ -27957,8 +28223,8 @@ var main = { exports: {} };
             t3 = "0" + t3;
           return t3;
         }, e3.printMetadata = function(t3) {
-          var n3 = e3.getLanguageId(t3), r3 = e3.getTokenType(t3), i3 = e3.getFontStyle(t3), o2 = e3.getForeground(t3), s3 = e3.getBackground(t3);
-          console.log({ languageId: n3, tokenType: r3, fontStyle: i3, foreground: o2, background: s3 });
+          var n3 = e3.getLanguageId(t3), r3 = e3.getTokenType(t3), i3 = e3.getFontStyle(t3), o3 = e3.getForeground(t3), s3 = e3.getBackground(t3);
+          console.log({ languageId: n3, tokenType: r3, fontStyle: i3, foreground: o3, background: s3 });
         }, e3.getLanguageId = function(e4) {
           return (255 & e4) >>> 0;
         }, e3.getTokenType = function(e4) {
@@ -27969,9 +28235,9 @@ var main = { exports: {} };
           return (8372224 & e4) >>> 14;
         }, e3.getBackground = function(e4) {
           return (4286578688 & e4) >>> 23;
-        }, e3.set = function(t3, n3, r3, i3, o2, s3) {
+        }, e3.set = function(t3, n3, r3, i3, o3, s3) {
           var a3 = e3.getLanguageId(t3), c3 = e3.getTokenType(t3), u3 = e3.getFontStyle(t3), l3 = e3.getForeground(t3), h3 = e3.getBackground(t3);
-          return n3 !== 0 && (a3 = n3), r3 !== 0 && (c3 = r3 === 8 ? 0 : r3), i3 !== -1 && (u3 = i3), o2 !== 0 && (l3 = o2), s3 !== 0 && (h3 = s3), (a3 << 0 | c3 << 8 | u3 << 11 | l3 << 14 | h3 << 23) >>> 0;
+          return n3 !== 0 && (a3 = n3), r3 !== 0 && (c3 = r3 === 8 ? 0 : r3), i3 !== -1 && (u3 = i3), o3 !== 0 && (l3 = o3), s3 !== 0 && (h3 = s3), (a3 << 0 | c3 << 8 | u3 << 11 | l3 << 14 | h3 << 23) >>> 0;
         }, e3;
       }();
       t2.StackElementMetadata = P2;
@@ -27998,11 +28264,11 @@ var main = { exports: {} };
         }, e3._matches = function(e4, t3) {
           if (t3 === null)
             return true;
-          for (var n3 = t3.length, r3 = 0, i3 = t3[r3], o2 = i3 + "."; e4; ) {
-            if (this._matchesScope(e4.scope, i3, o2)) {
+          for (var n3 = t3.length, r3 = 0, i3 = t3[r3], o3 = i3 + "."; e4; ) {
+            if (this._matchesScope(e4.scope, i3, o3)) {
               if (++r3 === n3)
                 return true;
-              o2 = (i3 = t3[r3]) + ".";
+              o3 = (i3 = t3[r3]) + ".";
             }
             e4 = e4.parent;
           }
@@ -28010,18 +28276,18 @@ var main = { exports: {} };
         }, e3.mergeMetadata = function(e4, t3, n3) {
           if (n3 === null)
             return e4;
-          var r3 = -1, i3 = 0, o2 = 0;
+          var r3 = -1, i3 = 0, o3 = 0;
           if (n3.themeData !== null)
             for (var s3 = 0, a3 = n3.themeData.length; s3 < a3; s3++) {
               var c3 = n3.themeData[s3];
               if (this._matches(t3, c3.parentScopes)) {
-                r3 = c3.fontStyle, i3 = c3.foreground, o2 = c3.background;
+                r3 = c3.fontStyle, i3 = c3.foreground, o3 = c3.background;
                 break;
               }
             }
-          return P2.set(e4, n3.languageId, n3.tokenType, r3, i3, o2);
+          return P2.set(e4, n3.languageId, n3.tokenType, r3, i3, o3);
         }, e3._push = function(t3, n3, r3) {
-          for (var i3 = 0, o2 = r3.length; i3 < o2; i3++) {
+          for (var i3 = 0, o3 = r3.length; i3 < o3; i3++) {
             var s3 = r3[i3], a3 = n3.getMetadataForScope(s3), c3 = e3.mergeMetadata(t3.metadata, t3, a3);
             t3 = new e3(t3, s3, c3);
           }
@@ -28038,8 +28304,8 @@ var main = { exports: {} };
       }();
       t2.ScopeListElement = x2;
       var I2 = function() {
-        function e3(e4, t3, n3, r3, i3, o2, s3, a3) {
-          this.parent = e4, this.depth = this.parent ? this.parent.depth + 1 : 1, this.ruleId = t3, this._enterPos = n3, this._anchorPos = r3, this.beginRuleCapturedEOL = i3, this.endRule = o2, this.nameScopesList = s3, this.contentNameScopesList = a3;
+        function e3(e4, t3, n3, r3, i3, o3, s3, a3) {
+          this.parent = e4, this.depth = this.parent ? this.parent.depth + 1 : 1, this.ruleId = t3, this._enterPos = n3, this._anchorPos = r3, this.beginRuleCapturedEOL = i3, this.endRule = o3, this.nameScopesList = s3, this.contentNameScopesList = a3;
         }
         return e3._structuralEquals = function(e4, t3) {
           for (; ; ) {
@@ -28068,8 +28334,8 @@ var main = { exports: {} };
           return this.parent;
         }, e3.prototype.safePop = function() {
           return this.parent ? this.parent : this;
-        }, e3.prototype.push = function(t3, n3, r3, i3, o2, s3, a3) {
-          return new e3(this, t3, n3, r3, i3, o2, s3, a3);
+        }, e3.prototype.push = function(t3, n3, r3, i3, o3, s3, a3) {
+          return new e3(this, t3, n3, r3, i3, o3, s3, a3);
         }, e3.prototype.getEnterPos = function() {
           return this._enterPos;
         }, e3.prototype.getAnchorPos = function() {
@@ -28090,10 +28356,10 @@ var main = { exports: {} };
         }, e3.NULL = new e3(null, 0, 0, 0, false, null, null, null), e3;
       }();
       t2.StackElement = I2;
-      var A = function(e3, t3) {
+      var A2 = function(e3, t3) {
         this.scopes = e3, this.endPos = t3;
       };
-      t2.LocalStackElement = A;
+      t2.LocalStackElement = A2;
       var T2 = function() {
         function e3(e4, t3, n3) {
           this._emitBinaryTokens = e4, this._tokenTypeOverrides = n3, s2.DebugFlags.InDebugMode ? this._lineText = t3 : this._lineText = null, this._tokens = [], this._binaryTokens = [], this._lastTokenEndIndex = 0;
@@ -28104,8 +28370,8 @@ var main = { exports: {} };
           if (!(this._lastTokenEndIndex >= t3)) {
             if (this._emitBinaryTokens) {
               for (var n3 = e4.metadata, r3 = 0, i3 = this._tokenTypeOverrides; r3 < i3.length; r3++) {
-                var o2 = i3[r3];
-                o2.matcher(e4.generateScopes()) && (n3 = P2.set(n3, 0, L2(o2.type), -1, 0, 0));
+                var o3 = i3[r3];
+                o3.matcher(e4.generateScopes()) && (n3 = P2.set(n3, 0, L2(o3.type), -1, 0, 0));
               }
               return this._binaryTokens.length > 0 && this._binaryTokens[this._binaryTokens.length - 1] === n3 || (this._binaryTokens.push(this._lastTokenEndIndex), this._binaryTokens.push(n3)), void (this._lastTokenEndIndex = t3);
             }
@@ -28165,19 +28431,19 @@ var main = { exports: {} };
         var n3 = ~t3.lastIndexOf("/") || ~t3.lastIndexOf("\\");
         return n3 === 0 ? t3 : ~n3 == t3.length - 1 ? e3(t3.substring(0, t3.length - 1)) : t3.substr(1 + ~n3);
       };
-      var i2 = /\$(\d+)|\${(\d+):\/(downcase|upcase)}/, o = function() {
+      var i2 = /\$(\d+)|\${(\d+):\/(downcase|upcase)}/, o2 = function() {
         function e3() {
         }
         return e3.hasCaptures = function(e4) {
           return e4 !== null && i2.test(e4);
         }, e3.replaceCaptures = function(e4, t3, n3) {
-          return e4.replace(i2, function(e5, r3, i3, o2) {
+          return e4.replace(i2, function(e5, r3, i3, o3) {
             var s2 = n3[parseInt(r3 || i3, 10)];
             if (!s2)
               return e5;
             for (var a2 = t3.substring(s2.start, s2.end); a2[0] === "."; )
               a2 = a2.substring(1);
-            switch (o2) {
+            switch (o3) {
               case "downcase":
                 return a2.toLowerCase();
               case "upcase":
@@ -28188,26 +28454,26 @@ var main = { exports: {} };
           });
         }, e3;
       }();
-      t2.RegexSource = o;
+      t2.RegexSource = o2;
     }, function(e2, t2, n2) {
       (function(e3) {
         Object.defineProperty(t2, "__esModule", { value: true }), t2.DebugFlags = { InDebugMode: e3 !== void 0 && !!e3.env.VSCODE_TEXTMATE_DEBUG };
       }).call(this, n2(7));
     }, function(e2, t2, n2) {
       var r2 = this && this.__awaiter || function(e3, t3, n3, r3) {
-        return new (n3 || (n3 = Promise))(function(i3, o2) {
+        return new (n3 || (n3 = Promise))(function(i3, o3) {
           function s3(e4) {
             try {
               c3(r3.next(e4));
             } catch (e5) {
-              o2(e5);
+              o3(e5);
             }
           }
           function a3(e4) {
             try {
               c3(r3.throw(e4));
             } catch (e5) {
-              o2(e5);
+              o3(e5);
             }
           }
           function c3(e4) {
@@ -28219,73 +28485,73 @@ var main = { exports: {} };
           c3((r3 = r3.apply(e3, t3 || [])).next());
         });
       }, i2 = this && this.__generator || function(e3, t3) {
-        var n3, r3, i3, o2, s3 = { label: 0, sent: function() {
+        var n3, r3, i3, o3, s3 = { label: 0, sent: function() {
           if (1 & i3[0])
             throw i3[1];
           return i3[1];
         }, trys: [], ops: [] };
-        return o2 = { next: a3(0), throw: a3(1), return: a3(2) }, typeof Symbol == "function" && (o2[Symbol.iterator] = function() {
+        return o3 = { next: a3(0), throw: a3(1), return: a3(2) }, typeof Symbol == "function" && (o3[Symbol.iterator] = function() {
           return this;
-        }), o2;
-        function a3(o3) {
+        }), o3;
+        function a3(o4) {
           return function(a4) {
-            return function(o4) {
+            return function(o5) {
               if (n3)
                 throw new TypeError("Generator is already executing.");
               for (; s3; )
                 try {
-                  if (n3 = 1, r3 && (i3 = 2 & o4[0] ? r3.return : o4[0] ? r3.throw || ((i3 = r3.return) && i3.call(r3), 0) : r3.next) && !(i3 = i3.call(r3, o4[1])).done)
+                  if (n3 = 1, r3 && (i3 = 2 & o5[0] ? r3.return : o5[0] ? r3.throw || ((i3 = r3.return) && i3.call(r3), 0) : r3.next) && !(i3 = i3.call(r3, o5[1])).done)
                     return i3;
-                  switch (r3 = 0, i3 && (o4 = [2 & o4[0], i3.value]), o4[0]) {
+                  switch (r3 = 0, i3 && (o5 = [2 & o5[0], i3.value]), o5[0]) {
                     case 0:
                     case 1:
-                      i3 = o4;
+                      i3 = o5;
                       break;
                     case 4:
-                      return s3.label++, { value: o4[1], done: false };
+                      return s3.label++, { value: o5[1], done: false };
                     case 5:
-                      s3.label++, r3 = o4[1], o4 = [0];
+                      s3.label++, r3 = o5[1], o5 = [0];
                       continue;
                     case 7:
-                      o4 = s3.ops.pop(), s3.trys.pop();
+                      o5 = s3.ops.pop(), s3.trys.pop();
                       continue;
                     default:
-                      if (!(i3 = s3.trys, (i3 = i3.length > 0 && i3[i3.length - 1]) || o4[0] !== 6 && o4[0] !== 2)) {
+                      if (!(i3 = s3.trys, (i3 = i3.length > 0 && i3[i3.length - 1]) || o5[0] !== 6 && o5[0] !== 2)) {
                         s3 = 0;
                         continue;
                       }
-                      if (o4[0] === 3 && (!i3 || o4[1] > i3[0] && o4[1] < i3[3])) {
-                        s3.label = o4[1];
+                      if (o5[0] === 3 && (!i3 || o5[1] > i3[0] && o5[1] < i3[3])) {
+                        s3.label = o5[1];
                         break;
                       }
-                      if (o4[0] === 6 && s3.label < i3[1]) {
-                        s3.label = i3[1], i3 = o4;
+                      if (o5[0] === 6 && s3.label < i3[1]) {
+                        s3.label = i3[1], i3 = o5;
                         break;
                       }
                       if (i3 && s3.label < i3[2]) {
-                        s3.label = i3[2], s3.ops.push(o4);
+                        s3.label = i3[2], s3.ops.push(o5);
                         break;
                       }
                       i3[2] && s3.ops.pop(), s3.trys.pop();
                       continue;
                   }
-                  o4 = t3.call(e3, s3);
+                  o5 = t3.call(e3, s3);
                 } catch (e4) {
-                  o4 = [6, e4], r3 = 0;
+                  o5 = [6, e4], r3 = 0;
                 } finally {
                   n3 = i3 = 0;
                 }
-              if (5 & o4[0])
-                throw o4[1];
-              return { value: o4[0] ? o4[1] : void 0, done: true };
-            }([o3, a4]);
+              if (5 & o5[0])
+                throw o5[1];
+              return { value: o5[0] ? o5[1] : void 0, done: true };
+            }([o4, a4]);
           };
         }
       };
       Object.defineProperty(t2, "__esModule", { value: true });
-      var o = n2(4), s2 = n2(8), a2 = n2(11), c2 = n2(0), u2 = function() {
+      var o2 = n2(4), s2 = n2(8), a2 = n2(11), c2 = n2(0), u2 = function() {
         function e3(e4) {
-          this._options = e4, this._syncRegistry = new o.SyncRegistry(a2.Theme.createFromRawTheme(e4.theme, e4.colorMap), e4.onigLib), this._ensureGrammarCache = /* @__PURE__ */ new Map();
+          this._options = e4, this._syncRegistry = new o2.SyncRegistry(a2.Theme.createFromRawTheme(e4.theme, e4.colorMap), e4.onigLib), this._ensureGrammarCache = /* @__PURE__ */ new Map();
         }
         return e3.prototype.dispose = function() {
           this._syncRegistry.dispose();
@@ -28323,15 +28589,15 @@ var main = { exports: {} };
             n3 instanceof c2.FullScopeDependency ? c2.collectDependencies(t3, this._syncRegistry.lookup(e4), r3) : c2.collectSpecificDependencies(t3, this._syncRegistry.lookup(e4), r3, n3.include);
             var i3 = this._syncRegistry.injections(n3.scopeName);
             if (i3)
-              for (var o2 = 0, s3 = i3; o2 < s3.length; o2++) {
-                var a3 = s3[o2];
+              for (var o3 = 0, s3 = i3; o3 < s3.length; o3++) {
+                var a3 = s3[o3];
                 t3.add(new c2.FullScopeDependency(a3));
               }
           } else if (n3.scopeName === e4)
             throw new Error("No grammar provided for <" + e4 + ">");
-        }, e3.prototype._loadGrammar = function(e4, t3, n3, o2) {
+        }, e3.prototype._loadGrammar = function(e4, t3, n3, o3) {
           return r2(this, void 0, void 0, function() {
-            var r3, s3, a3, u3, l2, h2, p2, f2, d2, g, m2, _2, y2 = this;
+            var r3, s3, a3, u3, l2, h2, p2, f2, d2, g2, m2, _2, y2 = this;
             return i2(this, function(i3) {
               switch (i3.label) {
                 case 0:
@@ -28345,20 +28611,20 @@ var main = { exports: {} };
                     _2 = p2[h2], this._collectDependenciesForDep(e4, l2, _2);
                   for (f2 = 0, d2 = l2.full; f2 < d2.length; f2++)
                     _2 = d2[f2], r3.has(_2.scopeName) || (r3.add(_2.scopeName), a3.push(_2));
-                  for (g = 0, m2 = l2.partial; g < m2.length; g++)
-                    _2 = m2[g], r3.has(_2.scopeName) || s3.has(_2.toKey()) || (s3.add(_2.toKey()), a3.push(_2));
+                  for (g2 = 0, m2 = l2.partial; g2 < m2.length; g2++)
+                    _2 = m2[g2], r3.has(_2.scopeName) || s3.has(_2.toKey()) || (s3.add(_2.toKey()), a3.push(_2));
                   return [3, 1];
                 case 3:
-                  return [2, this.grammarForScopeName(e4, t3, n3, o2)];
+                  return [2, this.grammarForScopeName(e4, t3, n3, o3)];
               }
             });
           });
-        }, e3.prototype.addGrammar = function(e4, t3, n3, o2) {
-          return t3 === void 0 && (t3 = []), n3 === void 0 && (n3 = 0), o2 === void 0 && (o2 = null), r2(this, void 0, void 0, function() {
+        }, e3.prototype.addGrammar = function(e4, t3, n3, o3) {
+          return t3 === void 0 && (t3 = []), n3 === void 0 && (n3 = 0), o3 === void 0 && (o3 = null), r2(this, void 0, void 0, function() {
             return i2(this, function(r3) {
               switch (r3.label) {
                 case 0:
-                  return this._syncRegistry.addGrammar(e4, t3), [4, this.grammarForScopeName(e4.scopeName, n3, o2)];
+                  return this._syncRegistry.addGrammar(e4, t3), [4, this.grammarForScopeName(e4.scopeName, n3, o3)];
                 case 1:
                   return [2, r3.sent()];
               }
@@ -28371,19 +28637,19 @@ var main = { exports: {} };
       t2.Registry = u2, t2.INITIAL = c2.StackElement.NULL, t2.parseRawGrammar = s2.parseRawGrammar;
     }, function(e2, t2, n2) {
       var r2 = this && this.__awaiter || function(e3, t3, n3, r3) {
-        return new (n3 || (n3 = Promise))(function(i3, o2) {
+        return new (n3 || (n3 = Promise))(function(i3, o3) {
           function s3(e4) {
             try {
               c2(r3.next(e4));
             } catch (e5) {
-              o2(e5);
+              o3(e5);
             }
           }
           function a2(e4) {
             try {
               c2(r3.throw(e4));
             } catch (e5) {
-              o2(e5);
+              o3(e5);
             }
           }
           function c2(e4) {
@@ -28395,71 +28661,71 @@ var main = { exports: {} };
           c2((r3 = r3.apply(e3, t3 || [])).next());
         });
       }, i2 = this && this.__generator || function(e3, t3) {
-        var n3, r3, i3, o2, s3 = { label: 0, sent: function() {
+        var n3, r3, i3, o3, s3 = { label: 0, sent: function() {
           if (1 & i3[0])
             throw i3[1];
           return i3[1];
         }, trys: [], ops: [] };
-        return o2 = { next: a2(0), throw: a2(1), return: a2(2) }, typeof Symbol == "function" && (o2[Symbol.iterator] = function() {
+        return o3 = { next: a2(0), throw: a2(1), return: a2(2) }, typeof Symbol == "function" && (o3[Symbol.iterator] = function() {
           return this;
-        }), o2;
-        function a2(o3) {
+        }), o3;
+        function a2(o4) {
           return function(a3) {
-            return function(o4) {
+            return function(o5) {
               if (n3)
                 throw new TypeError("Generator is already executing.");
               for (; s3; )
                 try {
-                  if (n3 = 1, r3 && (i3 = 2 & o4[0] ? r3.return : o4[0] ? r3.throw || ((i3 = r3.return) && i3.call(r3), 0) : r3.next) && !(i3 = i3.call(r3, o4[1])).done)
+                  if (n3 = 1, r3 && (i3 = 2 & o5[0] ? r3.return : o5[0] ? r3.throw || ((i3 = r3.return) && i3.call(r3), 0) : r3.next) && !(i3 = i3.call(r3, o5[1])).done)
                     return i3;
-                  switch (r3 = 0, i3 && (o4 = [2 & o4[0], i3.value]), o4[0]) {
+                  switch (r3 = 0, i3 && (o5 = [2 & o5[0], i3.value]), o5[0]) {
                     case 0:
                     case 1:
-                      i3 = o4;
+                      i3 = o5;
                       break;
                     case 4:
-                      return s3.label++, { value: o4[1], done: false };
+                      return s3.label++, { value: o5[1], done: false };
                     case 5:
-                      s3.label++, r3 = o4[1], o4 = [0];
+                      s3.label++, r3 = o5[1], o5 = [0];
                       continue;
                     case 7:
-                      o4 = s3.ops.pop(), s3.trys.pop();
+                      o5 = s3.ops.pop(), s3.trys.pop();
                       continue;
                     default:
-                      if (!(i3 = s3.trys, (i3 = i3.length > 0 && i3[i3.length - 1]) || o4[0] !== 6 && o4[0] !== 2)) {
+                      if (!(i3 = s3.trys, (i3 = i3.length > 0 && i3[i3.length - 1]) || o5[0] !== 6 && o5[0] !== 2)) {
                         s3 = 0;
                         continue;
                       }
-                      if (o4[0] === 3 && (!i3 || o4[1] > i3[0] && o4[1] < i3[3])) {
-                        s3.label = o4[1];
+                      if (o5[0] === 3 && (!i3 || o5[1] > i3[0] && o5[1] < i3[3])) {
+                        s3.label = o5[1];
                         break;
                       }
-                      if (o4[0] === 6 && s3.label < i3[1]) {
-                        s3.label = i3[1], i3 = o4;
+                      if (o5[0] === 6 && s3.label < i3[1]) {
+                        s3.label = i3[1], i3 = o5;
                         break;
                       }
                       if (i3 && s3.label < i3[2]) {
-                        s3.label = i3[2], s3.ops.push(o4);
+                        s3.label = i3[2], s3.ops.push(o5);
                         break;
                       }
                       i3[2] && s3.ops.pop(), s3.trys.pop();
                       continue;
                   }
-                  o4 = t3.call(e3, s3);
+                  o5 = t3.call(e3, s3);
                 } catch (e4) {
-                  o4 = [6, e4], r3 = 0;
+                  o5 = [6, e4], r3 = 0;
                 } finally {
                   n3 = i3 = 0;
                 }
-              if (5 & o4[0])
-                throw o4[1];
-              return { value: o4[0] ? o4[1] : void 0, done: true };
-            }([o3, a3]);
+              if (5 & o5[0])
+                throw o5[1];
+              return { value: o5[0] ? o5[1] : void 0, done: true };
+            }([o4, a3]);
           };
         }
       };
       Object.defineProperty(t2, "__esModule", { value: true });
-      var o = n2(0), s2 = function() {
+      var o2 = n2(0), s2 = function() {
         function e3(e4, t3) {
           this._theme = e4, this._grammars = {}, this._rawGrammars = {}, this._injectionGrammars = {}, this._onigLibPromise = t3;
         }
@@ -28489,7 +28755,7 @@ var main = { exports: {} };
             return i2(this, function(i3) {
               switch (i3.label) {
                 case 0:
-                  return this._grammars[e4] ? [3, 2] : (r3 = this._rawGrammars[e4]) ? (a2 = this._grammars, c2 = e4, u2 = o.createGrammar, l2 = [r3, t3, n3, s3, this], [4, this._onigLibPromise]) : [2, null];
+                  return this._grammars[e4] ? [3, 2] : (r3 = this._rawGrammars[e4]) ? (a2 = this._grammars, c2 = e4, u2 = o2.createGrammar, l2 = [r3, t3, n3, s3, this], [4, this._onigLibPromise]) : [2, null];
                 case 1:
                   a2[c2] = u2.apply(void 0, l2.concat([i3.sent()])), i3.label = 2;
                 case 2:
@@ -28515,7 +28781,7 @@ var main = { exports: {} };
         r2(e3, t3), e3.prototype = t3 === null ? Object.create(t3) : (n3.prototype = t3.prototype, new n3());
       });
       Object.defineProperty(t2, "__esModule", { value: true });
-      var o = n2(1), s2 = /\\(\d+)/, a2 = /\\(\d+)/g, c2 = function() {
+      var o2 = n2(1), s2 = /\\(\d+)/, a2 = /\\(\d+)/g, c2 = function() {
         function e3(e4, t3, n3) {
           this.debugRegExps = t3, this.rules = n3, this.scanner = e4.createOnigScanner(t3);
         }
@@ -28526,22 +28792,22 @@ var main = { exports: {} };
       t2.CompiledRule = c2;
       var u2 = function() {
         function e3(e4, t3, n3, r3) {
-          this.$location = e4, this.id = t3, this._name = n3 || null, this._nameIsCapturing = o.RegexSource.hasCaptures(this._name), this._contentName = r3 || null, this._contentNameIsCapturing = o.RegexSource.hasCaptures(this._contentName);
+          this.$location = e4, this.id = t3, this._name = n3 || null, this._nameIsCapturing = o2.RegexSource.hasCaptures(this._name), this._contentName = r3 || null, this._contentNameIsCapturing = o2.RegexSource.hasCaptures(this._contentName);
         }
         return Object.defineProperty(e3.prototype, "debugName", { get: function() {
-          var e4 = this.$location ? o.basename(this.$location.filename) + ":" + this.$location.line : "unknown";
+          var e4 = this.$location ? o2.basename(this.$location.filename) + ":" + this.$location.line : "unknown";
           return this.constructor.name + "#" + this.id + " @ " + e4;
         }, enumerable: true, configurable: true }), e3.prototype.getName = function(e4, t3) {
-          return this._nameIsCapturing && this._name !== null && e4 !== null && t3 !== null ? o.RegexSource.replaceCaptures(this._name, e4, t3) : this._name;
+          return this._nameIsCapturing && this._name !== null && e4 !== null && t3 !== null ? o2.RegexSource.replaceCaptures(this._name, e4, t3) : this._name;
         }, e3.prototype.getContentName = function(e4, t3) {
-          return this._contentNameIsCapturing && this._contentName !== null ? o.RegexSource.replaceCaptures(this._contentName, e4, t3) : this._contentName;
+          return this._contentNameIsCapturing && this._contentName !== null ? o2.RegexSource.replaceCaptures(this._contentName, e4, t3) : this._contentName;
         }, e3;
       }();
       t2.Rule = u2;
       var l2 = function(e3) {
-        function t3(t4, n3, r3, i3, o2) {
+        function t3(t4, n3, r3, i3, o3) {
           var s3 = e3.call(this, t4, n3, r3, i3) || this;
-          return s3.retokenizeCapturedWithRuleId = o2, s3;
+          return s3.retokenizeCapturedWithRuleId = o3, s3;
         }
         return i2(t3, e3), t3.prototype.dispose = function() {
         }, t3.prototype.collectPatternsRecursive = function(e4, t4, n3) {
@@ -28555,13 +28821,13 @@ var main = { exports: {} };
         function e3(e4, t3, n3) {
           if (n3 === void 0 && (n3 = true), n3)
             if (e4) {
-              for (var r3 = e4.length, i3 = 0, o2 = [], a3 = false, c3 = 0; c3 < r3; c3++) {
+              for (var r3 = e4.length, i3 = 0, o3 = [], a3 = false, c3 = 0; c3 < r3; c3++) {
                 if (e4.charAt(c3) === "\\" && c3 + 1 < r3) {
                   var u3 = e4.charAt(c3 + 1);
-                  u3 === "z" ? (o2.push(e4.substring(i3, c3)), o2.push("$(?!\\n)(?<!\\n)"), i3 = c3 + 2) : u3 !== "A" && u3 !== "G" || (a3 = true), c3++;
+                  u3 === "z" ? (o3.push(e4.substring(i3, c3)), o3.push("$(?!\\n)(?<!\\n)"), i3 = c3 + 2) : u3 !== "A" && u3 !== "G" || (a3 = true), c3++;
                 }
               }
-              this.hasAnchor = a3, i3 === 0 ? this.source = e4 : (o2.push(e4.substring(i3, r3)), this.source = o2.join(""));
+              this.hasAnchor = a3, i3 === 0 ? this.source = e4 : (o3.push(e4.substring(i3, r3)), this.source = o3.join(""));
             } else
               this.hasAnchor = false, this.source = e4;
           else
@@ -28580,10 +28846,10 @@ var main = { exports: {} };
             return (n3[parseInt(t4, 10)] || "").replace(/[\-\\\{\}\*\+\?\|\^\$\.\,\[\]\(\)\#\s]/g, "\\$&");
           });
         }, e3.prototype._buildAnchorCache = function() {
-          var e4, t3, n3, r3, i3 = [], o2 = [], s3 = [], a3 = [];
+          var e4, t3, n3, r3, i3 = [], o3 = [], s3 = [], a3 = [];
           for (e4 = 0, t3 = this.source.length; e4 < t3; e4++)
-            n3 = this.source.charAt(e4), i3[e4] = n3, o2[e4] = n3, s3[e4] = n3, a3[e4] = n3, n3 === "\\" && e4 + 1 < t3 && ((r3 = this.source.charAt(e4 + 1)) === "A" ? (i3[e4 + 1] = "\uFFFF", o2[e4 + 1] = "\uFFFF", s3[e4 + 1] = "A", a3[e4 + 1] = "A") : r3 === "G" ? (i3[e4 + 1] = "\uFFFF", o2[e4 + 1] = "G", s3[e4 + 1] = "\uFFFF", a3[e4 + 1] = "G") : (i3[e4 + 1] = r3, o2[e4 + 1] = r3, s3[e4 + 1] = r3, a3[e4 + 1] = r3), e4++);
-          return { A0_G0: i3.join(""), A0_G1: o2.join(""), A1_G0: s3.join(""), A1_G1: a3.join("") };
+            n3 = this.source.charAt(e4), i3[e4] = n3, o3[e4] = n3, s3[e4] = n3, a3[e4] = n3, n3 === "\\" && e4 + 1 < t3 && ((r3 = this.source.charAt(e4 + 1)) === "A" ? (i3[e4 + 1] = "\uFFFF", o3[e4 + 1] = "\uFFFF", s3[e4 + 1] = "A", a3[e4 + 1] = "A") : r3 === "G" ? (i3[e4 + 1] = "\uFFFF", o3[e4 + 1] = "G", s3[e4 + 1] = "\uFFFF", a3[e4 + 1] = "G") : (i3[e4 + 1] = r3, o3[e4 + 1] = r3, s3[e4 + 1] = r3, a3[e4 + 1] = r3), e4++);
+          return { A0_G0: i3.join(""), A0_G1: o3.join(""), A1_G0: s3.join(""), A1_G1: a3.join("") };
         }, e3.prototype.resolveAnchors = function(e4, t3) {
           return this.hasAnchor && this._anchorCache ? e4 ? t3 ? this._anchorCache.A1_G1 : this._anchorCache.A1_G0 : t3 ? this._anchorCache.A0_G1 : this._anchorCache.A0_G0 : this.source;
         }, e3;
@@ -28628,9 +28894,9 @@ var main = { exports: {} };
       }();
       t2.RegExpSourceList = p2;
       var f2 = function(e3) {
-        function t3(t4, n3, r3, i3, o2) {
+        function t3(t4, n3, r3, i3, o3) {
           var s3 = e3.call(this, t4, n3, r3, null) || this;
-          return s3._match = new h2(i3, s3.id), s3.captures = o2, s3._cachedCompiledPatterns = null, s3;
+          return s3._match = new h2(i3, s3.id), s3.captures = o3, s3._cachedCompiledPatterns = null, s3;
         }
         return i2(t3, e3), t3.prototype.dispose = function() {
           this._cachedCompiledPatterns && (this._cachedCompiledPatterns.dispose(), this._cachedCompiledPatterns = null);
@@ -28644,9 +28910,9 @@ var main = { exports: {} };
       }(u2);
       t2.MatchRule = f2;
       var d2 = function(e3) {
-        function t3(t4, n3, r3, i3, o2) {
+        function t3(t4, n3, r3, i3, o3) {
           var s3 = e3.call(this, t4, n3, r3, i3) || this;
-          return s3.patterns = o2.patterns, s3.hasMissingPatterns = o2.hasMissingPatterns, s3._cachedCompiledPatterns = null, s3;
+          return s3.patterns = o3.patterns, s3.hasMissingPatterns = o3.hasMissingPatterns, s3._cachedCompiledPatterns = null, s3;
         }
         return i2(t3, e3), t3.prototype.dispose = function() {
           this._cachedCompiledPatterns && (this._cachedCompiledPatterns.dispose(), this._cachedCompiledPatterns = null);
@@ -28659,10 +28925,10 @@ var main = { exports: {} };
         }, t3;
       }(u2);
       t2.IncludeOnlyRule = d2;
-      var g = function(e3) {
-        function t3(t4, n3, r3, i3, o2, s3, a3, c3, u3, l3) {
+      var g2 = function(e3) {
+        function t3(t4, n3, r3, i3, o3, s3, a3, c3, u3, l3) {
           var p3 = e3.call(this, t4, n3, r3, i3) || this;
-          return p3._begin = new h2(o2, p3.id), p3.beginCaptures = s3, p3._end = new h2(a3 || "\uFFFF", -1), p3.endHasBackReferences = p3._end.hasBackReferences, p3.endCaptures = c3, p3.applyEndPatternLast = u3 || false, p3.patterns = l3.patterns, p3.hasMissingPatterns = l3.hasMissingPatterns, p3._cachedCompiledPatterns = null, p3;
+          return p3._begin = new h2(o3, p3.id), p3.beginCaptures = s3, p3._end = new h2(a3 || "\uFFFF", -1), p3.endHasBackReferences = p3._end.hasBackReferences, p3.endCaptures = c3, p3.applyEndPatternLast = u3 || false, p3.patterns = l3.patterns, p3.hasMissingPatterns = l3.hasMissingPatterns, p3._cachedCompiledPatterns = null, p3;
         }
         return i2(t3, e3), t3.prototype.dispose = function() {
           this._cachedCompiledPatterns && (this._cachedCompiledPatterns.dispose(), this._cachedCompiledPatterns = null);
@@ -28683,11 +28949,11 @@ var main = { exports: {} };
           return this._cachedCompiledPatterns || (this._cachedCompiledPatterns = new p2(), this.collectPatternsRecursive(e4, this._cachedCompiledPatterns, true), this.applyEndPatternLast ? this._cachedCompiledPatterns.push(this._end.hasBackReferences ? this._end.clone() : this._end) : this._cachedCompiledPatterns.unshift(this._end.hasBackReferences ? this._end.clone() : this._end)), this._end.hasBackReferences && (this.applyEndPatternLast ? this._cachedCompiledPatterns.setSource(this._cachedCompiledPatterns.length() - 1, t4) : this._cachedCompiledPatterns.setSource(0, t4)), this._cachedCompiledPatterns.compile(e4, n3, r3);
         }, t3;
       }(u2);
-      t2.BeginEndRule = g;
+      t2.BeginEndRule = g2;
       var m2 = function(e3) {
-        function t3(t4, n3, r3, i3, o2, s3, a3, c3, u3) {
+        function t3(t4, n3, r3, i3, o3, s3, a3, c3, u3) {
           var l3 = e3.call(this, t4, n3, r3, i3) || this;
-          return l3._begin = new h2(o2, l3.id), l3.beginCaptures = s3, l3.whileCaptures = c3, l3._while = new h2(a3, -2), l3.whileHasBackReferences = l3._while.hasBackReferences, l3.patterns = u3.patterns, l3.hasMissingPatterns = u3.hasMissingPatterns, l3._cachedCompiledPatterns = null, l3._cachedCompiledWhilePatterns = null, l3;
+          return l3._begin = new h2(o3, l3.id), l3.beginCaptures = s3, l3.whileCaptures = c3, l3._while = new h2(a3, -2), l3.whileHasBackReferences = l3._while.hasBackReferences, l3.patterns = u3.patterns, l3.hasMissingPatterns = u3.hasMissingPatterns, l3._cachedCompiledPatterns = null, l3._cachedCompiledWhilePatterns = null, l3;
         }
         return i2(t3, e3), t3.prototype.dispose = function() {
           this._cachedCompiledPatterns && (this._cachedCompiledPatterns.dispose(), this._cachedCompiledPatterns = null), this._cachedCompiledWhilePatterns && (this._cachedCompiledWhilePatterns.dispose(), this._cachedCompiledWhilePatterns = null);
@@ -28723,21 +28989,21 @@ var main = { exports: {} };
             if (t3.id = i3, t3.match)
               return new f2(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.match, e3._compileCaptures(t3.captures, n3, r3));
             if (t3.begin === void 0) {
-              t3.repository && (r3 = o.mergeObjects({}, r3, t3.repository));
+              t3.repository && (r3 = o2.mergeObjects({}, r3, t3.repository));
               var s3 = t3.patterns;
               return s3 === void 0 && t3.include && (s3 = [{ include: t3.include }]), new d2(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.contentName, e3._compilePatterns(s3, n3, r3));
             }
-            return t3.while ? new m2(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.contentName, t3.begin, e3._compileCaptures(t3.beginCaptures || t3.captures, n3, r3), t3.while, e3._compileCaptures(t3.whileCaptures || t3.captures, n3, r3), e3._compilePatterns(t3.patterns, n3, r3)) : new g(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.contentName, t3.begin, e3._compileCaptures(t3.beginCaptures || t3.captures, n3, r3), t3.end, e3._compileCaptures(t3.endCaptures || t3.captures, n3, r3), t3.applyEndPatternLast, e3._compilePatterns(t3.patterns, n3, r3));
+            return t3.while ? new m2(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.contentName, t3.begin, e3._compileCaptures(t3.beginCaptures || t3.captures, n3, r3), t3.while, e3._compileCaptures(t3.whileCaptures || t3.captures, n3, r3), e3._compilePatterns(t3.patterns, n3, r3)) : new g2(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.contentName, t3.begin, e3._compileCaptures(t3.beginCaptures || t3.captures, n3, r3), t3.end, e3._compileCaptures(t3.endCaptures || t3.captures, n3, r3), t3.applyEndPatternLast, e3._compilePatterns(t3.patterns, n3, r3));
           }), t3.id;
         }, e3._compileCaptures = function(t3, n3, r3) {
           var i3 = [];
           if (t3) {
-            var o2 = 0;
+            var o3 = 0;
             for (var s3 in t3) {
               if (s3 !== "$vscodeTextmateLocation")
-                (c3 = parseInt(s3, 10)) > o2 && (o2 = c3);
+                (c3 = parseInt(s3, 10)) > o3 && (o3 = c3);
             }
-            for (var a3 = 0; a3 <= o2; a3++)
+            for (var a3 = 0; a3 <= o3; a3++)
               i3[a3] = null;
             for (var s3 in t3)
               if (s3 !== "$vscodeTextmateLocation") {
@@ -28749,8 +29015,8 @@ var main = { exports: {} };
         }, e3._compilePatterns = function(t3, n3, r3) {
           var i3 = [];
           if (t3)
-            for (var o2 = 0, s3 = t3.length; o2 < s3; o2++) {
-              var a3 = t3[o2], c3 = -1;
+            for (var o3 = 0, s3 = t3.length; o3 < s3; o3++) {
+              var a3 = t3[o3], c3 = -1;
               if (a3.include)
                 if (a3.include.charAt(0) === "#") {
                   var u3 = r3[a3.include.substr(1)];
@@ -28772,7 +29038,7 @@ var main = { exports: {} };
                 c3 = e3.getCompiledRuleId(a3, n3, r3);
               if (c3 !== -1) {
                 var y2 = n3.getRule(c3), v2 = false;
-                if ((y2 instanceof d2 || y2 instanceof g || y2 instanceof m2) && y2.hasMissingPatterns && y2.patterns.length === 0 && (v2 = true), v2)
+                if ((y2 instanceof d2 || y2 instanceof g2 || y2 instanceof m2) && y2.hasMissingPatterns && y2.patterns.length === 0 && (v2 = true), v2)
                   continue;
                 i3.push(c3);
               }
@@ -28786,11 +29052,11 @@ var main = { exports: {} };
         return !!e3 && !!e3.match(/[\w\.:]+/);
       }
       Object.defineProperty(t2, "__esModule", { value: true }), t2.createMatchers = function(e3, t3) {
-        for (var n3, i2, o, s2 = [], a2 = (o = (i2 = /([LR]:|[\w\.:][\w\.:\-]*|[\,\|\-\(\)])/g).exec(n3 = e3), { next: function() {
-          if (!o)
+        for (var n3, i2, o2, s2 = [], a2 = (o2 = (i2 = /([LR]:|[\w\.:][\w\.:\-]*|[\,\|\-\(\)])/g).exec(n3 = e3), { next: function() {
+          if (!o2)
             return null;
-          var e4 = o[0];
-          return o = i2.exec(n3), e4;
+          var e4 = o2[0];
+          return o2 = i2.exec(n3), e4;
         } }), c2 = a2.next(); c2 !== null; ) {
           var u2 = 0;
           if (c2.length === 2 && c2.charAt(1) === ":") {
@@ -28861,7 +29127,7 @@ var main = { exports: {} };
       };
     }, function(e2, t2) {
       var n2, r2, i2 = e2.exports = {};
-      function o() {
+      function o2() {
         throw new Error("setTimeout has not been defined");
       }
       function s2() {
@@ -28870,7 +29136,7 @@ var main = { exports: {} };
       function a2(e3) {
         if (n2 === setTimeout)
           return setTimeout(e3, 0);
-        if ((n2 === o || !n2) && setTimeout)
+        if ((n2 === o2 || !n2) && setTimeout)
           return n2 = setTimeout, setTimeout(e3, 0);
         try {
           return n2(e3, 0);
@@ -28884,9 +29150,9 @@ var main = { exports: {} };
       }
       !function() {
         try {
-          n2 = typeof setTimeout == "function" ? setTimeout : o;
+          n2 = typeof setTimeout == "function" ? setTimeout : o2;
         } catch (e3) {
-          n2 = o;
+          n2 = o2;
         }
         try {
           r2 = typeof clearTimeout == "function" ? clearTimeout : s2;
@@ -28927,7 +29193,7 @@ var main = { exports: {} };
       function d2(e3, t3) {
         this.fun = e3, this.array = t3;
       }
-      function g() {
+      function g2() {
       }
       i2.nextTick = function(e3) {
         var t3 = new Array(arguments.length - 1);
@@ -28937,7 +29203,7 @@ var main = { exports: {} };
         u2.push(new d2(e3, t3)), u2.length !== 1 || l2 || a2(f2);
       }, d2.prototype.run = function() {
         this.fun.apply(null, this.array);
-      }, i2.title = "browser", i2.browser = true, i2.env = {}, i2.argv = [], i2.version = "", i2.versions = {}, i2.on = g, i2.addListener = g, i2.once = g, i2.off = g, i2.removeListener = g, i2.removeAllListeners = g, i2.emit = g, i2.prependListener = g, i2.prependOnceListener = g, i2.listeners = function(e3) {
+      }, i2.title = "browser", i2.browser = true, i2.env = {}, i2.argv = [], i2.version = "", i2.versions = {}, i2.on = g2, i2.addListener = g2, i2.once = g2, i2.off = g2, i2.removeListener = g2, i2.removeAllListeners = g2, i2.emit = g2, i2.prependListener = g2, i2.prependOnceListener = g2, i2.listeners = function(e3) {
         return [];
       }, i2.binding = function(e3) {
         throw new Error("process.binding is not supported");
@@ -28950,11 +29216,11 @@ var main = { exports: {} };
       };
     }, function(e2, t2, n2) {
       Object.defineProperty(t2, "__esModule", { value: true });
-      var r2 = n2(9), i2 = n2(2), o = n2(10);
+      var r2 = n2(9), i2 = n2(2), o2 = n2(10);
       t2.parseRawGrammar = function(e3, t3) {
         return t3 === void 0 && (t3 = null), t3 !== null && /\.json$/.test(t3) ? function(e4, t4) {
           if (i2.DebugFlags.InDebugMode)
-            return o.parse(e4, t4, true);
+            return o2.parse(e4, t4, true);
           return JSON.parse(e4);
         }(e3, t3) : function(e4, t4) {
           if (i2.DebugFlags.InDebugMode)
@@ -28964,13 +29230,13 @@ var main = { exports: {} };
       };
     }, function(e2, t2, n2) {
       function r2(e3, t3, n3) {
-        var r3 = e3.length, i2 = 0, o = 1, s2 = 0;
+        var r3 = e3.length, i2 = 0, o2 = 1, s2 = 0;
         function a2(t4) {
           if (n3 === null)
             i2 += t4;
           else
             for (; t4 > 0; ) {
-              e3.charCodeAt(i2) === 10 ? (i2++, o++, s2 = 0) : (i2++, s2++), t4--;
+              e3.charCodeAt(i2) === 10 ? (i2++, o2++, s2 = 0) : (i2++, s2++), t4--;
             }
         }
         function c2(e4) {
@@ -28994,30 +29260,30 @@ var main = { exports: {} };
         function p2(t4) {
           var n4 = e3.indexOf(t4, i2);
           if (n4 !== -1) {
-            var o2 = e3.substring(i2, n4);
-            return c2(n4 + t4.length), o2;
+            var o3 = e3.substring(i2, n4);
+            return c2(n4 + t4.length), o3;
           }
-          o2 = e3.substr(i2);
-          return c2(r3), o2;
+          o3 = e3.substr(i2);
+          return c2(r3), o3;
         }
         r3 > 0 && e3.charCodeAt(0) === 65279 && (i2 = 1);
-        var f2 = 0, d2 = null, g = [], m2 = [], _2 = null;
+        var f2 = 0, d2 = null, g2 = [], m2 = [], _2 = null;
         function y2(e4, t4) {
-          g.push(f2), m2.push(d2), f2 = e4, d2 = t4;
+          g2.push(f2), m2.push(d2), f2 = e4, d2 = t4;
         }
         function v2() {
-          if (g.length === 0)
+          if (g2.length === 0)
             return b2("illegal state stack");
-          f2 = g.pop(), d2 = m2.pop();
+          f2 = g2.pop(), d2 = m2.pop();
         }
         function b2(t4) {
           throw new Error("Near offset " + i2 + ": " + t4 + " ~~~" + e3.substr(i2, 50) + "~~~");
         }
-        var C2, w2, k, R = function() {
+        var C2, w2, k2, R2 = function() {
           if (_2 === null)
             return b2("missing <key>");
           var e4 = {};
-          n3 !== null && (e4[n3] = { filename: t3, line: o, char: s2 }), d2[_2] = e4, _2 = null, y2(1, e4);
+          n3 !== null && (e4[n3] = { filename: t3, line: o2, char: s2 }), d2[_2] = e4, _2 = null, y2(1, e4);
         }, S2 = function() {
           if (_2 === null)
             return b2("missing <key>");
@@ -29025,7 +29291,7 @@ var main = { exports: {} };
           d2[_2] = e4, _2 = null, y2(2, e4);
         }, P2 = function() {
           var e4 = {};
-          n3 !== null && (e4[n3] = { filename: t3, line: o, char: s2 }), d2.push(e4), y2(1, e4);
+          n3 !== null && (e4[n3] = { filename: t3, line: o2, char: s2 }), d2.push(e4), y2(1, e4);
         }, x2 = function() {
           var e4 = [];
           d2.push(e4), y2(2, e4);
@@ -29035,7 +29301,7 @@ var main = { exports: {} };
             return b2("unexpected </dict>");
           v2();
         }
-        function A() {
+        function A2() {
           return f2 === 1 || f2 !== 2 ? b2("unexpected </array>") : void v2();
         }
         function T2(e4) {
@@ -29133,18 +29399,18 @@ var main = { exports: {} };
                   continue;
                 }
                 if (l2("array")) {
-                  h2(">"), A();
+                  h2(">"), A2();
                   continue;
                 }
                 return b2("unexpected closed tag");
               }
-              var F2 = (w2 = void 0, k = void 0, w2 = p2(">"), k = false, w2.charCodeAt(w2.length - 1) === 47 && (k = true, w2 = w2.substring(0, w2.length - 1)), { name: w2.trim(), isClosed: k });
+              var F2 = (w2 = void 0, k2 = void 0, w2 = p2(">"), k2 = false, w2.charCodeAt(w2.length - 1) === 47 && (k2 = true, w2 = w2.substring(0, w2.length - 1)), { name: w2.trim(), isClosed: k2 });
               switch (F2.name) {
                 case "dict":
-                  f2 === 1 ? R() : f2 === 2 ? P2() : (d2 = {}, n3 !== null && (d2[n3] = { filename: t3, line: o, char: s2 }), y2(1, d2)), F2.isClosed && I2();
+                  f2 === 1 ? R2() : f2 === 2 ? P2() : (d2 = {}, n3 !== null && (d2[n3] = { filename: t3, line: o2, char: s2 }), y2(1, d2)), F2.isClosed && I2();
                   continue;
                 case "array":
-                  f2 === 1 ? S2() : f2 === 2 ? x2() : y2(2, d2 = []), F2.isClosed && A();
+                  f2 === 1 ? S2() : f2 === 2 ? x2() : y2(2, d2 = []), F2.isClosed && A2();
                   continue;
                 case "key":
                   C2 = E2(F2), f2 !== 1 ? b2("unexpected <key>") : _2 !== null ? b2("too many <key>") : _2 = C2;
@@ -29195,19 +29461,19 @@ var main = { exports: {} };
         throw new Error("Near offset " + e3.pos + ": " + t3 + " ~~~" + e3.source.substr(e3.pos, 50) + "~~~");
       }
       Object.defineProperty(t2, "__esModule", { value: true }), t2.parse = function(e3, t3, n3) {
-        var a2 = new i2(e3), c2 = new o(), u2 = 0, l2 = null, h2 = [], p2 = [];
+        var a2 = new i2(e3), c2 = new o2(), u2 = 0, l2 = null, h2 = [], p2 = [];
         function f2() {
           h2.push(u2), p2.push(l2);
         }
         function d2() {
           u2 = h2.pop(), l2 = p2.pop();
         }
-        function g(e4) {
+        function g2(e4) {
           r2(a2, e4);
         }
         for (; s2(a2, c2); ) {
           if (u2 === 0) {
-            if (l2 !== null && g("too many constructs in root"), c2.type === 3) {
+            if (l2 !== null && g2("too many constructs in root"), c2.type === 3) {
               l2 = {}, n3 && (l2.$vscodeTextmateLocation = c2.toLocation(t3)), f2(), u2 = 1;
               continue;
             }
@@ -29215,7 +29481,7 @@ var main = { exports: {} };
               l2 = [], f2(), u2 = 4;
               continue;
             }
-            g("unexpected token in root");
+            g2("unexpected token in root");
           }
           if (u2 === 2) {
             if (c2.type === 5) {
@@ -29226,7 +29492,7 @@ var main = { exports: {} };
               u2 = 3;
               continue;
             }
-            g("expected , or }");
+            g2("expected , or }");
           }
           if (u2 === 1 || u2 === 3) {
             if (u2 === 1 && c2.type === 5) {
@@ -29235,7 +29501,7 @@ var main = { exports: {} };
             }
             if (c2.type === 1) {
               var m2 = c2.value;
-              if (s2(a2, c2) && c2.type === 6 || g("expected colon"), s2(a2, c2) || g("expected value"), u2 = 2, c2.type === 1) {
+              if (s2(a2, c2) && c2.type === 6 || g2("expected colon"), s2(a2, c2) || g2("expected value"), u2 = 2, c2.type === 1) {
                 l2[m2] = c2.value;
                 continue;
               }
@@ -29266,7 +29532,7 @@ var main = { exports: {} };
                 continue;
               }
             }
-            g("unexpected token in dict");
+            g2("unexpected token in dict");
           }
           if (u2 === 5) {
             if (c2.type === 4) {
@@ -29277,7 +29543,7 @@ var main = { exports: {} };
               u2 = 6;
               continue;
             }
-            g("expected , or ]");
+            g2("expected , or ]");
           }
           if (u2 === 4 || u2 === 6) {
             if (u2 === 4 && c2.type === 4) {
@@ -29314,15 +29580,15 @@ var main = { exports: {} };
               n3 && (y2.$vscodeTextmateLocation = c2.toLocation(t3)), l2.push(y2), f2(), u2 = 1, l2 = y2;
               continue;
             }
-            g("unexpected token in array");
+            g2("unexpected token in array");
           }
-          g("unknown state");
+          g2("unknown state");
         }
-        return p2.length !== 0 && g("unclosed constructs"), l2;
+        return p2.length !== 0 && g2("unclosed constructs"), l2;
       };
       var i2 = function(e3) {
         this.source = e3, this.pos = 0, this.len = e3.length, this.line = 1, this.char = 0;
-      }, o = function() {
+      }, o2 = function() {
         function e3() {
           this.value = null, this.type = 0, this.offset = -1, this.len = -1, this.line = -1, this.char = -1;
         }
@@ -29332,27 +29598,27 @@ var main = { exports: {} };
       }();
       function s2(e3, t3) {
         t3.value = null, t3.type = 0, t3.offset = -1, t3.len = -1, t3.line = -1, t3.char = -1;
-        for (var n3, i3 = e3.source, o2 = e3.pos, s3 = e3.len, a2 = e3.line, c2 = e3.char; ; ) {
-          if (o2 >= s3)
+        for (var n3, i3 = e3.source, o3 = e3.pos, s3 = e3.len, a2 = e3.line, c2 = e3.char; ; ) {
+          if (o3 >= s3)
             return false;
-          if ((n3 = i3.charCodeAt(o2)) !== 32 && n3 !== 9 && n3 !== 13) {
+          if ((n3 = i3.charCodeAt(o3)) !== 32 && n3 !== 9 && n3 !== 13) {
             if (n3 !== 10)
               break;
-            o2++, a2++, c2 = 0;
+            o3++, a2++, c2 = 0;
           } else
-            o2++, c2++;
+            o3++, c2++;
         }
-        if (t3.offset = o2, t3.line = a2, t3.char = c2, n3 === 34) {
-          for (t3.type = 1, o2++, c2++; ; ) {
-            if (o2 >= s3)
+        if (t3.offset = o3, t3.line = a2, t3.char = c2, n3 === 34) {
+          for (t3.type = 1, o3++, c2++; ; ) {
+            if (o3 >= s3)
               return false;
-            if (n3 = i3.charCodeAt(o2), o2++, c2++, n3 !== 92) {
+            if (n3 = i3.charCodeAt(o3), o3++, c2++, n3 !== 92) {
               if (n3 === 34)
                 break;
             } else
-              o2++, c2++;
+              o3++, c2++;
           }
-          t3.value = i3.substring(t3.offset + 1, o2 - 1).replace(/\\u([0-9A-Fa-f]{4})/g, function(e4, t4) {
+          t3.value = i3.substring(t3.offset + 1, o3 - 1).replace(/\\u([0-9A-Fa-f]{4})/g, function(e4, t4) {
             return String.fromCodePoint(parseInt(t4, 16));
           }).replace(/\\(.)/g, function(t4, n4) {
             switch (n4) {
@@ -29378,67 +29644,67 @@ var main = { exports: {} };
             throw new Error("unreachable");
           });
         } else if (n3 === 91)
-          t3.type = 2, o2++, c2++;
+          t3.type = 2, o3++, c2++;
         else if (n3 === 123)
-          t3.type = 3, o2++, c2++;
+          t3.type = 3, o3++, c2++;
         else if (n3 === 93)
-          t3.type = 4, o2++, c2++;
+          t3.type = 4, o3++, c2++;
         else if (n3 === 125)
-          t3.type = 5, o2++, c2++;
+          t3.type = 5, o3++, c2++;
         else if (n3 === 58)
-          t3.type = 6, o2++, c2++;
+          t3.type = 6, o3++, c2++;
         else if (n3 === 44)
-          t3.type = 7, o2++, c2++;
+          t3.type = 7, o3++, c2++;
         else if (n3 === 110) {
-          if (t3.type = 8, o2++, c2++, (n3 = i3.charCodeAt(o2)) !== 117)
+          if (t3.type = 8, o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 117)
             return false;
-          if (o2++, c2++, (n3 = i3.charCodeAt(o2)) !== 108)
+          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 108)
             return false;
-          if (o2++, c2++, (n3 = i3.charCodeAt(o2)) !== 108)
+          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 108)
             return false;
-          o2++, c2++;
+          o3++, c2++;
         } else if (n3 === 116) {
-          if (t3.type = 9, o2++, c2++, (n3 = i3.charCodeAt(o2)) !== 114)
+          if (t3.type = 9, o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 114)
             return false;
-          if (o2++, c2++, (n3 = i3.charCodeAt(o2)) !== 117)
+          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 117)
             return false;
-          if (o2++, c2++, (n3 = i3.charCodeAt(o2)) !== 101)
+          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 101)
             return false;
-          o2++, c2++;
+          o3++, c2++;
         } else if (n3 === 102) {
-          if (t3.type = 10, o2++, c2++, (n3 = i3.charCodeAt(o2)) !== 97)
+          if (t3.type = 10, o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 97)
             return false;
-          if (o2++, c2++, (n3 = i3.charCodeAt(o2)) !== 108)
+          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 108)
             return false;
-          if (o2++, c2++, (n3 = i3.charCodeAt(o2)) !== 115)
+          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 115)
             return false;
-          if (o2++, c2++, (n3 = i3.charCodeAt(o2)) !== 101)
+          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 101)
             return false;
-          o2++, c2++;
+          o3++, c2++;
         } else
           for (t3.type = 11; ; ) {
-            if (o2 >= s3)
+            if (o3 >= s3)
               return false;
-            if (!((n3 = i3.charCodeAt(o2)) === 46 || n3 >= 48 && n3 <= 57 || n3 === 101 || n3 === 69 || n3 === 45 || n3 === 43))
+            if (!((n3 = i3.charCodeAt(o3)) === 46 || n3 >= 48 && n3 <= 57 || n3 === 101 || n3 === 69 || n3 === 45 || n3 === 43))
               break;
-            o2++, c2++;
+            o3++, c2++;
           }
-        return t3.len = o2 - t3.offset, t3.value === null && (t3.value = i3.substr(t3.offset, t3.len)), e3.pos = o2, e3.line = a2, e3.char = c2, true;
+        return t3.len = o3 - t3.offset, t3.value === null && (t3.value = i3.substr(t3.offset, t3.len)), e3.pos = o3, e3.line = a2, e3.char = c2, true;
       }
     }, function(e2, t2, n2) {
       Object.defineProperty(t2, "__esModule", { value: true });
-      var r2 = function(e3, t3, n3, r3, i3, o2) {
-        this.scope = e3, this.parentScopes = t3, this.index = n3, this.fontStyle = r3, this.foreground = i3, this.background = o2;
+      var r2 = function(e3, t3, n3, r3, i3, o3) {
+        this.scope = e3, this.parentScopes = t3, this.index = n3, this.fontStyle = r3, this.foreground = i3, this.background = o3;
       };
       function i2(e3) {
         return !!/^#[0-9a-f]{6}$/i.test(e3) || (!!/^#[0-9a-f]{8}$/i.test(e3) || (!!/^#[0-9a-f]{3}$/i.test(e3) || !!/^#[0-9a-f]{4}$/i.test(e3)));
       }
-      function o(e3) {
+      function o2(e3) {
         if (!e3)
           return [];
         if (!e3.settings || !Array.isArray(e3.settings))
           return [];
-        for (var t3 = e3.settings, n3 = [], o2 = 0, s3 = 0, a3 = t3.length; s3 < a3; s3++) {
+        for (var t3 = e3.settings, n3 = [], o3 = 0, s3 = 0, a3 = t3.length; s3 < a3; s3++) {
           var c3 = t3[s3];
           if (c3.settings) {
             var u3 = void 0;
@@ -29449,8 +29715,8 @@ var main = { exports: {} };
             var l3 = -1;
             if (typeof c3.settings.fontStyle == "string") {
               l3 = 0;
-              for (var h3 = 0, p3 = (g = c3.settings.fontStyle.split(" ")).length; h3 < p3; h3++) {
-                switch (g[h3]) {
+              for (var h3 = 0, p3 = (g2 = c3.settings.fontStyle.split(" ")).length; h3 < p3; h3++) {
+                switch (g2[h3]) {
                   case "italic":
                     l3 |= 1;
                     break;
@@ -29467,8 +29733,8 @@ var main = { exports: {} };
             var d2 = null;
             typeof c3.settings.background == "string" && i2(c3.settings.background) && (d2 = c3.settings.background);
             for (h3 = 0, p3 = u3.length; h3 < p3; h3++) {
-              var g, m2 = (g = u3[h3].trim().split(" "))[g.length - 1], _2 = null;
-              g.length > 1 && (_2 = g.slice(0, g.length - 1)).reverse(), n3[o2++] = new r2(m2, _2, s3, l3, f2, d2);
+              var g2, m2 = (g2 = u3[h3].trim().split(" "))[g2.length - 1], _2 = null;
+              g2.length > 1 && (_2 = g2.slice(0, g2.length - 1)).reverse(), n3[o3++] = new r2(m2, _2, s3, l3, f2, d2);
             }
           }
         }
@@ -29480,16 +29746,16 @@ var main = { exports: {} };
           return n4 !== 0 || (n4 = l2(e4.parentScopes, t4.parentScopes)) !== 0 ? n4 : e4.index - t4.index;
         });
         for (var n3 = 0, r3 = "#000000", i3 = "#ffffff"; e3.length >= 1 && e3[0].scope === ""; ) {
-          var o2 = e3.shift();
-          o2.fontStyle !== -1 && (n3 = o2.fontStyle), o2.foreground !== null && (r3 = o2.foreground), o2.background !== null && (i3 = o2.background);
+          var o3 = e3.shift();
+          o3.fontStyle !== -1 && (n3 = o3.fontStyle), o3.foreground !== null && (r3 = o3.foreground), o3.background !== null && (i3 = o3.background);
         }
-        for (var s3 = new a2(t3), f2 = new h2(0, null, n3, s3.getId(r3), s3.getId(i3)), d2 = new p2(new h2(0, null, -1, 0, 0), []), g = 0, m2 = e3.length; g < m2; g++) {
-          var _2 = e3[g];
+        for (var s3 = new a2(t3), f2 = new h2(0, null, n3, s3.getId(r3), s3.getId(i3)), d2 = new p2(new h2(0, null, -1, 0, 0), []), g2 = 0, m2 = e3.length; g2 < m2; g2++) {
+          var _2 = e3[g2];
           d2.insert(0, _2.scope, _2.parentScopes, _2.fontStyle, s3.getId(_2.foreground), s3.getId(_2.background));
         }
         return new c2(s3, f2, d2);
       }
-      t2.ParsedThemeRule = r2, t2.parseTheme = o;
+      t2.ParsedThemeRule = r2, t2.parseTheme = o2;
       var a2 = function() {
         function e3(e4) {
           if (this._lastColorId = 0, this._id2color = [], this._color2id = /* @__PURE__ */ Object.create(null), Array.isArray(e4)) {
@@ -29519,7 +29785,7 @@ var main = { exports: {} };
           this._colorMap = e4, this._root = n3, this._defaults = t3, this._cache = {};
         }
         return e3.createFromRawTheme = function(e4, t3) {
-          return this.createFromParsedTheme(o(e4), t3);
+          return this.createFromParsedTheme(o2(e4), t3);
         }, e3.createFromParsedTheme = function(e4, t3) {
           return s2(e4, t3);
         }, e3.prototype.getColorMap = function() {
@@ -29543,9 +29809,9 @@ var main = { exports: {} };
         var n3 = e3.length, r3 = t3.length;
         if (n3 === r3) {
           for (var i3 = 0; i3 < n3; i3++) {
-            var o2 = u2(e3[i3], t3[i3]);
-            if (o2 !== 0)
-              return o2;
+            var o3 = u2(e3[i3], t3[i3]);
+            if (o3 !== 0)
+              return o3;
           }
           return 0;
         }
@@ -29575,14 +29841,14 @@ var main = { exports: {} };
           return e4.length === 1 || e4.sort(this._cmpBySpecificity), e4;
         }, e3._cmpBySpecificity = function(e4, t3) {
           if (e4.scopeDepth === t3.scopeDepth) {
-            var n3 = e4.parentScopes, r3 = t3.parentScopes, i3 = n3 === null ? 0 : n3.length, o2 = r3 === null ? 0 : r3.length;
-            if (i3 === o2)
+            var n3 = e4.parentScopes, r3 = t3.parentScopes, i3 = n3 === null ? 0 : n3.length, o3 = r3 === null ? 0 : r3.length;
+            if (i3 === o3)
               for (var s3 = 0; s3 < i3; s3++) {
                 var a3 = n3[s3].length, c3 = r3[s3].length;
                 if (a3 !== c3)
                   return c3 - a3;
               }
-            return o2 - i3;
+            return o3 - i3;
           }
           return t3.scopeDepth - e4.scopeDepth;
         }, e3.prototype.match = function(t3) {
@@ -29590,16 +29856,16 @@ var main = { exports: {} };
             return e3._sortBySpecificity([].concat(this._mainRule).concat(this._rulesWithParentScopes));
           var n3, r3, i3 = t3.indexOf(".");
           return i3 === -1 ? (n3 = t3, r3 = "") : (n3 = t3.substring(0, i3), r3 = t3.substring(i3 + 1)), this._children.hasOwnProperty(n3) ? this._children[n3].match(r3) : e3._sortBySpecificity([].concat(this._mainRule).concat(this._rulesWithParentScopes));
-        }, e3.prototype.insert = function(t3, n3, r3, i3, o2, s3) {
+        }, e3.prototype.insert = function(t3, n3, r3, i3, o3, s3) {
           if (n3 !== "") {
             var a3, c3, u3, l3 = n3.indexOf(".");
-            l3 === -1 ? (a3 = n3, c3 = "") : (a3 = n3.substring(0, l3), c3 = n3.substring(l3 + 1)), this._children.hasOwnProperty(a3) ? u3 = this._children[a3] : (u3 = new e3(this._mainRule.clone(), h2.cloneArr(this._rulesWithParentScopes)), this._children[a3] = u3), u3.insert(t3 + 1, c3, r3, i3, o2, s3);
+            l3 === -1 ? (a3 = n3, c3 = "") : (a3 = n3.substring(0, l3), c3 = n3.substring(l3 + 1)), this._children.hasOwnProperty(a3) ? u3 = this._children[a3] : (u3 = new e3(this._mainRule.clone(), h2.cloneArr(this._rulesWithParentScopes)), this._children[a3] = u3), u3.insert(t3 + 1, c3, r3, i3, o3, s3);
           } else
-            this._doInsertHere(t3, r3, i3, o2, s3);
+            this._doInsertHere(t3, r3, i3, o3, s3);
         }, e3.prototype._doInsertHere = function(e4, t3, n3, r3, i3) {
           if (t3 !== null) {
-            for (var o2 = 0, s3 = this._rulesWithParentScopes.length; o2 < s3; o2++) {
-              var a3 = this._rulesWithParentScopes[o2];
+            for (var o3 = 0, s3 = this._rulesWithParentScopes.length; o3 < s3; o3++) {
+              var a3 = this._rulesWithParentScopes[o3];
               if (l2(a3.parentScopes, t3) === 0)
                 return void a3.acceptOverwrite(e4, n3, r3, i3);
             }
@@ -31308,9 +31574,9 @@ class Resolver {
     if (lang2.grammar) {
       return lang2.grammar;
     }
-    const g = await fetchGrammar(languages.includes(lang2) ? `${this.languagesPath}${lang2.path}` : lang2.path);
-    lang2.grammar = g;
-    return g;
+    const g2 = await fetchGrammar(languages.includes(lang2) ? `${this.languagesPath}${lang2.path}` : lang2.path);
+    lang2.grammar = g2;
+    return g2;
   }
   addLanguage(l2) {
     this.languageMap[l2.id] = l2;
@@ -31537,11 +31803,11 @@ class Registry extends main.exports.Registry {
     return this._resolvedGrammars[name];
   }
   async loadLanguage(lang2) {
-    const g = await this.loadGrammar(lang2.scopeName);
-    this._resolvedGrammars[lang2.id] = g;
+    const g2 = await this.loadGrammar(lang2.scopeName);
+    this._resolvedGrammars[lang2.id] = g2;
     if (lang2.aliases) {
       lang2.aliases.forEach((la2) => {
-        this._resolvedGrammars[la2] = g;
+        this._resolvedGrammars[la2] = g2;
       });
     }
   }
@@ -31746,8 +32012,8 @@ var flexsearch_bundle = { exports: {} };
           c2 = a2.length;
           const d2 = [];
           for (let e2 = 0, f2 = 0; e2 < c2; e2++) {
-            const g = a2[e2];
-            g && !b2[g] && (d2[f2++] = g);
+            const g2 = a2[e2];
+            g2 && !b2[g2] && (d2[f2++] = g2);
           }
           a2 = d2;
         }
@@ -31758,10 +32024,10 @@ var flexsearch_bundle = { exports: {} };
     const da = /[\p{Z}\p{S}\p{P}\p{C}]+/u, ea = /[\u0300-\u036f]/g;
     function fa(a2, b2) {
       const c2 = Object.keys(a2), d2 = c2.length, e2 = [];
-      let f2 = "", g = 0;
-      for (let h2 = 0, k, m2; h2 < d2; h2++)
-        k = c2[h2], (m2 = a2[k]) ? (e2[g++] = F(b2 ? "(?!\\b)" + k + "(\\b|_)" : k), e2[g++] = m2) : f2 += (f2 ? "|" : "") + k;
-      f2 && (e2[g++] = F(b2 ? "(?!\\b)(" + f2 + ")(\\b|_)" : "(" + f2 + ")"), e2[g] = "");
+      let f2 = "", g2 = 0;
+      for (let h2 = 0, k2, m2; h2 < d2; h2++)
+        k2 = c2[h2], (m2 = a2[k2]) ? (e2[g2++] = F(b2 ? "(?!\\b)" + k2 + "(\\b|_)" : k2), e2[g2++] = m2) : f2 += (f2 ? "|" : "") + k2;
+      f2 && (e2[g2++] = F(b2 ? "(?!\\b)(" + f2 + ")(\\b|_)" : "(" + f2 + ")"), e2[g2] = "");
       return e2;
     }
     function E(a2, b2) {
@@ -31796,12 +32062,12 @@ var flexsearch_bundle = { exports: {} };
         var e2 = d2[d2.length - 1];
         let f2;
         D(e2) && (f2 = e2, delete d2[d2.length - 1]);
-        e2 = new Promise(function(g) {
+        e2 = new Promise(function(g2) {
           setTimeout(function() {
             c2.async = true;
             const h2 = c2[b2].apply(c2, d2);
             c2.async = false;
-            g(h2);
+            g2(h2);
           });
         });
         return f2 ? (e2.then(f2), this) : e2;
@@ -31809,51 +32075,51 @@ var flexsearch_bundle = { exports: {} };
     }
     function ma(a2, b2, c2, d2) {
       const e2 = a2.length;
-      let f2 = [], g, h2, k = 0;
+      let f2 = [], g2, h2, k2 = 0;
       d2 && (d2 = []);
       for (let m2 = e2 - 1; 0 <= m2; m2--) {
-        const n2 = a2[m2], w2 = n2.length, q = v();
-        let r2 = !g;
+        const n2 = a2[m2], w2 = n2.length, q2 = v();
+        let r2 = !g2;
         for (let l2 = 0; l2 < w2; l2++) {
-          const p2 = n2[l2], z = p2.length;
-          if (z)
-            for (let B = 0, A, y2; B < z; B++)
-              if (y2 = p2[B], g) {
-                if (g[y2]) {
+          const p2 = n2[l2], z2 = p2.length;
+          if (z2)
+            for (let B2 = 0, A2, y2; B2 < z2; B2++)
+              if (y2 = p2[B2], g2) {
+                if (g2[y2]) {
                   if (!m2) {
                     if (c2)
                       c2--;
-                    else if (f2[k++] = y2, k === b2)
+                    else if (f2[k2++] = y2, k2 === b2)
                       return f2;
                   }
                   if (m2 || d2)
-                    q[y2] = 1;
+                    q2[y2] = 1;
                   r2 = true;
                 }
-                if (d2 && (h2[y2] = (A = h2[y2]) ? ++A : A = 1, A < e2)) {
-                  const H = d2[A - 2] || (d2[A - 2] = []);
-                  H[H.length] = y2;
+                if (d2 && (h2[y2] = (A2 = h2[y2]) ? ++A2 : A2 = 1, A2 < e2)) {
+                  const H2 = d2[A2 - 2] || (d2[A2 - 2] = []);
+                  H2[H2.length] = y2;
                 }
               } else
-                q[y2] = 1;
+                q2[y2] = 1;
         }
         if (d2)
-          g || (h2 = q);
+          g2 || (h2 = q2);
         else if (!r2)
           return [];
-        g = q;
+        g2 = q2;
       }
       if (d2)
         for (let m2 = d2.length - 1, n2, w2; 0 <= m2; m2--) {
           n2 = d2[m2];
           w2 = n2.length;
-          for (let q = 0, r2; q < w2; q++)
-            if (r2 = n2[q], !g[r2]) {
+          for (let q2 = 0, r2; q2 < w2; q2++)
+            if (r2 = n2[q2], !g2[r2]) {
               if (c2)
                 c2--;
-              else if (f2[k++] = r2, k === b2)
+              else if (f2[k2++] = r2, k2 === b2)
                 return f2;
-              g[r2] = 1;
+              g2[r2] = 1;
             }
         }
       return f2;
@@ -31862,10 +32128,10 @@ var flexsearch_bundle = { exports: {} };
       const c2 = v(), d2 = v(), e2 = [];
       for (let f2 = 0; f2 < a2.length; f2++)
         c2[a2[f2]] = 1;
-      for (let f2 = 0, g; f2 < b2.length; f2++) {
-        g = b2[f2];
-        for (let h2 = 0, k; h2 < g.length; h2++)
-          k = g[h2], c2[k] && !d2[k] && (d2[k] = 1, e2[e2.length] = k);
+      for (let f2 = 0, g2; f2 < b2.length; f2++) {
+        g2 = b2[f2];
+        for (let h2 = 0, k2; h2 < g2.length; h2++)
+          k2 = g2[h2], c2[k2] && !d2[k2] && (d2[k2] = 1, e2[e2.length] = k2);
       }
       return e2;
     }
@@ -31902,8 +32168,8 @@ var flexsearch_bundle = { exports: {} };
     const qa = { memory: { charset: "latin:extra", D: 3, B: 4, m: false }, performance: { D: 3, B: 3, s: false, context: { depth: 2, D: 1 } }, match: { charset: "latin:extra", G: "reverse" }, score: { charset: "latin:advanced", D: 20, B: 3, context: { depth: 3, D: 9 } }, "default": {} };
     function ra(a2, b2, c2, d2, e2, f2) {
       setTimeout(function() {
-        const g = a2(c2, JSON.stringify(f2));
-        g && g.then ? g.then(function() {
+        const g2 = a2(c2, JSON.stringify(f2));
+        g2 && g2.then ? g2.then(function() {
           b2.export(a2, b2, c2, d2, e2 + 1);
         }) : b2.export(a2, b2, c2, d2, e2 + 1);
       });
@@ -31920,19 +32186,19 @@ var flexsearch_bundle = { exports: {} };
         x(d2) && (d2 = ka[d2]);
       } else
         a2 = {};
-      let e2, f2, g = a2.context || {};
+      let e2, f2, g2 = a2.context || {};
       this.encode = a2.encode || c2 && c2.encode || ia;
       this.register = b2 || v();
       this.D = e2 = a2.resolution || 9;
       this.G = b2 = c2 && c2.G || a2.tokenize || "strict";
-      this.depth = b2 === "strict" && g.depth;
-      this.l = u(g.bidirectional);
+      this.depth = b2 === "strict" && g2.depth;
+      this.l = u(g2.bidirectional);
       this.s = f2 = u(a2.optimize);
       this.m = u(a2.fastupdate);
       this.B = a2.minlength || 1;
       this.C = a2.boost;
       this.map = f2 ? aa(e2) : v();
-      this.A = e2 = g.resolution || 1;
+      this.A = e2 = g2.resolution || 1;
       this.h = f2 ? aa(e2) : v();
       this.F = c2 && c2.F || a2.rtl;
       this.H = (b2 = a2.matcher || d2 && d2.H) && fa(b2, false);
@@ -31940,7 +32206,7 @@ var flexsearch_bundle = { exports: {} };
       if (c2 = b2 = a2.filter || d2 && d2.filter) {
         c2 = b2;
         d2 = v();
-        for (let h2 = 0, k = c2.length; h2 < k; h2++)
+        for (let h2 = 0, k2 = c2.length; h2 < k2; h2++)
           d2[c2[h2]] = 1;
         c2 = d2;
       }
@@ -31957,43 +32223,43 @@ var flexsearch_bundle = { exports: {} };
           return this.update(a2, b2);
         b2 = this.encode(b2);
         if (d2 = b2.length) {
-          const m2 = v(), n2 = v(), w2 = this.depth, q = this.D;
+          const m2 = v(), n2 = v(), w2 = this.depth, q2 = this.D;
           for (let r2 = 0; r2 < d2; r2++) {
             let l2 = b2[this.F ? d2 - 1 - r2 : r2];
             var e2 = l2.length;
             if (l2 && e2 >= this.B && (w2 || !n2[l2])) {
-              var f2 = L(q, d2, r2), g = "";
+              var f2 = L(q2, d2, r2), g2 = "";
               switch (this.G) {
                 case "full":
                   if (3 < e2) {
                     for (f2 = 0; f2 < e2; f2++)
                       for (var h2 = e2; h2 > f2; h2--)
                         if (h2 - f2 >= this.B) {
-                          var k = L(q, d2, r2, e2, f2);
-                          g = l2.substring(f2, h2);
-                          M(this, n2, g, k, a2, c2);
+                          var k2 = L(q2, d2, r2, e2, f2);
+                          g2 = l2.substring(f2, h2);
+                          M(this, n2, g2, k2, a2, c2);
                         }
                     break;
                   }
                 case "reverse":
                   if (2 < e2) {
                     for (h2 = e2 - 1; 0 < h2; h2--)
-                      g = l2[h2] + g, g.length >= this.B && M(this, n2, g, L(q, d2, r2, e2, h2), a2, c2);
-                    g = "";
+                      g2 = l2[h2] + g2, g2.length >= this.B && M(this, n2, g2, L(q2, d2, r2, e2, h2), a2, c2);
+                    g2 = "";
                   }
                 case "forward":
                   if (1 < e2) {
                     for (h2 = 0; h2 < e2; h2++)
-                      g += l2[h2], g.length >= this.B && M(this, n2, g, f2, a2, c2);
+                      g2 += l2[h2], g2.length >= this.B && M(this, n2, g2, f2, a2, c2);
                     break;
                   }
                 default:
-                  if (this.C && (f2 = Math.min(f2 / this.C(b2, l2, r2) | 0, q - 1)), M(this, n2, l2, f2, a2, c2), w2 && 1 < d2 && r2 < d2 - 1) {
-                    for (e2 = v(), g = this.A, f2 = l2, h2 = Math.min(w2 + 1, d2 - r2), e2[f2] = 1, k = 1; k < h2; k++)
-                      if ((l2 = b2[this.F ? d2 - 1 - r2 - k : r2 + k]) && l2.length >= this.B && !e2[l2]) {
+                  if (this.C && (f2 = Math.min(f2 / this.C(b2, l2, r2) | 0, q2 - 1)), M(this, n2, l2, f2, a2, c2), w2 && 1 < d2 && r2 < d2 - 1) {
+                    for (e2 = v(), g2 = this.A, f2 = l2, h2 = Math.min(w2 + 1, d2 - r2), e2[f2] = 1, k2 = 1; k2 < h2; k2++)
+                      if ((l2 = b2[this.F ? d2 - 1 - r2 - k2 : r2 + k2]) && l2.length >= this.B && !e2[l2]) {
                         e2[l2] = 1;
                         const p2 = this.l && l2 > f2;
-                        M(this, m2, p2 ? f2 : l2, L(g + (d2 / 2 > g ? 0 : 1), d2, r2, h2 - 1, k - 1), a2, c2, p2 ? l2 : f2);
+                        M(this, m2, p2 ? f2 : l2, L(g2 + (d2 / 2 > g2 ? 0 : 1), d2, r2, h2 - 1, k2 - 1), a2, c2, p2 ? l2 : f2);
                       }
                   }
               }
@@ -32007,31 +32273,31 @@ var flexsearch_bundle = { exports: {} };
     function L(a2, b2, c2, d2, e2) {
       return c2 && 1 < a2 ? b2 + (d2 || 0) <= a2 ? c2 + (e2 || 0) : (a2 - 1) / (b2 + (d2 || 0)) * (c2 + (e2 || 0)) + 1 | 0 : 0;
     }
-    function M(a2, b2, c2, d2, e2, f2, g) {
-      let h2 = g ? a2.h : a2.map;
-      if (!b2[c2] || g && !b2[c2][g])
-        a2.s && (h2 = h2[d2]), g ? (b2 = b2[c2] || (b2[c2] = v()), b2[g] = 1, h2 = h2[g] || (h2[g] = v())) : b2[c2] = 1, h2 = h2[c2] || (h2[c2] = []), a2.s || (h2 = h2[d2] || (h2[d2] = [])), f2 && h2.indexOf(e2) !== -1 || (h2[h2.length] = e2, a2.m && (a2 = a2.register[e2] || (a2.register[e2] = []), a2[a2.length] = h2));
+    function M(a2, b2, c2, d2, e2, f2, g2) {
+      let h2 = g2 ? a2.h : a2.map;
+      if (!b2[c2] || g2 && !b2[c2][g2])
+        a2.s && (h2 = h2[d2]), g2 ? (b2 = b2[c2] || (b2[c2] = v()), b2[g2] = 1, h2 = h2[g2] || (h2[g2] = v())) : b2[c2] = 1, h2 = h2[c2] || (h2[c2] = []), a2.s || (h2 = h2[d2] || (h2[d2] = [])), f2 && h2.indexOf(e2) !== -1 || (h2[h2.length] = e2, a2.m && (a2 = a2.register[e2] || (a2.register[e2] = []), a2[a2.length] = h2));
     }
     t.search = function(a2, b2, c2) {
       c2 || (!b2 && C(a2) ? (c2 = a2, a2 = c2.query) : C(b2) && (c2 = b2));
       let d2 = [], e2;
-      let f2, g = 0;
+      let f2, g2 = 0;
       if (c2) {
         b2 = c2.limit;
-        g = c2.offset || 0;
+        g2 = c2.offset || 0;
         var h2 = c2.context;
         f2 = c2.suggest;
       }
       if (a2 && (a2 = this.encode(a2), e2 = a2.length, 1 < e2)) {
         c2 = v();
-        var k = [];
-        for (let n2 = 0, w2 = 0, q; n2 < e2; n2++)
-          if ((q = a2[n2]) && q.length >= this.B && !c2[q])
-            if (this.s || f2 || this.map[q])
-              k[w2++] = q, c2[q] = 1;
+        var k2 = [];
+        for (let n2 = 0, w2 = 0, q2; n2 < e2; n2++)
+          if ((q2 = a2[n2]) && q2.length >= this.B && !c2[q2])
+            if (this.s || f2 || this.map[q2])
+              k2[w2++] = q2, c2[q2] = 1;
             else
               return d2;
-        a2 = k;
+        a2 = k2;
         e2 = a2.length;
       }
       if (!e2)
@@ -32043,12 +32309,12 @@ var flexsearch_bundle = { exports: {} };
       h2 ? (m2 = a2[0], c2 = 1) : 1 < e2 && a2.sort(ba);
       for (let n2, w2; c2 < e2; c2++) {
         w2 = a2[c2];
-        h2 ? (n2 = sa(this, d2, f2, b2, g, e2 === 2, w2, m2), f2 && n2 === false && d2.length || (m2 = w2)) : n2 = sa(this, d2, f2, b2, g, e2 === 1, w2);
+        h2 ? (n2 = sa(this, d2, f2, b2, g2, e2 === 2, w2, m2), f2 && n2 === false && d2.length || (m2 = w2)) : n2 = sa(this, d2, f2, b2, g2, e2 === 1, w2);
         if (n2)
           return n2;
         if (f2 && c2 === e2 - 1) {
-          k = d2.length;
-          if (!k) {
+          k2 = d2.length;
+          if (!k2) {
             if (h2) {
               h2 = 0;
               c2 = -1;
@@ -32056,31 +32322,31 @@ var flexsearch_bundle = { exports: {} };
             }
             return d2;
           }
-          if (k === 1)
-            return ta(d2[0], b2, g);
+          if (k2 === 1)
+            return ta(d2[0], b2, g2);
         }
       }
-      return ma(d2, b2, g, f2);
+      return ma(d2, b2, g2, f2);
     };
-    function sa(a2, b2, c2, d2, e2, f2, g, h2) {
-      let k = [], m2 = h2 ? a2.h : a2.map;
-      a2.s || (m2 = ua(m2, g, h2, a2.l));
+    function sa(a2, b2, c2, d2, e2, f2, g2, h2) {
+      let k2 = [], m2 = h2 ? a2.h : a2.map;
+      a2.s || (m2 = ua(m2, g2, h2, a2.l));
       if (m2) {
         let n2 = 0;
         const w2 = Math.min(m2.length, h2 ? a2.A : a2.D);
-        for (let q = 0, r2 = 0, l2, p2; q < w2; q++)
-          if (l2 = m2[q]) {
-            if (a2.s && (l2 = ua(l2, g, h2, a2.l)), e2 && l2 && f2 && (p2 = l2.length, p2 <= e2 ? (e2 -= p2, l2 = null) : (l2 = l2.slice(e2), e2 = 0)), l2 && (k[n2++] = l2, f2 && (r2 += l2.length, r2 >= d2)))
+        for (let q2 = 0, r2 = 0, l2, p2; q2 < w2; q2++)
+          if (l2 = m2[q2]) {
+            if (a2.s && (l2 = ua(l2, g2, h2, a2.l)), e2 && l2 && f2 && (p2 = l2.length, p2 <= e2 ? (e2 -= p2, l2 = null) : (l2 = l2.slice(e2), e2 = 0)), l2 && (k2[n2++] = l2, f2 && (r2 += l2.length, r2 >= d2)))
               break;
           }
         if (n2) {
           if (f2)
-            return ta(k, d2, 0);
-          b2[b2.length] = k;
+            return ta(k2, d2, 0);
+          b2[b2.length] = k2;
           return;
         }
       }
-      return !c2 && k;
+      return !c2 && k2;
     }
     function ta(a2, b2, c2) {
       a2 = a2.length === 1 ? a2[0] : [].concat.apply([], a2);
@@ -32120,44 +32386,44 @@ var flexsearch_bundle = { exports: {} };
           b2 = a2.indexOf(b2), b2 !== -1 ? 1 < a2.length && (a2.splice(b2, 1), f2++) : f2++;
         else {
           e2 = Math.min(a2.length, c2);
-          for (let g = 0, h2; g < e2; g++)
-            if (h2 = a2[g])
-              f2 = N(h2, b2, c2, d2, e2), d2 || f2 || delete a2[g];
+          for (let g2 = 0, h2; g2 < e2; g2++)
+            if (h2 = a2[g2])
+              f2 = N(h2, b2, c2, d2, e2), d2 || f2 || delete a2[g2];
         }
       else
-        for (let g in a2)
-          (f2 = N(a2[g], b2, c2, d2, e2)) || delete a2[g];
+        for (let g2 in a2)
+          (f2 = N(a2[g2], b2, c2, d2, e2)) || delete a2[g2];
       return f2;
     }
     t.searchCache = oa;
     t.export = function(a2, b2, c2, d2, e2) {
-      let f2, g;
+      let f2, g2;
       switch (e2 || (e2 = 0)) {
         case 0:
           f2 = "reg";
           if (this.m) {
-            g = v();
+            g2 = v();
             for (let h2 in this.register)
-              g[h2] = 1;
+              g2[h2] = 1;
           } else
-            g = this.register;
+            g2 = this.register;
           break;
         case 1:
           f2 = "cfg";
-          g = { doc: 0, opt: this.s ? 1 : 0 };
+          g2 = { doc: 0, opt: this.s ? 1 : 0 };
           break;
         case 2:
           f2 = "map";
-          g = this.map;
+          g2 = this.map;
           break;
         case 3:
           f2 = "ctx";
-          g = this.h;
+          g2 = this.h;
           break;
         default:
           return;
       }
-      ra(a2, b2 || this, c2 ? c2 + "." + f2 : f2, d2, e2, g);
+      ra(a2, b2 || this, c2 ? c2 + "." + f2 : f2, d2, e2, g2);
       return true;
     };
     t.import = function(a2, b2) {
@@ -32270,8 +32536,8 @@ var flexsearch_bundle = { exports: {} };
       c2 = v();
       let d2 = b2.index || b2.field || b2;
       x(d2) && (d2 = [d2]);
-      for (let e2 = 0, f2, g; e2 < d2.length; e2++)
-        f2 = d2[e2], x(f2) || (g = f2, f2 = f2.field), g = C(g) ? Object.assign({}, a2, g) : a2, this.o && (c2[f2] = new O(g), c2[f2].o || (this.o = false)), this.o || (c2[f2] = new K(g, this.register)), this.K[e2] = S(f2, this.A), this.h[e2] = f2;
+      for (let e2 = 0, f2, g2; e2 < d2.length; e2++)
+        f2 = d2[e2], x(f2) || (g2 = f2, f2 = f2.field), g2 = C(g2) ? Object.assign({}, a2, g2) : a2, this.o && (c2[f2] = new O(g2), c2[f2].o || (this.o = false)), this.o || (c2[f2] = new K(g2, this.register)), this.K[e2] = S(f2, this.A), this.h[e2] = f2;
       if (this.C)
         for (a2 = b2.store, x(a2) && (a2 = [a2]), b2 = 0; b2 < a2.length; b2++)
           this.C[b2] = S(a2[b2], this.A);
@@ -32304,8 +32570,8 @@ var flexsearch_bundle = { exports: {} };
         else
           b2 = b2[e2] || (b2[e2] = v()), e2 = c2[++d2], U(a2, b2, c2, d2, e2);
     }
-    function V(a2, b2, c2, d2, e2, f2, g, h2) {
-      if (a2 = a2[g])
+    function V(a2, b2, c2, d2, e2, f2, g2, h2) {
+      if (a2 = a2[g2])
         if (d2 === b2.length - 1) {
           if (a2.constructor === Array) {
             if (c2[d2]) {
@@ -32317,10 +32583,10 @@ var flexsearch_bundle = { exports: {} };
           }
           e2.add(f2, a2, h2, true);
         } else if (a2.constructor === Array)
-          for (g = 0; g < a2.length; g++)
-            V(a2, b2, c2, d2, e2, f2, g, h2);
+          for (g2 = 0; g2 < a2.length; g2++)
+            V(a2, b2, c2, d2, e2, f2, g2, h2);
         else
-          g = b2[++d2], V(a2, b2, c2, d2, e2, f2, g, h2);
+          g2 = b2[++d2], V(a2, b2, c2, d2, e2, f2, g2, h2);
     }
     t = Q.prototype;
     t.add = function(a2, b2, c2) {
@@ -32333,11 +32599,11 @@ var flexsearch_bundle = { exports: {} };
         if (this.I) {
           let d2 = T(b2, this.I), e2 = v();
           x(d2) && (d2 = [d2]);
-          for (let f2 = 0, g, h2; f2 < d2.length; f2++)
-            if (g = d2[f2], !e2[g] && (e2[g] = 1, h2 = this.l[g] || (this.l[g] = []), !c2 || h2.indexOf(a2) === -1)) {
+          for (let f2 = 0, g2, h2; f2 < d2.length; f2++)
+            if (g2 = d2[f2], !e2[g2] && (e2[g2] = 1, h2 = this.l[g2] || (this.l[g2] = []), !c2 || h2.indexOf(a2) === -1)) {
               if (h2[h2.length] = a2, this.m) {
-                const k = this.register[a2] || (this.register[a2] = []);
-                k[k.length] = h2;
+                const k2 = this.register[a2] || (this.register[a2] = []);
+                k2[k2.length] = h2;
               }
             }
         }
@@ -32377,12 +32643,12 @@ var flexsearch_bundle = { exports: {} };
     };
     t.search = function(a2, b2, c2, d2) {
       c2 || (!b2 && C(a2) ? (c2 = a2, a2 = c2.query) : C(b2) && (c2 = b2, b2 = 0));
-      let e2 = [], f2 = [], g, h2, k, m2, n2, w2, q = 0;
+      let e2 = [], f2 = [], g2, h2, k2, m2, n2, w2, q2 = 0;
       if (c2)
         if (c2.constructor === Array)
-          k = c2, c2 = null;
+          k2 = c2, c2 = null;
         else {
-          k = (g = c2.pluck) || c2.index || c2.field;
+          k2 = (g2 = c2.pluck) || c2.index || c2.field;
           m2 = c2.tag;
           h2 = this.store && c2.enrich;
           n2 = c2.bool === "and";
@@ -32391,34 +32657,34 @@ var flexsearch_bundle = { exports: {} };
           if (m2 && (x(m2) && (m2 = [m2]), !a2)) {
             for (let l2 = 0, p2; l2 < m2.length; l2++)
               if (p2 = ya.call(this, m2[l2], b2, w2, h2))
-                e2[e2.length] = p2, q++;
-            return q ? e2 : [];
+                e2[e2.length] = p2, q2++;
+            return q2 ? e2 : [];
           }
-          x(k) && (k = [k]);
+          x(k2) && (k2 = [k2]);
         }
-      k || (k = this.h);
-      n2 = n2 && (1 < k.length || m2 && 1 < m2.length);
+      k2 || (k2 = this.h);
+      n2 = n2 && (1 < k2.length || m2 && 1 < m2.length);
       const r2 = !d2 && (this.o || this.async) && [];
-      for (let l2 = 0, p2, z, B; l2 < k.length; l2++) {
-        let A;
-        z = k[l2];
-        x(z) || (A = z, z = z.field);
+      for (let l2 = 0, p2, z2, B2; l2 < k2.length; l2++) {
+        let A2;
+        z2 = k2[l2];
+        x(z2) || (A2 = z2, z2 = z2.field);
         if (r2)
-          r2[l2] = this.index[z].searchAsync(a2, b2, A || c2);
+          r2[l2] = this.index[z2].searchAsync(a2, b2, A2 || c2);
         else {
-          d2 ? p2 = d2[l2] : p2 = this.index[z].search(a2, b2, A || c2);
-          B = p2 && p2.length;
-          if (m2 && B) {
+          d2 ? p2 = d2[l2] : p2 = this.index[z2].search(a2, b2, A2 || c2);
+          B2 = p2 && p2.length;
+          if (m2 && B2) {
             const y2 = [];
-            let H = 0;
+            let H2 = 0;
             n2 && (y2[0] = [p2]);
-            for (let X = 0, pa, R; X < m2.length; X++)
-              if (pa = m2[X], B = (R = this.l[pa]) && R.length)
-                H++, y2[y2.length] = n2 ? [R] : R;
-            H && (p2 = n2 ? ma(y2, b2 || 100, w2 || 0) : na(p2, y2), B = p2.length);
+            for (let X2 = 0, pa, R2; X2 < m2.length; X2++)
+              if (pa = m2[X2], B2 = (R2 = this.l[pa]) && R2.length)
+                H2++, y2[y2.length] = n2 ? [R2] : R2;
+            H2 && (p2 = n2 ? ma(y2, b2 || 100, w2 || 0) : na(p2, y2), B2 = p2.length);
           }
-          if (B)
-            f2[q] = z, e2[q++] = p2;
+          if (B2)
+            f2[q2] = z2, e2[q2++] = p2;
           else if (n2)
             return [];
         }
@@ -32426,19 +32692,19 @@ var flexsearch_bundle = { exports: {} };
       if (r2) {
         const l2 = this;
         return new Promise(function(p2) {
-          Promise.all(r2).then(function(z) {
-            p2(l2.search(a2, b2, c2, z));
+          Promise.all(r2).then(function(z2) {
+            p2(l2.search(a2, b2, c2, z2));
           });
         });
       }
-      if (!q)
+      if (!q2)
         return [];
-      if (g && (!h2 || !this.store))
+      if (g2 && (!h2 || !this.store))
         return e2[0];
       for (let l2 = 0, p2; l2 < f2.length; l2++) {
         p2 = e2[l2];
         p2.length && h2 && (p2 = za.call(this, p2));
-        if (g)
+        if (g2)
           return p2;
         e2[l2] = { field: f2[l2], result: p2 };
       }
@@ -32474,10 +32740,10 @@ var flexsearch_bundle = { exports: {} };
       e2 || (e2 = 0);
       d2 || (d2 = 0);
       if (d2 < this.h.length) {
-        const f2 = this.h[d2], g = this.index[f2];
+        const f2 = this.h[d2], g2 = this.index[f2];
         b2 = this;
         setTimeout(function() {
-          g.export(a2, b2, e2 ? f2.replace(":", "-") : "", d2, e2++) || (d2++, e2 = 1, b2.export(a2, b2, f2, d2, e2));
+          g2.export(a2, b2, e2 ? f2.replace(":", "-") : "", d2, e2++) || (d2++, e2 = 1, b2.export(a2, b2, f2, d2, e2));
         });
       } else {
         let f2;
@@ -32533,16 +32799,16 @@ var flexsearch_bundle = { exports: {} };
       const b2 = [];
       if (a2) {
         const c2 = a2.split(Fa), d2 = c2.length;
-        for (let e2 = 0, f2, g = 0; e2 < d2; e2++)
+        for (let e2 = 0, f2, g2 = 0; e2 < d2; e2++)
           if ((a2 = c2[e2]) && (!this.filter || !this.filter[a2])) {
             f2 = a2[0];
-            let h2 = Ga[f2] || f2, k = h2;
+            let h2 = Ga[f2] || f2, k2 = h2;
             for (let m2 = 1; m2 < a2.length; m2++) {
               f2 = a2[m2];
               const n2 = Ga[f2] || f2;
-              n2 && n2 !== k && (h2 += n2, k = n2);
+              n2 && n2 !== k2 && (h2 += n2, k2 = n2);
             }
-            b2[g++] = h2;
+            b2[g2++] = h2;
           }
       }
       return b2;
@@ -32581,11 +32847,11 @@ var gun = { exports: {} };
 (function(module2) {
   (function() {
     function USE(arg, req) {
-      return req ? commonjsRequire(arg) : arg.slice ? USE[R(arg)] : function(mod2, path2) {
+      return req ? commonjsRequire(arg) : arg.slice ? USE[R2(arg)] : function(mod2, path2) {
         arg(mod2 = { exports: {} });
-        USE[R(path2)] = mod2.exports;
+        USE[R2(path2)] = mod2.exports;
       };
-      function R(p2) {
+      function R2(p2) {
         return p2.split("/").slice(-1).toString().replace(".js", "");
       }
     }
@@ -32602,36 +32868,36 @@ var gun = { exports: {} };
         }
         return s2;
       };
-      String.match = function(t2, o) {
+      String.match = function(t2, o2) {
         var tmp, u2;
         if (typeof t2 !== "string") {
           return false;
         }
-        if (typeof o == "string") {
-          o = { "=": o };
+        if (typeof o2 == "string") {
+          o2 = { "=": o2 };
         }
-        o = o || {};
-        tmp = o["="] || o["*"] || o[">"] || o["<"];
+        o2 = o2 || {};
+        tmp = o2["="] || o2["*"] || o2[">"] || o2["<"];
         if (t2 === tmp) {
           return true;
         }
-        if (u2 !== o["="]) {
+        if (u2 !== o2["="]) {
           return false;
         }
-        tmp = o["*"] || o[">"];
+        tmp = o2["*"] || o2[">"];
         if (t2.slice(0, (tmp || "").length) === tmp) {
           return true;
         }
-        if (u2 !== o["*"]) {
+        if (u2 !== o2["*"]) {
           return false;
         }
-        if (u2 !== o[">"] && u2 !== o["<"]) {
-          return t2 >= o[">"] && t2 <= o["<"] ? true : false;
+        if (u2 !== o2[">"] && u2 !== o2["<"]) {
+          return t2 >= o2[">"] && t2 <= o2["<"] ? true : false;
         }
-        if (u2 !== o[">"] && t2 >= o[">"]) {
+        if (u2 !== o2[">"] && t2 >= o2[">"]) {
           return true;
         }
-        if (u2 !== o["<"] && t2 <= o["<"]) {
+        if (u2 !== o2["<"] && t2 <= o2["<"]) {
           return true;
         }
         return false;
@@ -32652,22 +32918,22 @@ var gun = { exports: {} };
         return c2;
       };
       var has2 = Object.prototype.hasOwnProperty;
-      Object.plain = function(o) {
-        return o ? o instanceof Object && o.constructor === Object || Object.prototype.toString.call(o).match(/^\[object (\w+)\]$/)[1] === "Object" : false;
+      Object.plain = function(o2) {
+        return o2 ? o2 instanceof Object && o2.constructor === Object || Object.prototype.toString.call(o2).match(/^\[object (\w+)\]$/)[1] === "Object" : false;
       };
-      Object.empty = function(o, n2) {
-        for (var k in o) {
-          if (has2.call(o, k) && (!n2 || n2.indexOf(k) == -1)) {
+      Object.empty = function(o2, n2) {
+        for (var k2 in o2) {
+          if (has2.call(o2, k2) && (!n2 || n2.indexOf(k2) == -1)) {
             return false;
           }
         }
         return true;
       };
-      Object.keys = Object.keys || function(o) {
+      Object.keys = Object.keys || function(o2) {
         var l2 = [];
-        for (var k in o) {
-          if (has2.call(o, k)) {
-            l2.push(k);
+        for (var k2 in o2) {
+          if (has2.call(o2, k2)) {
+            l2.push(k2);
           }
         }
         return l2;
@@ -32781,25 +33047,25 @@ var gun = { exports: {} };
       }
       State.drift = 0;
       var NI = -Infinity, N2 = 0, D2 = 999, last = NI, u2;
-      State.is = function(n2, k, o) {
-        var tmp = k && n2 && n2._ && n2._[">"] || o;
+      State.is = function(n2, k2, o2) {
+        var tmp = k2 && n2 && n2._ && n2._[">"] || o2;
         if (!tmp) {
           return;
         }
-        return typeof (tmp = tmp[k]) == "number" ? tmp : NI;
+        return typeof (tmp = tmp[k2]) == "number" ? tmp : NI;
       };
-      State.ify = function(n2, k, s2, v2, soul) {
+      State.ify = function(n2, k2, s2, v2, soul) {
         (n2 = n2 || {})._ = n2._ || {};
         if (soul) {
           n2._["#"] = soul;
         }
         var tmp = n2._[">"] || (n2._[">"] = {});
-        if (u2 !== k && k !== "_") {
+        if (u2 !== k2 && k2 !== "_") {
           if (typeof s2 == "number") {
-            tmp[k] = s2;
+            tmp[k2] = s2;
           }
           if (u2 !== v2) {
-            n2[k] = v2;
+            n2[k2] = v2;
           }
         }
         return n2;
@@ -32882,17 +33148,17 @@ var gun = { exports: {} };
       };
     })(USE, "./ask");
     USE(function(module3) {
-      function Gun2(o) {
-        if (o instanceof Gun2) {
+      function Gun2(o2) {
+        if (o2 instanceof Gun2) {
           return (this._ = { $: this }).$;
         }
         if (!(this instanceof Gun2)) {
-          return new Gun2(o);
+          return new Gun2(o2);
         }
-        return Gun2.create(this._ = { $: this, opt: o });
+        return Gun2.create(this._ = { $: this, opt: o2 });
       }
-      Gun2.is = function($) {
-        return $ instanceof Gun2 || $ && $._ && $ === $._.$ || false;
+      Gun2.is = function($2) {
+        return $2 instanceof Gun2 || $2 && $2._ && $2 === $2._.$ || false;
       };
       Gun2.version = 0.202;
       Gun2.chain = Gun2.prototype;
@@ -32905,21 +33171,21 @@ var gun = { exports: {} };
       Gun2.dup = USE("./dup");
       Gun2.ask = USE("./ask");
       (function() {
-        Gun2.create = function(at) {
-          at.root = at.root || at;
-          at.graph = at.graph || {};
-          at.on = at.on || Gun2.on;
-          at.ask = at.ask || Gun2.ask;
-          at.dup = at.dup || Gun2.dup();
-          var gun2 = at.$.opt(at.opt);
-          if (!at.once) {
-            at.on("in", universe, at);
-            at.on("out", universe, at);
-            at.on("put", map2, at);
-            Gun2.on("create", at);
-            at.on("create", at);
+        Gun2.create = function(at2) {
+          at2.root = at2.root || at2;
+          at2.graph = at2.graph || {};
+          at2.on = at2.on || Gun2.on;
+          at2.ask = at2.ask || Gun2.ask;
+          at2.dup = at2.dup || Gun2.dup();
+          var gun2 = at2.$.opt(at2.opt);
+          if (!at2.once) {
+            at2.on("in", universe, at2);
+            at2.on("out", universe, at2);
+            at2.on("put", map2, at2);
+            Gun2.on("create", at2);
+            at2.on("create", at2);
           }
-          at.once = 1;
+          at2.once = 1;
           return gun2;
         };
         function universe(msg) {
@@ -32930,7 +33196,7 @@ var gun = { exports: {} };
             this.to.next(msg);
             return;
           }
-          var eve = this, as2 = eve.as, at = as2.at || as2, gun2 = at.$, dup = at.dup, tmp, DBG = msg.DBG;
+          var eve = this, as2 = eve.as, at2 = as2.at || as2, gun2 = at2.$, dup = at2.dup, tmp, DBG = msg.DBG;
           (tmp = msg["#"]) || (tmp = msg["#"] = text_rand(9));
           if (dup.check(tmp)) {
             return;
@@ -32943,7 +33209,7 @@ var gun = { exports: {} };
           if (msg["@"] && !msg.put) {
             ack(msg);
           }
-          if (!at.ask(msg["@"], msg)) {
+          if (!at2.ask(msg["@"], msg)) {
             DBG && (DBG.u = +new Date());
             if (msg.put) {
               put(msg);
@@ -32959,7 +33225,7 @@ var gun = { exports: {} };
             return;
           }
           msg.out = universe;
-          at.on("out", msg);
+          at2.on("out", msg);
           DBG && (DBG.ue = +new Date());
         }
         function put(msg) {
@@ -32988,7 +33254,7 @@ var gun = { exports: {} };
           var nl = Object.keys(put2);
           console.STAT && console.STAT(S2, ((DBG || ctx).pk = +new Date()) - S2, "put sort");
           var ni2 = 0, nj, kl, soul, node, states, err, tmp;
-          (function pop(o) {
+          (function pop(o2) {
             if (nj != ni2) {
               nj = ni2;
               if (!(soul = nl[ni2])) {
@@ -33013,8 +33279,8 @@ var gun = { exports: {} };
               return;
             }
             var i2 = 0, key;
-            o = o || 0;
-            while (o++ < 9 && (key = kl[i2++])) {
+            o2 = o2 || 0;
+            while (o2++ < 9 && (key = kl[i2++])) {
               if (key === "_") {
                 continue;
               }
@@ -33036,7 +33302,7 @@ var gun = { exports: {} };
             }
             ++ni2;
             kl = null;
-            pop(o);
+            pop(o2);
           })();
         }
         Gun2.on.put = put;
@@ -33195,9 +33461,9 @@ var gun = { exports: {} };
           console.STAT && console.STAT(S2, ((DBG || ctx).gk = +new Date()) - S2, "got keys");
           node && function go() {
             S2 = +new Date();
-            var i2 = 0, k, put = {}, tmp;
-            while (i2 < 9 && (k = keys2[i2++])) {
-              state_ify(put, k, state_is(node, k), node[k], soul);
+            var i2 = 0, k2, put = {}, tmp;
+            while (i2 < 9 && (k2 = keys2[i2++])) {
+              state_ify(put, k2, state_is(node, k2), node[k2], soul);
             }
             keys2 = keys2.slice(i2);
             (tmp = {})[soul] = put;
@@ -33227,31 +33493,31 @@ var gun = { exports: {} };
       (function() {
         Gun2.chain.opt = function(opt) {
           opt = opt || {};
-          var gun2 = this, at = gun2._, tmp = opt.peers || opt;
+          var gun2 = this, at2 = gun2._, tmp = opt.peers || opt;
           if (!Object.plain(opt)) {
             opt = {};
           }
-          if (!Object.plain(at.opt)) {
-            at.opt = opt;
+          if (!Object.plain(at2.opt)) {
+            at2.opt = opt;
           }
           if (typeof tmp == "string") {
             tmp = [tmp];
           }
-          if (!Object.plain(at.opt.peers)) {
-            at.opt.peers = {};
+          if (!Object.plain(at2.opt.peers)) {
+            at2.opt.peers = {};
           }
           if (tmp instanceof Array) {
             opt.peers = {};
             tmp.forEach(function(url) {
               var p2 = {};
               p2.id = p2.url = url;
-              opt.peers[url] = at.opt.peers[url] = at.opt.peers[url] || p2;
+              opt.peers[url] = at2.opt.peers[url] = at2.opt.peers[url] || p2;
             });
           }
-          obj_each(opt, function each(k) {
-            var v2 = this[k];
-            if (this && this.hasOwnProperty(k) || typeof v2 == "string" || Object.empty(v2)) {
-              this[k] = v2;
+          obj_each(opt, function each(k2) {
+            var v2 = this[k2];
+            if (this && this.hasOwnProperty(k2) || typeof v2 == "string" || Object.empty(v2)) {
+              this[k2] = v2;
               return;
             }
             if (v2 && v2.constructor !== Object && !(v2 instanceof Array)) {
@@ -33259,22 +33525,22 @@ var gun = { exports: {} };
             }
             obj_each(v2, each);
           });
-          at.opt.from = opt;
-          Gun2.on("opt", at);
-          at.opt.uuid = at.opt.uuid || function uuid(l2) {
+          at2.opt.from = opt;
+          Gun2.on("opt", at2);
+          at2.opt.uuid = at2.opt.uuid || function uuid(l2) {
             return Gun2.state().toString(36).replace(".", "") + String.random(l2 || 12);
           };
           return gun2;
         };
       })();
-      var obj_each = function(o, f2) {
-        Object.keys(o).forEach(f2, o);
+      var obj_each = function(o2, f2) {
+        Object.keys(o2).forEach(f2, o2);
       }, text_rand = String.random, turn = setTimeout.turn, valid = Gun2.valid, state_is = Gun2.state.is, state_ify = Gun2.state.ify, u2, empty2 = {}, C2;
       Gun2.log = function() {
         return !Gun2.log.off && C2.log.apply(C2, arguments), [].slice.call(arguments).join(" ");
       };
-      Gun2.log.once = function(w2, s2, o) {
-        return (o = Gun2.log.once)[w2] = o[w2] || 0, o[w2]++ || Gun2.log(s2);
+      Gun2.log.once = function(w2, s2, o2) {
+        return (o2 = Gun2.log.once)[w2] = o2[w2] || 0, o2[w2]++ || Gun2.log(s2);
       };
       if (typeof window !== "undefined") {
         (window.GUN = window.Gun = Gun2).window = window;
@@ -33303,30 +33569,30 @@ var gun = { exports: {} };
         } else if (n2 === 1) {
           return (this._.back || this._).$;
         }
-        var gun2 = this, at = gun2._;
+        var gun2 = this, at2 = gun2._;
         if (typeof n2 === "string") {
           n2 = n2.split(".");
         }
         if (n2 instanceof Array) {
-          var i2 = 0, l2 = n2.length, tmp = at;
+          var i2 = 0, l2 = n2.length, tmp = at2;
           for (i2; i2 < l2; i2++) {
             tmp = (tmp || empty2)[n2[i2]];
           }
           if (u2 !== tmp) {
             return opt ? gun2 : tmp;
-          } else if (tmp = at.back) {
+          } else if (tmp = at2.back) {
             return tmp.$.back(n2, opt);
           }
           return;
         }
         if (typeof n2 == "function") {
-          var yes, tmp = { back: at };
+          var yes, tmp = { back: at2 };
           while ((tmp = tmp.back) && u2 === (yes = n2(tmp, opt))) {
           }
           return yes;
         }
         if (typeof n2 == "number") {
-          return (at.back || at).$.back(n2 - 1);
+          return (at2.back || at2).$.back(n2 - 1);
         }
         return this;
       };
@@ -33335,8 +33601,8 @@ var gun = { exports: {} };
     USE(function(module3) {
       var Gun2 = USE("./root");
       Gun2.chain.chain = function(sub2) {
-        var gun2 = this, at = gun2._, chain = new (sub2 || gun2).constructor(gun2), cat = chain._, root;
-        cat.root = root = at.root;
+        var gun2 = this, at2 = gun2._, chain = new (sub2 || gun2).constructor(gun2), cat = chain._, root;
+        cat.root = root = at2.root;
         cat.id = ++root.once;
         cat.back = gun2._;
         cat.on = Gun2.on;
@@ -33345,26 +33611,26 @@ var gun = { exports: {} };
         return chain;
       };
       function output(msg) {
-        var get2, at = this.as, back = at.back, root = at.root, tmp;
+        var get2, at2 = this.as, back = at2.back, root = at2.root, tmp;
         if (!msg.$) {
-          msg.$ = at.$;
+          msg.$ = at2.$;
         }
         this.to.next(msg);
-        if (at.err) {
-          at.on("in", { put: at.put = u2, $: at.$ });
+        if (at2.err) {
+          at2.on("in", { put: at2.put = u2, $: at2.$ });
           return;
         }
         if (get2 = msg.get) {
           if (root.pass) {
-            root.pass[at.id] = at;
+            root.pass[at2.id] = at2;
           }
-          if (at.lex) {
-            Object.keys(at.lex).forEach(function(k) {
-              tmp[k] = at.lex[k];
+          if (at2.lex) {
+            Object.keys(at2.lex).forEach(function(k2) {
+              tmp[k2] = at2.lex[k2];
             }, tmp = msg.get = msg.get || {});
           }
-          if (get2["#"] || at.soul) {
-            get2["#"] = get2["#"] || at.soul;
+          if (get2["#"] || at2.soul) {
+            get2["#"] = get2["#"] || at2.soul;
             msg["#"] || (msg["#"] = text_rand(9));
             back = root.$.get(get2["#"])._;
             if (!(get2 = get2["."])) {
@@ -33389,18 +33655,18 @@ var gun = { exports: {} };
             return root.on("in", msg);
           }
           if (get2["."]) {
-            if (at.get) {
-              msg = { get: { ".": at.get }, $: at.$ };
-              (back.ask || (back.ask = {}))[at.get] = msg.$._;
+            if (at2.get) {
+              msg = { get: { ".": at2.get }, $: at2.$ };
+              (back.ask || (back.ask = {}))[at2.get] = msg.$._;
               return back.on("out", msg);
             }
-            msg = { get: at.lex ? msg.get : {}, $: at.$ };
+            msg = { get: at2.lex ? msg.get : {}, $: at2.$ };
             return back.on("out", msg);
           }
-          (at.ask || (at.ask = {}))[""] = at;
-          if (at.get) {
-            get2["."] = at.get;
-            (back.ask || (back.ask = {}))[at.get] = msg.$._;
+          (at2.ask || (at2.ask = {}))[""] = at2;
+          if (at2.get) {
+            get2["."] = at2.get;
+            (back.ask || (back.ask = {}))[at2.get] = msg.$._;
             return back.on("out", msg);
           }
         }
@@ -33409,7 +33675,7 @@ var gun = { exports: {} };
       Gun2.on.out = output;
       function input(msg, cat) {
         cat = cat || this.as;
-        var root = cat.root, gun2 = msg.$ || (msg.$ = cat.$), at = (gun2 || "")._ || empty2, tmp = msg.put || "", soul = tmp["#"], key = tmp["."], change = u2 !== tmp["="] ? tmp["="] : tmp[":"], state2 = tmp[">"] || -Infinity, sat;
+        var root = cat.root, gun2 = msg.$ || (msg.$ = cat.$), at2 = (gun2 || "")._ || empty2, tmp = msg.put || "", soul = tmp["#"], key = tmp["."], change = u2 !== tmp["="] ? tmp["="] : tmp[":"], state2 = tmp[">"] || -Infinity, sat;
         if (u2 !== msg.put && (u2 === tmp["#"] || u2 === tmp["."] || u2 === tmp[":"] && u2 === tmp["="] || u2 === tmp[">"])) {
           if (!valid(tmp)) {
             if (!(soul = ((tmp || "")._ || "")["#"])) {
@@ -33417,14 +33683,14 @@ var gun = { exports: {} };
               return;
             }
             gun2 = cat.root.$.get(soul);
-            return setTimeout.each(Object.keys(tmp).sort(), function(k) {
-              if (k == "_" || u2 === (state2 = state_is(tmp, k))) {
+            return setTimeout.each(Object.keys(tmp).sort(), function(k2) {
+              if (k2 == "_" || u2 === (state2 = state_is(tmp, k2))) {
                 return;
               }
-              cat.on("in", { $: gun2, put: { "#": soul, ".": k, "=": tmp[k], ">": state2 }, VIA: msg });
+              cat.on("in", { $: gun2, put: { "#": soul, ".": k2, "=": tmp[k2], ">": state2 }, VIA: msg });
             });
           }
-          cat.on("in", { $: at.back.$, put: { "#": soul = at.back.soul, ".": key = at.has || at.get, "=": tmp, ">": state_is(at.back.put, key) }, via: msg });
+          cat.on("in", { $: at2.back.$, put: { "#": soul = at2.back.soul, ".": key = at2.has || at2.get, "=": tmp, ">": state_is(at2.back.put, key) }, via: msg });
           return;
         }
         if ((msg.seen || "")[cat.id]) {
@@ -33432,16 +33698,16 @@ var gun = { exports: {} };
         }
         (msg.seen || (msg.seen = function() {
         }))[cat.id] = cat;
-        if (cat !== at) {
-          Object.keys(msg).forEach(function(k) {
-            tmp[k] = msg[k];
+        if (cat !== at2) {
+          Object.keys(msg).forEach(function(k2) {
+            tmp[k2] = msg[k2];
           }, tmp = {});
           tmp.get = cat.get || tmp.get;
           if (!cat.soul && !cat.has) {
             tmp.$$$ = tmp.$$$ || cat.$;
-          } else if (at.soul) {
+          } else if (at2.soul) {
             tmp.$ = cat.$;
-            tmp.$$ = tmp.$$ || at.$;
+            tmp.$$ = tmp.$$ || at2.$;
           }
           msg = tmp;
         }
@@ -33449,7 +33715,7 @@ var gun = { exports: {} };
         if ((cat.soul || msg.$$) && state2 >= state_is(root.graph[soul], key)) {
           (tmp = root.$.get(soul)._).put = state_ify(tmp.put, key, state2, change, soul);
         }
-        if (!at.soul && state2 >= state_is(root.graph[soul], key) && (sat = (root.$.get(soul)._.next || "")[key])) {
+        if (!at2.soul && state2 >= state_is(root.graph[soul], key) && (sat = (root.$.get(soul)._.next || "")[key])) {
           sat.put = change;
           if (typeof (tmp = valid(change)) == "string") {
             sat.put = root.$.get(tmp)._.put || change;
@@ -33462,11 +33728,11 @@ var gun = { exports: {} };
         cat.echo && setTimeout.each(Object.keys(cat.echo), function(lat2) {
           (lat2 = cat.echo[lat2]) && lat2.on("in", msg);
         }, 0, 99);
-        if (((msg.$$ || "")._ || at).soul) {
+        if (((msg.$$ || "")._ || at2).soul) {
           if ((sat = cat.next) && (sat = sat[key])) {
             tmp = {};
-            Object.keys(msg).forEach(function(k) {
-              tmp[k] = msg[k];
+            Object.keys(msg).forEach(function(k2) {
+              tmp[k2] = msg[k2];
             });
             tmp.$ = (msg.$$ || msg.$).get(tmp.get = key);
             delete tmp.$$;
@@ -33568,21 +33834,21 @@ var gun = { exports: {} };
       }
       Gun2.on.unlink = unlink;
       function ack(msg, ev) {
-        var as2 = this.as, at = as2.$._;
-        at.root;
+        var as2 = this.as, at2 = as2.$._;
+        at2.root;
         var get2 = as2.get || "", tmp = (msg.put || "")[get2["#"]] || "";
         if (!msg.put || typeof get2["."] == "string" && u2 === tmp[get2["."]]) {
-          if (u2 !== at.put) {
+          if (u2 !== at2.put) {
             return;
           }
-          if (!at.soul && !at.has) {
+          if (!at2.soul && !at2.has) {
             return;
           }
-          at.ack = (at.ack || 0) + 1;
-          at.on("in", {
-            get: at.get,
-            put: at.put = u2,
-            $: at.$,
+          at2.ack = (at2.ack || 0) + 1;
+          at2.on("in", {
+            get: at2.get,
+            put: at2.put = u2,
+            $: at2.$,
             "@": msg["@"]
           });
           return;
@@ -33591,8 +33857,8 @@ var gun = { exports: {} };
         Gun2.on.put(msg);
         return;
       }
-      var empty2 = {}, u2, text_rand = String.random, valid = Gun2.valid, obj_has = function(o, k) {
-        return o && Object.prototype.hasOwnProperty.call(o, k);
+      var empty2 = {}, u2, text_rand = String.random, valid = Gun2.valid, obj_has = function(o2, k2) {
+        return o2 && Object.prototype.hasOwnProperty.call(o2, k2);
       }, state = Gun2.state, state_is = state.is, state_ify = state.ify;
     })(USE, "./chain");
     USE(function(module3) {
@@ -33621,7 +33887,7 @@ var gun = { exports: {} };
             if ((tmp2 = root.pass) && !tmp2[id]) {
               return;
             }
-            var at = msg.$._, sat = (msg.$$ || "")._, data2 = (sat || at).put, odd = !at.has && !at.soul, test2 = {}, tmp2;
+            var at2 = msg.$._, sat = (msg.$$ || "")._, data2 = (sat || at2).put, odd = !at2.has && !at2.soul, test2 = {}, tmp2;
             if (odd || u2 === data2) {
               data2 = u2 === ((tmp2 = msg.put) || "")["="] ? u2 === (tmp2 || "")[":"] ? tmp2 : tmp2[":"] : tmp2["="];
             }
@@ -33639,7 +33905,7 @@ var gun = { exports: {} };
                     return test2;
                   }
                 });
-                !test2.run && tmp2.on("" + at.id, test2 = {});
+                !test2.run && tmp2.on("" + at2.id, test2 = {});
                 !test2.run && sat && tmp2.on("" + sat.id, test2 = {});
                 if (any.id > test2.run) {
                   if (!test2.stun || test2.stun.end) {
@@ -33658,10 +33924,10 @@ var gun = { exports: {} };
                 f2 = 0;
               }
               if ((tmp2 = root.hatch) && !tmp2.end && u2 === opt.hatch && !f2) {
-                if (wait[at.$._.id]) {
+                if (wait[at2.$._.id]) {
                   return;
                 }
-                wait[at.$._.id] = 1;
+                wait[at2.$._.id] = 1;
                 tmp2.push(function() {
                   any(msg, eve, 1);
                 });
@@ -33670,21 +33936,21 @@ var gun = { exports: {} };
               wait = {};
             }
             if (root.pass) {
-              if (root.pass[id + at.id]) {
+              if (root.pass[id + at2.id]) {
                 return;
               }
-              root.pass[id + at.id] = 1;
+              root.pass[id + at2.id] = 1;
             }
             if (opt.on) {
-              opt.ok.call(at.$, data2, at.get, msg, eve || any);
+              opt.ok.call(at2.$, data2, at2.get, msg, eve || any);
               return;
             }
             if (opt.v2020) {
               opt.ok(msg, eve || any);
               return;
             }
-            Object.keys(msg).forEach(function(k) {
-              tmp2[k] = msg[k];
+            Object.keys(msg).forEach(function(k2) {
+              tmp2[k2] = msg[k2];
             }, tmp2 = {});
             msg = tmp2;
             msg.put = data2;
@@ -33735,17 +34001,17 @@ var gun = { exports: {} };
         return gun2;
       };
       function cache2(key, back) {
-        var cat = back._, next = cat.next, gun2 = back.chain(), at = gun2._;
+        var cat = back._, next = cat.next, gun2 = back.chain(), at2 = gun2._;
         if (!next) {
           next = cat.next = {};
         }
-        next[at.get = key] = at;
+        next[at2.get = key] = at2;
         if (back === cat.root.$) {
-          at.soul = key;
+          at2.soul = key;
         } else if (cat.soul || cat.has) {
-          at.has = key;
+          at2.has = key;
         }
-        return at;
+        return at2;
       }
       function soul(gun2, cb, opt, as2) {
         var cat = gun2._, acks = 0, tmp;
@@ -33761,31 +34027,31 @@ var gun = { exports: {} };
             return;
           }
           eve.rid(msg);
-          var at = (at = msg.$) && at._ || {}, i2 = 0, as3;
+          var at2 = (at2 = msg.$) && at2._ || {}, i2 = 0, as3;
           tmp = cat.jam;
           delete cat.jam;
           while (as3 = tmp[i2++]) {
             var cb2 = as3[0];
             as3 = as3[1];
-            cb2 && cb2(at.link || at.soul || Gun2.valid(msg.put) || ((msg.put || {})._ || {})["#"], as3, msg, eve);
+            cb2 && cb2(at2.link || at2.soul || Gun2.valid(msg.put) || ((msg.put || {})._ || {})["#"], as3, msg, eve);
           }
         }, { out: { get: { ".": true } } });
         return gun2;
       }
-      function rid(at) {
+      function rid(at2) {
         var cat = this.at || this.on;
-        if (!at || cat.soul || cat.has) {
+        if (!at2 || cat.soul || cat.has) {
           return this.off();
         }
-        if (!(at = (at = (at = at.$ || at)._ || at).id)) {
+        if (!(at2 = (at2 = (at2 = at2.$ || at2)._ || at2).id)) {
           return;
         }
         cat.map;
         var seen;
-        if ((seen = this.seen || (this.seen = {}))[at]) {
+        if ((seen = this.seen || (this.seen = {}))[at2]) {
           return true;
         }
-        seen[at] = true;
+        seen[at2] = true;
         return;
       }
       var empty2 = {}, valid = Gun2.valid, u2;
@@ -33793,15 +34059,15 @@ var gun = { exports: {} };
     USE(function(module3) {
       var Gun2 = USE("./root");
       Gun2.chain.put = function(data2, cb, as2) {
-        var gun2 = this, at = gun2._, root = at.root;
+        var gun2 = this, at2 = gun2._, root = at2.root;
         as2 = as2 || {};
-        as2.root = at.root;
+        as2.root = at2.root;
         as2.run || (as2.run = root.once);
-        stun(as2, at.id);
+        stun(as2, at2.id);
         as2.ack = as2.ack || cb;
         as2.via = as2.via || gun2;
         as2.data = as2.data || data2;
-        as2.soul || (as2.soul = at.soul || typeof cb == "string" && cb);
+        as2.soul || (as2.soul = at2.soul || typeof cb == "string" && cb);
         var s2 = as2.state = as2.state || Gun2.state();
         if (typeof data2 == "function") {
           data2(function(d2) {
@@ -33818,22 +34084,22 @@ var gun = { exports: {} };
         as2.turn = as2.turn || turn;
         as2.ran = as2.ran || ran;
         (function walk() {
-          var to2 = as2.todo, at2 = to2.pop(), d2 = at2.it;
-          at2.ref && at2.ref._.id;
-          var v2, k, cat, tmp, g;
-          stun(as2, at2.ref);
-          if (tmp = at2.todo) {
-            k = tmp.pop();
-            d2 = d2[k];
+          var to2 = as2.todo, at3 = to2.pop(), d2 = at3.it;
+          at3.ref && at3.ref._.id;
+          var v2, k2, cat, tmp, g2;
+          stun(as2, at3.ref);
+          if (tmp = at3.todo) {
+            k2 = tmp.pop();
+            d2 = d2[k2];
             if (tmp.length) {
-              to2.push(at2);
+              to2.push(at3);
             }
           }
-          k && (to2.path || (to2.path = [])).push(k);
-          if (!(v2 = valid(d2)) && !(g = Gun2.is(d2))) {
+          k2 && (to2.path || (to2.path = [])).push(k2);
+          if (!(v2 = valid(d2)) && !(g2 = Gun2.is(d2))) {
             if (!Object.plain(d2)) {
-              ran.err(as2, "Invalid data: " + check2(d2) + " at " + (as2.via.back(function(at3) {
-                at3.get && tmp.push(at3.get);
+              ran.err(as2, "Invalid data: " + check2(d2) + " at " + (as2.via.back(function(at4) {
+                at4.get && tmp.push(at4.get);
               }, tmp = []) || tmp.join(".")) + "." + (to2.path || []).join("."));
               return;
             }
@@ -33845,8 +34111,8 @@ var gun = { exports: {} };
               }
             }
           }
-          if (k && v2) {
-            at2.node = state_ify(at2.node, k, s2, d2);
+          if (k2 && v2) {
+            at3.node = state_ify(at3.node, k2, s2, d2);
           } else {
             let resolve2 = function(msg, eve) {
               var end = cat.link["#"];
@@ -33856,24 +34122,24 @@ var gun = { exports: {} };
               }
               var soul = end || msg.soul || (tmp = (msg.$$ || msg.$)._ || "").soul || tmp.link || ((tmp = tmp.put || "")._ || "")["#"] || tmp["#"] || ((tmp = msg.put || "") && msg.$$ ? tmp["#"] : (tmp["="] || tmp[":"] || "")["#"]);
               !end && stun(as2, msg.$);
-              if (!soul && !at2.link["#"]) {
-                (at2.wait || (at2.wait = [])).push(function() {
+              if (!soul && !at3.link["#"]) {
+                (at3.wait || (at3.wait = [])).push(function() {
                   resolve2(msg, eve);
                 });
                 return;
               }
               if (!soul) {
                 soul = [];
-                (msg.$$ || msg.$).back(function(at3) {
-                  if (tmp = at3.soul || at3.link) {
+                (msg.$$ || msg.$).back(function(at4) {
+                  if (tmp = at4.soul || at4.link) {
                     return soul.push(tmp);
                   }
-                  soul.push(at3.get);
+                  soul.push(at4.get);
                 });
                 soul = soul.reverse().join("/");
               }
               cat.link["#"] = soul;
-              !g && (((as2.graph || (as2.graph = {}))[soul] = cat.node || (cat.node = { _: {} }))._["#"] = soul);
+              !g2 && (((as2.graph || (as2.graph = {}))[soul] = cat.node || (cat.node = { _: {} }))._["#"] = soul);
               delete as2.wait[id];
               cat.wait && setTimeout.each(cat.wait, function(cb2) {
                 cb2 && cb2();
@@ -33884,12 +34150,12 @@ var gun = { exports: {} };
               ran.err(as2, "Data at root of graph must be a node (an object).");
               return;
             }
-            as2.seen.push(cat = { it: d2, link: {}, todo: g ? [] : Object.keys(d2).sort().reverse(), path: (to2.path || []).slice(), up: at2 });
-            at2.node = state_ify(at2.node, k, s2, cat.link);
-            !g && cat.todo.length && to2.push(cat);
+            as2.seen.push(cat = { it: d2, link: {}, todo: g2 ? [] : Object.keys(d2).sort().reverse(), path: (to2.path || []).slice(), up: at3 });
+            at3.node = state_ify(at3.node, k2, s2, cat.link);
+            !g2 && cat.todo.length && to2.push(cat);
             var id = as2.seen.length;
             (as2.wait || (as2.wait = {}))[id] = "";
-            tmp = (cat.ref = g ? d2 : k ? at2.ref.get(k) : at2.ref)._;
+            tmp = (cat.ref = g2 ? d2 : k2 ? at3.ref.get(k2) : at3.ref)._;
             (tmp = d2 && (d2._ || "")["#"] || tmp.soul || tmp.link) ? resolve2({ soul: tmp }) : cat.ref.get(resolve2, { run: as2.run, v2020: 1, out: { get: { ".": " " } } });
           }
           if (!to2.length) {
@@ -33971,16 +34237,16 @@ var gun = { exports: {} };
         as2.ran(as2);
       };
       function get2(as2) {
-        var at = as2.via._, tmp;
-        as2.via = as2.via.back(function(at2) {
-          if (at2.soul || !at2.get) {
-            return at2.$;
+        var at2 = as2.via._, tmp;
+        as2.via = as2.via.back(function(at3) {
+          if (at3.soul || !at3.get) {
+            return at3.$;
           }
           tmp = as2.data;
-          (as2.data = {})[at2.get] = tmp;
+          (as2.data = {})[at3.get] = tmp;
         });
         if (!as2.via || !as2.via._.soul) {
-          as2.via = at.root.$.get(((as2.data || "")._ || "")["#"] || at.$.back("opt.uuid")());
+          as2.via = at2.root.$.get(((as2.data || "")._ || "")["#"] || at2.$.back("opt.uuid")());
         }
         as2.via.put(as2.data, as2.ack, as2);
         return;
@@ -34030,7 +34296,7 @@ var gun = { exports: {} };
         cat.put;
         var id = String.random(7), tmp;
         gun2.get(function(data2, key, msg, eve) {
-          var $ = this, at = $._, one = at.one || (at.one = {});
+          var $2 = this, at2 = $2._, one = at2.one || (at2.one = {});
           if (eve.stun) {
             return;
           }
@@ -34048,10 +34314,10 @@ var gun = { exports: {} };
           clearTimeout(one[id]);
           one[id] = setTimeout(once, opt.wait || 99);
           function once(f2) {
-            if (!at.has && !at.soul) {
-              at = { put: data2, get: key };
+            if (!at2.has && !at2.soul) {
+              at2 = { put: data2, get: key };
             }
-            if (u2 === (tmp = at.put)) {
+            if (u2 === (tmp = at2.put)) {
               tmp = ((msg.$$ || "")._ || "").put;
             }
             if (typeof Gun2.valid(tmp) == "string") {
@@ -34073,7 +34339,7 @@ var gun = { exports: {} };
             if (cat.soul || cat.has) {
               eve.off();
             }
-            cb.call($, tmp, at.get);
+            cb.call($2, tmp, at2.get);
             clearTimeout(one[id]);
           }
         }, { on: 1 });
@@ -34088,41 +34354,41 @@ var gun = { exports: {} };
         return chain;
       }
       Gun2.chain.off = function() {
-        var gun2 = this, at = gun2._, tmp;
-        var cat = at.back;
+        var gun2 = this, at2 = gun2._, tmp;
+        var cat = at2.back;
         if (!cat) {
           return;
         }
-        at.ack = 0;
+        at2.ack = 0;
         if (tmp = cat.next) {
-          if (tmp[at.get]) {
-            delete tmp[at.get];
+          if (tmp[at2.get]) {
+            delete tmp[at2.get];
           }
         }
         if (tmp = cat.ask) {
-          delete tmp[at.get];
+          delete tmp[at2.get];
         }
         if (tmp = cat.put) {
-          delete tmp[at.get];
+          delete tmp[at2.get];
         }
-        if (tmp = at.soul) {
+        if (tmp = at2.soul) {
           delete cat.root.graph[tmp];
         }
-        if (tmp = at.map) {
-          Object.keys(tmp).forEach(function(i2, at2) {
-            at2 = tmp[i2];
-            if (at2.link) {
-              cat.root.$.get(at2.link).off();
+        if (tmp = at2.map) {
+          Object.keys(tmp).forEach(function(i2, at3) {
+            at3 = tmp[i2];
+            if (at3.link) {
+              cat.root.$.get(at3.link).off();
             }
           });
         }
-        if (tmp = at.next) {
+        if (tmp = at2.next) {
           Object.keys(tmp).forEach(function(i2, neat) {
             neat = tmp[i2];
             neat.$.off();
           });
         }
-        at.on("off", {});
+        at2.on("off", {});
         return gun2;
       };
       var u2;
@@ -34175,8 +34441,8 @@ var gun = { exports: {} };
             return chain._.on("in", next2._);
           }
           var tmp = {};
-          Object.keys(msg.put).forEach(function(k) {
-            tmp[k] = msg.put[k];
+          Object.keys(msg.put).forEach(function(k2) {
+            tmp[k2] = msg.put[k2];
           }, tmp);
           tmp["="] = next2;
           chain._.on("in", { get: key, put: tmp });
@@ -34185,8 +34451,8 @@ var gun = { exports: {} };
       };
       function map2(msg) {
         this.to.next(msg);
-        var cat = this.as, gun2 = msg.$, at = gun2._, put = msg.put, tmp;
-        if (!at.soul && !msg.$$) {
+        var cat = this.as, gun2 = msg.$, at2 = gun2._, put = msg.put, tmp;
+        if (!at2.soul && !msg.$$) {
           return;
         }
         if ((tmp = cat.lex) && !String.match(msg.get || (put || "")["."], tmp["."] || tmp["#"] || tmp)) {
@@ -34218,7 +34484,7 @@ var gun = { exports: {} };
           return gun2.get(soul || root.back("opt.uuid")(7)).put(item, cb, opt);
         }
         gun2.put(function(go) {
-          item.get(function(soul2, o, msg) {
+          item.get(function(soul2, o2, msg) {
             if (!soul2) {
               return cb.call(gun2, { err: Gun2.log('Only a node can be linked! Not "' + msg.put + '"!') });
             }
@@ -34338,8 +34604,8 @@ var gun = { exports: {} };
           (msg._ = function() {
           }).via = mesh.leap = peer;
           if ((tmp = msg["><"]) && typeof tmp == "string") {
-            tmp.slice(0, 99).split(",").forEach(function(k) {
-              this[k] = 1;
+            tmp.slice(0, 99).split(",").forEach(function(k2) {
+              this[k2] = 1;
             }, msg._.yo = {});
           }
           if (tmp = msg.dam) {
@@ -34386,7 +34652,7 @@ var gun = { exports: {} };
               delete msg._.$put;
             }, sort);
           };
-          function sort(k, v2) {
+          function sort(k2, v2) {
             var tmp;
             if (!(v2 instanceof Object)) {
               return v2;
@@ -34394,8 +34660,8 @@ var gun = { exports: {} };
             Object.keys(v2).sort().forEach(sorta, { to: tmp = {}, on: v2 });
             return tmp;
           }
-          function sorta(k) {
-            this.to[k] = this.on[k];
+          function sorta(k2) {
+            this.to[k2] = this.on[k2];
           }
           mesh.say = function(msg, peer) {
             var tmp;
@@ -34536,8 +34802,8 @@ var gun = { exports: {} };
             if (!msg.dam) {
               var i2 = 0, to2 = [];
               tmp = opt.peers;
-              for (var k in tmp) {
-                var p2 = tmp[k];
+              for (var k2 in tmp) {
+                var p2 = tmp[k2];
                 to2.push(p2.url || p2.pid || p2.id);
                 if (++i2 > 6) {
                   break;
@@ -34549,8 +34815,8 @@ var gun = { exports: {} };
             }
             if (put = meta.$put) {
               tmp = {};
-              Object.keys(msg).forEach(function(k2) {
-                tmp[k2] = msg[k2];
+              Object.keys(msg).forEach(function(k3) {
+                tmp[k3] = msg[k3];
               });
               tmp.put = ":])([:";
               json(tmp, function(err, raw) {
@@ -34794,12 +35060,12 @@ var gun = { exports: {} };
       }
       if (!store) {
         Gun.log("Warning: No localStorage exists to persist data to!");
-        store = { setItem: function(k, v2) {
-          this[k] = v2;
-        }, removeItem: function(k) {
-          delete this[k];
-        }, getItem: function(k) {
-          return this[k];
+        store = { setItem: function(k2, v2) {
+          this[k2] = v2;
+        }, removeItem: function(k2) {
+          delete this[k2];
+        }, getItem: function(k2) {
+          return this[k2];
         } };
       }
       var json = JSON.stringifyAsync || function(v2, cb, r2, s2) {
@@ -34930,37 +35196,37 @@ var gun = { exports: {} };
       }
       return s2;
     };
-    Type.text.match = Type.text.match || function(t2, o) {
+    Type.text.match = Type.text.match || function(t2, o2) {
       var tmp, u3;
       DEP("text.match");
       if (typeof t2 !== "string") {
         return false;
       }
-      if (typeof o == "string") {
-        o = { "=": o };
+      if (typeof o2 == "string") {
+        o2 = { "=": o2 };
       }
-      o = o || {};
-      tmp = o["="] || o["*"] || o[">"] || o["<"];
+      o2 = o2 || {};
+      tmp = o2["="] || o2["*"] || o2[">"] || o2["<"];
       if (t2 === tmp) {
         return true;
       }
-      if (u3 !== o["="]) {
+      if (u3 !== o2["="]) {
         return false;
       }
-      tmp = o["*"] || o[">"] || o["<"];
+      tmp = o2["*"] || o2[">"] || o2["<"];
       if (t2.slice(0, (tmp || "").length) === tmp) {
         return true;
       }
-      if (u3 !== o["*"]) {
+      if (u3 !== o2["*"]) {
         return false;
       }
-      if (u3 !== o[">"] && u3 !== o["<"]) {
-        return t2 >= o[">"] && t2 <= o["<"] ? true : false;
+      if (u3 !== o2[">"] && u3 !== o2["<"]) {
+        return t2 >= o2[">"] && t2 <= o2["<"] ? true : false;
       }
-      if (u3 !== o[">"] && t2 >= o[">"]) {
+      if (u3 !== o2[">"] && t2 >= o2[">"]) {
         return true;
       }
-      if (u3 !== o["<"] && t2 <= o["<"]) {
+      if (u3 !== o2["<"] && t2 <= o2["<"]) {
         return true;
       }
       return false;
@@ -34986,17 +35252,17 @@ var gun = { exports: {} };
       return l2 instanceof Array;
     } };
     Type.list.slit = Type.list.slit || Array.prototype.slice;
-    Type.list.sort = Type.list.sort || function(k) {
+    Type.list.sort = Type.list.sort || function(k2) {
       DEP("list.sort");
-      return function(A, B) {
-        if (!A || !B) {
+      return function(A2, B2) {
+        if (!A2 || !B2) {
           return 0;
         }
-        A = A[k];
-        B = B[k];
-        if (A < B) {
+        A2 = A2[k2];
+        B2 = B2[k2];
+        if (A2 < B2) {
           return -1;
-        } else if (A > B) {
+        } else if (A2 > B2) {
           return 1;
         } else {
           return 0;
@@ -35008,50 +35274,50 @@ var gun = { exports: {} };
       return obj_map(l2, c2, _2);
     };
     Type.list.index = 1;
-    Type.obj = Type.boj || { is: function(o) {
+    Type.obj = Type.boj || { is: function(o2) {
       DEP("obj");
-      return o ? o instanceof Object && o.constructor === Object || Object.prototype.toString.call(o).match(/^\[object (\w+)\]$/)[1] === "Object" : false;
+      return o2 ? o2 instanceof Object && o2.constructor === Object || Object.prototype.toString.call(o2).match(/^\[object (\w+)\]$/)[1] === "Object" : false;
     } };
-    Type.obj.put = Type.obj.put || function(o, k, v2) {
+    Type.obj.put = Type.obj.put || function(o2, k2, v2) {
       DEP("obj.put");
-      return (o || {})[k] = v2, o;
+      return (o2 || {})[k2] = v2, o2;
     };
-    Type.obj.has = Type.obj.has || function(o, k) {
+    Type.obj.has = Type.obj.has || function(o2, k2) {
       DEP("obj.has");
-      return o && Object.prototype.hasOwnProperty.call(o, k);
+      return o2 && Object.prototype.hasOwnProperty.call(o2, k2);
     };
-    Type.obj.del = Type.obj.del || function(o, k) {
+    Type.obj.del = Type.obj.del || function(o2, k2) {
       DEP("obj.del");
-      if (!o) {
+      if (!o2) {
         return;
       }
-      o[k] = null;
-      delete o[k];
-      return o;
+      o2[k2] = null;
+      delete o2[k2];
+      return o2;
     };
-    Type.obj.as = Type.obj.as || function(o, k, v2, u3) {
+    Type.obj.as = Type.obj.as || function(o2, k2, v2, u3) {
       DEP("obj.as");
-      return o[k] = o[k] || (u3 === v2 ? {} : v2);
+      return o2[k2] = o2[k2] || (u3 === v2 ? {} : v2);
     };
-    Type.obj.ify = Type.obj.ify || function(o) {
+    Type.obj.ify = Type.obj.ify || function(o2) {
       DEP("obj.ify");
-      if (obj_is(o)) {
-        return o;
+      if (obj_is(o2)) {
+        return o2;
       }
       try {
-        o = JSON.parse(o);
+        o2 = JSON.parse(o2);
       } catch (e2) {
-        o = {};
+        o2 = {};
       }
-      return o;
+      return o2;
     };
     (function() {
       var u3;
-      function map2(v2, k) {
-        if (obj_has(this, k) && u3 !== this[k]) {
+      function map2(v2, k2) {
+        if (obj_has(this, k2) && u3 !== this[k2]) {
           return;
         }
-        this[k] = v2;
+        this[k2] = v2;
       }
       Type.obj.to = Type.obj.to || function(from2, to2) {
         DEP("obj.to");
@@ -35060,9 +35326,9 @@ var gun = { exports: {} };
         return to2;
       };
     })();
-    Type.obj.copy = Type.obj.copy || function(o) {
+    Type.obj.copy = Type.obj.copy || function(o2) {
       DEP("obj.copy");
-      return !o ? o : JSON.parse(JSON.stringify(o));
+      return !o2 ? o2 : JSON.parse(JSON.stringify(o2));
     };
     (function() {
       function empty2(v2, i2) {
@@ -35074,28 +35340,28 @@ var gun = { exports: {} };
           return true;
         }
       }
-      Type.obj.empty = Type.obj.empty || function(o, n2) {
+      Type.obj.empty = Type.obj.empty || function(o2, n2) {
         DEP("obj.empty");
-        if (!o) {
+        if (!o2) {
           return true;
         }
-        return obj_map(o, empty2, { n: n2 }) ? false : true;
+        return obj_map(o2, empty2, { n: n2 }) ? false : true;
       };
     })();
     (function() {
-      function t2(k, v2) {
+      function t2(k2, v2) {
         if (arguments.length === 2) {
           t2.r = t2.r || {};
-          t2.r[k] = v2;
+          t2.r[k2] = v2;
           return;
         }
         t2.r = t2.r || [];
-        t2.r.push(k);
+        t2.r.push(k2);
       }
       var keys2 = Object.keys, map2;
-      Object.keys = Object.keys || function(o) {
-        return map2(o, function(v2, k, t3) {
-          t3(k);
+      Object.keys = Object.keys || function(o2) {
+        return map2(o2, function(v2, k2, t3) {
+          t3(k2);
         });
       };
       Type.obj.map = map2 = Type.obj.map || function(l2, c2, _2) {
@@ -35171,23 +35437,23 @@ var gun = { exports: {} };
       Val.link.is = function(v2) {
         DEP("val.link.is");
         if (v2 && v2[rel_] && !v2._ && obj_is(v2)) {
-          var o = {};
-          obj_map(v2, map2, o);
-          if (o.id) {
-            return o.id;
+          var o2 = {};
+          obj_map(v2, map2, o2);
+          if (o2.id) {
+            return o2.id;
           }
         }
         return false;
       };
-      function map2(s2, k) {
-        var o = this;
-        if (o.id) {
-          return o.id = false;
+      function map2(s2, k2) {
+        var o2 = this;
+        if (o2.id) {
+          return o2.id = false;
         }
-        if (k == rel_ && text_is(s2)) {
-          o.id = s2;
+        if (k2 == rel_ && text_is(s2)) {
+          o2.id = s2;
         } else {
-          return o.id = false;
+          return o2.id = false;
         }
       }
     })();
@@ -35203,16 +35469,16 @@ var gun = { exports: {} };
     var obj = Type.obj, obj_is = obj.is, obj_put = obj.put, obj_map = obj.map;
     Type.val = Type.val || Val;
     var Node = { _: "_" };
-    Node.soul = function(n2, o) {
+    Node.soul = function(n2, o2) {
       DEP("node.soul");
-      return n2 && n2._ && n2._[o || soul_];
+      return n2 && n2._ && n2._[o2 || soul_];
     };
-    Node.soul.ify = function(n2, o) {
+    Node.soul.ify = function(n2, o2) {
       DEP("node.soul.ify");
-      o = typeof o === "string" ? { soul: o } : o || {};
+      o2 = typeof o2 === "string" ? { soul: o2 } : o2 || {};
       n2 = n2 || {};
       n2._ = n2._ || {};
-      n2._[soul_] = o.soul || n2._[soul_] || text_random();
+      n2._[soul_] = o2.soul || n2._[soul_] || text_random();
       return n2;
     };
     Node.soul._ = Val.link._;
@@ -35228,49 +35494,49 @@ var gun = { exports: {} };
         }
         return false;
       };
-      function map2(v2, k) {
-        if (k === Node._) {
+      function map2(v2, k2) {
+        if (k2 === Node._) {
           return;
         }
         if (!Val.is(v2)) {
           return true;
         }
         if (this.cb) {
-          this.cb.call(this.as, v2, k, this.n, this.s);
+          this.cb.call(this.as, v2, k2, this.n, this.s);
         }
       }
     })();
     (function() {
-      Node.ify = function(obj2, o, as2) {
+      Node.ify = function(obj2, o2, as2) {
         DEP("node.ify");
-        if (!o) {
-          o = {};
-        } else if (typeof o === "string") {
-          o = { soul: o };
-        } else if (typeof o == "function") {
-          o = { map: o };
+        if (!o2) {
+          o2 = {};
+        } else if (typeof o2 === "string") {
+          o2 = { soul: o2 };
+        } else if (typeof o2 == "function") {
+          o2 = { map: o2 };
         }
-        if (o.map) {
-          o.node = o.map.call(as2, obj2, u2, o.node || {});
+        if (o2.map) {
+          o2.node = o2.map.call(as2, obj2, u2, o2.node || {});
         }
-        if (o.node = Node.soul.ify(o.node || {}, o)) {
-          obj_map(obj2, map2, { o, as: as2 });
+        if (o2.node = Node.soul.ify(o2.node || {}, o2)) {
+          obj_map(obj2, map2, { o: o2, as: as2 });
         }
-        return o.node;
+        return o2.node;
       };
-      function map2(v2, k) {
-        var o = this.o, tmp, u3;
-        if (o.map) {
-          tmp = o.map.call(this.as, v2, "" + k, o.node);
+      function map2(v2, k2) {
+        var o2 = this.o, tmp, u3;
+        if (o2.map) {
+          tmp = o2.map.call(this.as, v2, "" + k2, o2.node);
           if (u3 === tmp) {
-            obj_del(o.node, k);
-          } else if (o.node) {
-            o.node[k] = tmp;
+            obj_del(o2.node, k2);
+          } else if (o2.node) {
+            o2.node[k2] = tmp;
           }
           return;
         }
         if (Val.is(v2)) {
-          o.node[k] = v2;
+          o2.node[k2] = v2;
         }
       }
     })();
@@ -35284,45 +35550,45 @@ var gun = { exports: {} };
       DEP("state.lex");
       return State().toString(36).replace(".", "");
     };
-    State.to = function(from2, k, to2) {
+    State.to = function(from2, k2, to2) {
       DEP("state.to");
-      var val = (from2 || {})[k];
+      var val = (from2 || {})[k2];
       if (obj_is(val)) {
         val = obj_copy(val);
       }
-      return State.ify(to2, k, State.is(from2, k), val, Node.soul(from2));
+      return State.ify(to2, k2, State.is(from2, k2), val, Node.soul(from2));
     };
     (function() {
       State.map = function(cb, s2, as2) {
         DEP("state.map");
         var u3;
-        var o = obj_is(o = cb || s2) ? o : null;
+        var o2 = obj_is(o2 = cb || s2) ? o2 : null;
         cb = fn_is(cb = cb || s2) ? cb : null;
-        if (o && !cb) {
+        if (o2 && !cb) {
           s2 = num_is(s2) ? s2 : State();
-          o[N_] = o[N_] || {};
-          obj_map(o, map2, { o, s: s2 });
-          return o;
+          o2[N_] = o2[N_] || {};
+          obj_map(o2, map2, { o: o2, s: s2 });
+          return o2;
         }
         as2 = as2 || obj_is(s2) ? s2 : u3;
         s2 = num_is(s2) ? s2 : State();
-        return function(v2, k, o2, opt) {
+        return function(v2, k2, o3, opt) {
           if (!cb) {
-            map2.call({ o: o2, s: s2 }, v2, k);
+            map2.call({ o: o3, s: s2 }, v2, k2);
             return v2;
           }
-          cb.call(as2 || this || {}, v2, k, o2, opt);
-          if (obj_has(o2, k) && u3 === o2[k]) {
+          cb.call(as2 || this || {}, v2, k2, o3, opt);
+          if (obj_has(o3, k2) && u3 === o3[k2]) {
             return;
           }
-          map2.call({ o: o2, s: s2 }, v2, k);
+          map2.call({ o: o3, s: s2 }, v2, k2);
         };
       };
-      function map2(v2, k) {
-        if (N_ === k) {
+      function map2(v2, k2) {
+        if (N_ === k2) {
           return;
         }
-        State.ify(this.o, k, this.s);
+        State.ify(this.o, k2, this.s);
       }
     })();
     var obj = Type.obj;
@@ -35333,12 +35599,12 @@ var gun = { exports: {} };
     var N_ = Node._, u2;
     var Graph = {};
     (function() {
-      Graph.is = function(g, cb, fn2, as2) {
+      Graph.is = function(g2, cb, fn2, as2) {
         DEP("graph.is");
-        if (!g || !obj_is(g) || obj_empty(g)) {
+        if (!g2 || !obj_is(g2) || obj_empty(g2)) {
           return false;
         }
-        return !obj_map(g, map2, { cb, fn: fn2, as: as2 });
+        return !obj_map(g2, map2, { cb, fn: fn2, as: as2 });
       };
       function map2(n2, s2) {
         if (!n2 || s2 !== Node.soul(n2) || !Node.is(n2, this.fn, this.as)) {
@@ -35360,7 +35626,7 @@ var gun = { exports: {} };
     (function() {
       Graph.ify = function(obj2, env, as2) {
         DEP("graph.ify");
-        var at = { path: [], obj: obj2 };
+        var at2 = { path: [], obj: obj2 };
         if (!env) {
           env = {};
         } else if (typeof env === "string") {
@@ -35373,86 +35639,86 @@ var gun = { exports: {} };
           as2 = u2;
         }
         if (env.soul) {
-          at.link = Val.link.ify(env.soul);
+          at2.link = Val.link.ify(env.soul);
         }
         env.shell = (as2 || {}).shell;
         env.graph = env.graph || {};
         env.seen = env.seen || [];
         env.as = env.as || as2;
-        node(env, at);
-        env.root = at.node;
+        node(env, at2);
+        env.root = at2.node;
         return env.graph;
       };
-      function node(env, at) {
+      function node(env, at2) {
         var tmp;
-        if (tmp = seen(env, at)) {
+        if (tmp = seen(env, at2)) {
           return tmp;
         }
-        at.env = env;
-        at.soul = soul;
-        if (Node.ify(at.obj, map2, at)) {
-          at.link = at.link || Val.link.ify(Node.soul(at.node));
-          if (at.obj !== env.shell) {
-            env.graph[Val.link.is(at.link)] = at.node;
+        at2.env = env;
+        at2.soul = soul;
+        if (Node.ify(at2.obj, map2, at2)) {
+          at2.link = at2.link || Val.link.ify(Node.soul(at2.node));
+          if (at2.obj !== env.shell) {
+            env.graph[Val.link.is(at2.link)] = at2.node;
           }
         }
-        return at;
+        return at2;
       }
-      function map2(v2, k, n2) {
-        var at = this, env = at.env, is, tmp;
-        if (Node._ === k && obj_has(v2, Val.link._)) {
+      function map2(v2, k2, n2) {
+        var at2 = this, env = at2.env, is, tmp;
+        if (Node._ === k2 && obj_has(v2, Val.link._)) {
           return n2._;
         }
-        if (!(is = valid(v2, k, n2, at, env))) {
+        if (!(is = valid(v2, k2, n2, at2, env))) {
           return;
         }
-        if (!k) {
-          at.node = at.node || n2 || {};
+        if (!k2) {
+          at2.node = at2.node || n2 || {};
           if (obj_has(v2, Node._) && Node.soul(v2)) {
-            at.node._ = obj_copy(v2._);
+            at2.node._ = obj_copy(v2._);
           }
-          at.node = Node.soul.ify(at.node, Val.link.is(at.link));
-          at.link = at.link || Val.link.ify(Node.soul(at.node));
+          at2.node = Node.soul.ify(at2.node, Val.link.is(at2.link));
+          at2.link = at2.link || Val.link.ify(Node.soul(at2.node));
         }
         if (tmp = env.map) {
-          tmp.call(env.as || {}, v2, k, n2, at);
-          if (obj_has(n2, k)) {
-            v2 = n2[k];
+          tmp.call(env.as || {}, v2, k2, n2, at2);
+          if (obj_has(n2, k2)) {
+            v2 = n2[k2];
             if (u2 === v2) {
-              obj_del(n2, k);
+              obj_del(n2, k2);
               return;
             }
-            if (!(is = valid(v2, k, n2, at, env))) {
+            if (!(is = valid(v2, k2, n2, at2, env))) {
               return;
             }
           }
         }
-        if (!k) {
-          return at.node;
+        if (!k2) {
+          return at2.node;
         }
         if (is === true) {
           return v2;
         }
-        tmp = node(env, { obj: v2, path: at.path.concat(k) });
+        tmp = node(env, { obj: v2, path: at2.path.concat(k2) });
         if (!tmp.node) {
           return;
         }
         return tmp.link;
       }
       function soul(id) {
-        var at = this;
-        var prev = Val.link.is(at.link), graph = at.env.graph;
-        at.link = at.link || Val.link.ify(id);
-        at.link[Val.link._] = id;
-        if (at.node && at.node[Node._]) {
-          at.node[Node._][Val.link._] = id;
+        var at2 = this;
+        var prev = Val.link.is(at2.link), graph = at2.env.graph;
+        at2.link = at2.link || Val.link.ify(id);
+        at2.link[Val.link._] = id;
+        if (at2.node && at2.node[Node._]) {
+          at2.node[Node._][Val.link._] = id;
         }
         if (obj_has(graph, prev)) {
           graph[id] = graph[prev];
           obj_del(graph, prev);
         }
       }
-      function valid(v2, k, n2, at, env) {
+      function valid(v2, k2, n2, at2, env) {
         var tmp;
         if (Val.is(v2)) {
           return true;
@@ -35461,23 +35727,23 @@ var gun = { exports: {} };
           return 1;
         }
         if (tmp = env.invalid) {
-          v2 = tmp.call(env.as || {}, v2, k, n2);
-          return valid(v2, k, n2, at, env);
+          v2 = tmp.call(env.as || {}, v2, k2, n2);
+          return valid(v2, k2, n2, at2, env);
         }
-        env.err = "Invalid value at '" + at.path.concat(k).join(".") + "'!";
+        env.err = "Invalid value at '" + at2.path.concat(k2).join(".") + "'!";
         if (Type.list.is(v2)) {
           env.err += " Use `.set(item)` instead of an Array.";
         }
       }
-      function seen(env, at) {
+      function seen(env, at2) {
         var arr = env.seen, i2 = arr.length, has2;
         while (i2--) {
           has2 = arr[i2];
-          if (at.obj === has2.obj) {
+          if (at2.obj === has2.obj) {
             return has2;
           }
         }
-        arr.push(at);
+        arr.push(at2);
       }
     })();
     Graph.node = function(node) {
@@ -35499,24 +35765,24 @@ var gun = { exports: {} };
         obj_map(graph[root], map2, { obj: obj2, graph, opt });
         return obj2;
       };
-      function map2(v2, k) {
+      function map2(v2, k2) {
         var tmp, obj2;
-        if (Node._ === k) {
+        if (Node._ === k2) {
           if (obj_empty(v2, Val.link._)) {
             return;
           }
-          this.obj[k] = obj_copy(v2);
+          this.obj[k2] = obj_copy(v2);
           return;
         }
         if (!(tmp = Val.link.is(v2))) {
-          this.obj[k] = v2;
+          this.obj[k2] = v2;
           return;
         }
         if (obj2 = this.opt.seen[tmp]) {
-          this.obj[k] = obj2;
+          this.obj[k2] = obj2;
           return;
         }
-        this.obj[k] = this.opt.seen[tmp] = Graph.to(this.graph, tmp, this.opt);
+        this.obj[k2] = this.opt.seen[tmp] = Graph.to(this.graph, tmp, this.opt);
       }
     })();
     var fn_is = Type.fn.is;
@@ -35560,11 +35826,11 @@ var radix = { exports: {} };
         return t2;
       }
       key = "" + key;
-      var i2 = 0, l2 = key.length - 1, k = key[i2], at, tmp;
-      while (!(at = t2[k]) && i2 < l2) {
-        k += key[++i2];
+      var i2 = 0, l2 = key.length - 1, k2 = key[i2], at2, tmp;
+      while (!(at2 = t2[k2]) && i2 < l2) {
+        k2 += key[++i2];
       }
-      if (!at) {
+      if (!at2) {
         if (!each(t2, function(r2, s2) {
           var ii2 = 0, kk = "";
           if ((s2 || "").length) {
@@ -35596,9 +35862,9 @@ var radix = { exports: {} };
           if (u2 === val) {
             return;
           }
-          (t2[k] || (t2[k] = {}))[""] = val;
-          if (Radix.debug && "" + k === "undefined") {
-            console.log(1, k);
+          (t2[k2] || (t2[k2] = {}))[""] = val;
+          if (Radix.debug && "" + k2 === "undefined") {
+            console.log(1, k2);
             debugger;
           }
         }
@@ -35607,14 +35873,14 @@ var radix = { exports: {} };
         }
       } else if (i2 == l2) {
         if (u2 === val) {
-          return u2 === (tmp = at[""]) ? at : (radix2.unit = 1) && tmp;
+          return u2 === (tmp = at2[""]) ? at2 : (radix2.unit = 1) && tmp;
         }
-        at[""] = val;
+        at2[""] = val;
       } else {
         if (u2 !== val) {
-          delete at[_2];
+          delete at2[_2];
         }
-        return radix2(key.slice(++i2), val, at || (at = {}));
+        return radix2(key.slice(++i2), val, at2 || (at2 = {}));
       }
     };
     return radix2;
@@ -35632,9 +35898,9 @@ var radix = { exports: {} };
       }
       return;
     }
-    var keys2 = (t2[_2] || no).sort || (t2[_2] = function $() {
-      $.sort = Object.keys(t2).sort();
-      return $;
+    var keys2 = (t2[_2] || no).sort || (t2[_2] = function $2() {
+      $2.sort = Object.keys(t2).sort();
+      return $2;
     }()).sort, rev;
     opt = opt === true ? { branch: true } : opt || {};
     if (rev = opt.reverse) {
@@ -35700,12 +35966,12 @@ var radix = { exports: {} };
     } catch (e2) {
     }
   }
-  var each = Radix.object = function(o, f2, r2) {
-    for (var k in o) {
-      if (!o.hasOwnProperty(k)) {
+  var each = Radix.object = function(o2, f2, r2) {
+    for (var k2 in o2) {
+      if (!o2.hasOwnProperty(k2)) {
         continue;
       }
-      if ((r2 = f2(o[k], k)) !== u2) {
+      if ((r2 = f2(o2[k2], k2)) !== u2) {
         return r2;
       }
     }
@@ -35901,11 +36167,11 @@ var yson = { exports: {} };
       var j2 = 0;
       ify();
       function ify() {
-        var at = ctx.at, data3 = at.d, add3 = "", tmp;
-        if (at.i && at.i - at.j > 0) {
+        var at2 = ctx.at, data3 = at2.d, add3 = "", tmp;
+        if (at2.i && at2.i - at2.j > 0) {
           add3 += ",";
         }
-        if (u2 !== (tmp = at.k)) {
+        if (u2 !== (tmp = at2.k)) {
           add3 += JSON.stringify(tmp) + ":";
         }
         switch (typeof data3) {
@@ -35925,16 +36191,16 @@ var yson = { exports: {} };
             }
             if (data3 instanceof Array) {
               add3 += "[";
-              at = { i: -1, as: data3, up: at, j: 0 };
-              at.l = data3.length;
-              ctx.up.push(ctx.at = at);
+              at2 = { i: -1, as: data3, up: at2, j: 0 };
+              at2.l = data3.length;
+              ctx.up.push(ctx.at = at2);
               break;
             }
             if (typeof (data3 || "").toJSON != "function") {
               add3 += "{";
-              at = { i: -1, ok: Object.keys(data3).sort(), as: data3, up: at, j: 0 };
-              at.l = at.ok.length;
-              ctx.up.push(ctx.at = at);
+              at2 = { i: -1, ok: Object.keys(data3).sort(), as: data3, up: at2, j: 0 };
+              at2.l = at2.ok.length;
+              ctx.up.push(ctx.at = at2);
               break;
             }
             if (tmp = data3.toJSON()) {
@@ -35942,24 +36208,24 @@ var yson = { exports: {} };
               break;
             }
           case "function":
-            if (at.as instanceof Array) {
+            if (at2.as instanceof Array) {
               add3 += "null";
               break;
             }
           default:
             add3 = "";
-            at.j++;
+            at2.j++;
         }
         ctx.text += add3;
-        while (1 + at.i >= at.l) {
-          ctx.text += at.ok ? "}" : "]";
-          at = ctx.at = at.up;
+        while (1 + at2.i >= at2.l) {
+          ctx.text += at2.ok ? "}" : "]";
+          at2 = ctx.at = at2.up;
         }
-        if (++at.i < at.l) {
-          if (tmp = at.ok) {
-            at.d = at.as[at.k = tmp[at.i]];
+        if (++at2.i < at2.l) {
+          if (tmp = at2.ok) {
+            at2.d = at2.as[at2.k = tmp[at2.i]];
           } else {
-            at.d = at.as[at.i];
+            at2.d = at2.as[at2.i];
           }
           if (++j2 < 9) {
             return ify();
@@ -36034,15 +36300,15 @@ var yson = { exports: {} };
     };
     var r2 = function(key, data2, cb, tag, DBG) {
       if (typeof data2 === "function") {
-        var o = cb || {};
+        var o2 = cb || {};
         cb = data2;
-        r2.read(key, cb, o, DBG || tag);
+        r2.read(key, cb, o2, DBG || tag);
         return;
       }
       r2.save(key, data2, cb, tag, DBG);
     };
     r2.save = function(key, data2, cb, tag, DBG) {
-      var s2 = { key }, f2, q;
+      var s2 = { key }, f2, q2;
       s2.find = function(file) {
         var tmp;
         s2.file = file || (file = opt.code.from);
@@ -36091,7 +36357,7 @@ var yson = { exports: {} };
       s2.write = function() {
         DBG && (DBG.sto = DBG.sto || +new Date());
         var file = f2 = s2.file, disk = s2.disk;
-        q = s2.q = disk.Q;
+        q2 = s2.q = disk.Q;
         s2.tags = disk.tags;
         delete disk.Q;
         delete r2.disk[file];
@@ -36100,7 +36366,7 @@ var yson = { exports: {} };
       };
       s2.ack = function(err, ok) {
         DBG && (DBG.sa = DBG.sa || +new Date());
-        DBG && (DBG.sal = q.length);
+        DBG && (DBG.sal = q2.length);
         var ack, tmp;
         for (var id in r2.tags) {
           if (!r2.tags.hasOwnProperty(id)) {
@@ -36113,8 +36379,8 @@ var yson = { exports: {} };
           ack = tag2[f2];
           delete tag2[f2];
           var ne2;
-          for (var k in tag2) {
-            if (tag2.hasOwnProperty(k)) {
+          for (var k2 in tag2) {
+            if (tag2.hasOwnProperty(k2)) {
               ne2 = true;
               break;
             }
@@ -36125,14 +36391,14 @@ var yson = { exports: {} };
           delete r2.tags[tag2];
           ack && ack(err, ok);
         }
-        !q && (q = "");
-        var l2 = q.length, i2 = 0;
+        !q2 && (q2 = "");
+        var l2 = q2.length, i2 = 0;
         var S2 = +new Date();
         for (; i2 < l2; i2++) {
-          (ack = q[i2]) && ack(err, ok);
+          (ack = q2[i2]) && ack(err, ok);
         }
         console.STAT && console.STAT(S2, +new Date() - S2, "rad acks", ename(s2.file));
-        console.STAT && console.STAT(S2, q.length, "rad acks #", ename(s2.file));
+        console.STAT && console.STAT(S2, q2.length, "rad acks #", ename(s2.file));
       };
       cb || (cb = function(err, ok) {
         if (!err) {
@@ -36145,12 +36411,12 @@ var yson = { exports: {} };
     r2.one = {};
     r2.tags = {};
     var RWC = 0;
-    r2.write = function(file, rad, cb, o, DBG) {
+    r2.write = function(file, rad, cb, o2, DBG) {
       if (!rad) {
         cb("No radix!");
         return;
       }
-      o = typeof o == "object" ? o : { force: o };
+      o2 = typeof o2 == "object" ? o2 : { force: o2 };
       var f2 = function Fractal() {
       }, a2, b2;
       f2.text = "";
@@ -36198,12 +36464,12 @@ var yson = { exports: {} };
         f2.sub = Radix();
         Radix.map(rad, f2.slice, { reverse: 1 });
         DBG && (DBG.wf2 = +new Date());
-        r2.write(f2.end, f2.sub, f2.both, o);
+        r2.write(f2.end, f2.sub, f2.both, o2);
         DBG && (DBG.wf3 = +new Date());
         f2.hub = Radix();
         Radix.map(rad, f2.stop);
         DBG && (DBG.wf4 = +new Date());
-        r2.write(rad.file, f2.hub, f2.both, o);
+        r2.write(rad.file, f2.hub, f2.both, o2);
         DBG && (DBG.wf5 = +new Date());
         console.STAT && console.STAT(S2, +new Date() - S2, "rad split", ename(rad.file), SC);
         return true;
@@ -36233,28 +36499,28 @@ var yson = { exports: {} };
         a2 = true;
         b2 = err;
       };
-      f2.each = function(val, key, k, pre2) {
+      f2.each = function(val, key, k2, pre2) {
         if (u2 !== val) {
           f2.count++;
         }
         if (opt.max <= (val || "").length) {
           return cb("Data too big!"), true;
         }
-        var enc = Radisk.encode(pre2.length) + "#" + Radisk.encode(k) + (u2 === val ? "" : ":" + Radisk.encode(val)) + "\n";
-        if (opt.chunk < f2.text.length + enc.length && 1 < f2.count && !o.force) {
+        var enc = Radisk.encode(pre2.length) + "#" + Radisk.encode(k2) + (u2 === val ? "" : ":" + Radisk.encode(val)) + "\n";
+        if (opt.chunk < f2.text.length + enc.length && 1 < f2.count && !o2.force) {
           return f2.split();
         }
         f2.text += enc;
       };
       if (opt.jsonify) {
-        r2.write.jsonify(f2, rad, cb, o, DBG);
+        r2.write.jsonify(f2, rad, cb, o2, DBG);
         return;
       }
       if (!Radix.map(rad, f2.each, true)) {
         f2.write();
       }
     };
-    r2.write.jsonify = function(f2, rad, cb, o, DBG) {
+    r2.write.jsonify = function(f2, rad, cb, o2, DBG) {
       var raw;
       var S2 = +new Date();
       DBG && (DBG.w = S2);
@@ -36266,7 +36532,7 @@ var yson = { exports: {} };
       }
       DBG && (DBG.ws = +new Date());
       console.STAT && console.STAT(S2, +new Date() - S2, "rad stringified JSON");
-      if (opt.chunk < raw.length && !o.force) {
+      if (opt.chunk < raw.length && !o2.force) {
         var c2 = 0;
         Radix.map(rad, function() {
           if (c2++) {
@@ -36280,48 +36546,48 @@ var yson = { exports: {} };
       f2.text = raw;
       f2.write();
     };
-    r2.range = function(tree, o) {
-      if (!tree || !o) {
+    r2.range = function(tree, o2) {
+      if (!tree || !o2) {
         return;
       }
-      if (u2 === o.start && u2 === o.end) {
+      if (u2 === o2.start && u2 === o2.end) {
         return tree;
       }
       if (atomic(tree)) {
         return tree;
       }
       var sub2 = Radix();
-      Radix.map(tree, function(v2, k) {
-        sub2(k, v2);
-      }, o);
+      Radix.map(tree, function(v2, k2) {
+        sub2(k2, v2);
+      }, o2);
       return sub2("");
     };
     (function() {
-      r2.read = function(key, cb, o, DBG) {
-        o = o || {};
-        var g = { key };
-        g.find = function(file) {
+      r2.read = function(key, cb, o2, DBG) {
+        o2 = o2 || {};
+        var g2 = { key };
+        g2.find = function(file) {
           var tmp;
-          g.file = file || (file = opt.code.from);
+          g2.file = file || (file = opt.code.from);
           DBG && (DBG = DBG[file] = DBG[file] || {});
           DBG && (DBG.rf = DBG.rf || +new Date());
-          if (tmp = r2.disk[g.file = file]) {
-            g.check(u2, tmp);
+          if (tmp = r2.disk[g2.file = file]) {
+            g2.check(u2, tmp);
             return;
           }
-          r2.parse(file, g.check, u2, DBG);
+          r2.parse(file, g2.check, u2, DBG);
         };
-        g.get = function(err, disk, info) {
+        g2.get = function(err, disk, info) {
           DBG && (DBG.rgl = +new Date());
           DBG && (DBG.rg = DBG.rg || +new Date());
-          if (g.err = err || g.err) {
+          if (g2.err = err || g2.err) {
             cb(err);
             return;
           }
-          var file = g.file = (disk || "").file || g.file;
+          var file = g2.file = (disk || "").file || g2.file;
           if (!disk && file !== opt.code.from) {
             r2.find.bad(file);
-            r2.read(key, cb, o);
+            r2.read(key, cb, o2);
             return;
           }
           disk = r2.disk[file] || (r2.disk[file] = disk);
@@ -36330,58 +36596,58 @@ var yson = { exports: {} };
             return;
           }
           disk.file || (disk.file = file);
-          var data2 = r2.range(disk(key), o);
+          var data2 = r2.range(disk(key), o2);
           DBG && (DBG.rr = +new Date());
-          o.unit = disk.unit;
-          o.chunks = (o.chunks || 0) + 1;
-          o.parsed = (o.parsed || 0) + ((info || "").parsed || o.chunks * opt.chunk);
-          o.more = 1;
-          o.next = u2;
+          o2.unit = disk.unit;
+          o2.chunks = (o2.chunks || 0) + 1;
+          o2.parsed = (o2.parsed || 0) + ((info || "").parsed || o2.chunks * opt.chunk);
+          o2.more = 1;
+          o2.next = u2;
           Radix.map(r2.list, function next2(v2, f2) {
             if (!v2 || file === f2) {
               return;
             }
-            o.next = f2;
+            o2.next = f2;
             return 1;
-          }, o.reverse ? { reverse: 1, end: file } : { start: file });
+          }, o2.reverse ? { reverse: 1, end: file } : { start: file });
           DBG && (DBG.rl = +new Date());
-          if (!o.next) {
-            o.more = 0;
+          if (!o2.next) {
+            o2.more = 0;
           }
-          if (o.next) {
-            if (!o.reverse && (key < o.next && o.next.indexOf(key) != 0 || u2 !== o.end && (o.end || "\uFFFF") < o.next)) {
-              o.more = 0;
+          if (o2.next) {
+            if (!o2.reverse && (key < o2.next && o2.next.indexOf(key) != 0 || u2 !== o2.end && (o2.end || "\uFFFF") < o2.next)) {
+              o2.more = 0;
             }
-            if (o.reverse && (key > o.next && key.indexOf(o.next) != 0 || u2 !== o.start && (o.start || "") > o.next && file <= o.start)) {
-              o.more = 0;
+            if (o2.reverse && (key > o2.next && key.indexOf(o2.next) != 0 || u2 !== o2.start && (o2.start || "") > o2.next && file <= o2.start)) {
+              o2.more = 0;
             }
           }
-          if (!o.more) {
-            cb(g.err, data2, o);
+          if (!o2.more) {
+            cb(g2.err, data2, o2);
             return;
           }
           if (data2) {
-            cb(g.err, data2, o);
+            cb(g2.err, data2, o2);
           }
-          if (o.parsed >= o.limit) {
+          if (o2.parsed >= o2.limit) {
             return;
           }
           var S2 = +new Date();
           DBG && (DBG.rm = S2);
-          var next = o.next;
+          var next = o2.next;
           timediate(function() {
             console.STAT && console.STAT(S2, +new Date() - S2, "rad more");
-            r2.parse(next, g.check);
+            r2.parse(next, g2.check);
           }, 0);
         };
-        g.check = function(err, disk, info) {
-          g.get(err, disk, info);
+        g2.check = function(err, disk, info) {
+          g2.get(err, disk, info);
           if (!disk || disk.check) {
             return;
           }
           disk.check = 1;
           var S2 = +new Date();
-          (info || (info = {})).file || (info.file = g.file);
+          (info || (info = {})).file || (info.file = g2.file);
           Radix.map(disk, function(val, key2) {
             r2.find(key2, function(file) {
               if ((file || (file = opt.code.from)) === info.file) {
@@ -36401,22 +36667,22 @@ var yson = { exports: {} };
           });
           console.STAT && console.STAT(S2, +new Date() - S2, "rad check");
         };
-        r2.find(key || (o.reverse ? o.end || "" : o.start || ""), g.find);
+        r2.find(key || (o2.reverse ? o2.end || "" : o2.start || ""), g2.find);
       };
     })();
     (function() {
       var RPC = 0;
       var Q2 = {}, s2 = String.fromCharCode(31);
       r2.parse = function(file, cb, raw, DBG) {
-        var q;
+        var q2;
         if (!file) {
           return cb();
         }
-        if (q = Q2[file]) {
-          q.push(cb);
+        if (q2 = Q2[file]) {
+          q2.push(cb);
           return;
         }
-        q = Q2[file] = [cb];
+        q2 = Q2[file] = [cb];
         var p2 = function Parse() {
         }, info = { file };
         (p2.disk = Radix()).file = file;
@@ -36425,7 +36691,7 @@ var yson = { exports: {} };
           console.STAT && console.STAT(S2, +new Date() - S2, "read disk", JSON.stringify(file), ++RPC, "total all parses.");
           if ((p2.err = err) || (p2.not = !data2)) {
             delete Q2[file];
-            p2.map(q, p2.ack);
+            p2.map(q2, p2.ack);
             return;
           }
           if (typeof data2 !== "string") {
@@ -36440,13 +36706,13 @@ var yson = { exports: {} };
             }
             if (p2.err) {
               delete Q2[file];
-              p2.map(q, p2.ack);
+              p2.map(q2, p2.ack);
               return;
             }
           }
           info.parsed = data2.length;
           DBG && (DBG.rpl = info.parsed);
-          DBG && (DBG.rpa = q.length);
+          DBG && (DBG.rpa = q2.length);
           S2 = +new Date();
           if (!(opt.jsonify || data2[0] === "{")) {
             p2.radec(err, data2);
@@ -36458,31 +36724,31 @@ var yson = { exports: {} };
               p2.disk.$ = tree;
               console.STAT && (ST = +new Date() - S2) > 9 && console.STAT(S2, ST, "rad parsed JSON");
               DBG && (DBG.rpd = +new Date());
-              p2.map(q, p2.ack);
+              p2.map(q2, p2.ack);
               return;
             }
             if (data2[0] === "{") {
               delete Q2[file];
               p2.err = "JSON error!";
-              p2.map(q, p2.ack);
+              p2.map(q2, p2.ack);
               return;
             }
             p2.radec(err2, data2);
           });
         };
         p2.map = function() {
-          if (!q || !q.length) {
+          if (!q2 || !q2.length) {
             return;
           }
           var S3 = +new Date();
           var err = p2.err, data2 = p2.not ? u2 : p2.disk;
           var i2 = 0, ack;
-          while (i2 < 9 && (ack = q[i2++])) {
+          while (i2 < 9 && (ack = q2[i2++])) {
             ack(err, data2, info);
           }
           console.STAT && console.STAT(S3, +new Date() - S3, "rad packs", ename(file));
           console.STAT && console.STAT(S3, i2, "rad packs #", ename(file));
-          if (!(q = q.slice(i2)).length) {
+          if (!(q2 = q2.slice(i2)).length) {
             return;
           }
           puff(p2.map, 0);
@@ -36500,21 +36766,21 @@ var yson = { exports: {} };
         p2.radec = function(err, data2) {
           delete Q2[file];
           S2 = +new Date();
-          var tmp = p2.split(data2), pre2 = [], i2, k, v2;
+          var tmp = p2.split(data2), pre2 = [], i2, k2, v2;
           if (!tmp || tmp[1] !== 0) {
             p2.err = "File '" + file + "' does not have root radix! ";
-            p2.map(q, p2.ack);
+            p2.map(q2, p2.ack);
             return;
           }
           while (tmp) {
-            k = v2 = u2;
+            k2 = v2 = u2;
             i2 = tmp[1];
             tmp = p2.split(tmp[2]) || "";
             if (tmp[0] == "#") {
-              k = tmp[1];
+              k2 = tmp[1];
               pre2 = pre2.slice(0, i2);
               if (i2 <= pre2.length) {
-                pre2.push(k);
+                pre2.push(k2);
               }
             }
             tmp = p2.split(tmp[2]) || "";
@@ -36524,27 +36790,27 @@ var yson = { exports: {} };
             if (tmp[0] == "=" || tmp[0] == ":") {
               v2 = tmp[1];
             }
-            if (u2 !== k && u2 !== v2) {
+            if (u2 !== k2 && u2 !== v2) {
               p2.disk(pre2.join(""), v2);
             }
             tmp = p2.split(tmp[2]);
           }
           console.STAT && console.STAT(S2, +new Date() - S2, "parsed RAD");
-          p2.map(q, p2.ack);
+          p2.map(q2, p2.ack);
         };
         p2.split = function(t2) {
           if (!t2) {
             return;
           }
-          var l2 = [], o = {}, i2 = -1, a2 = "";
+          var l2 = [], o2 = {}, i2 = -1, a2 = "";
           i2 = t2.indexOf(s2);
           if (!t2[i2]) {
             return;
           }
           a2 = t2.slice(0, i2);
           l2[0] = a2;
-          l2[1] = Radisk.decode(t2.slice(i2), o);
-          l2[2] = t2.slice(i2 + o.i);
+          l2[1] = Radisk.decode(t2.slice(i2), o2);
+          l2[2] = t2.slice(i2 + o2.i);
           return l2;
         };
         if (r2.disk) {
@@ -36649,7 +36915,7 @@ var yson = { exports: {} };
   }
   (function() {
     var _2 = String.fromCharCode(31);
-    Radisk.encode = function(d2, o, s2) {
+    Radisk.encode = function(d2, o2, s2) {
       s2 = s2 || _2;
       var t2 = s2, tmp;
       if (typeof d2 == "string") {
@@ -36671,7 +36937,7 @@ var yson = { exports: {} };
         return t2 + "-" + t2;
       }
     };
-    Radisk.decode = function(t2, o, s2) {
+    Radisk.decode = function(t2, o2, s2) {
       s2 = s2 || _2;
       var d2 = "", i2 = -1, n2 = 0, c2, p2;
       if (s2 !== t2[0]) {
@@ -36688,8 +36954,8 @@ var yson = { exports: {} };
         i2 = t2.length;
       }
       d2 = t2.slice(c2 + 1, i2);
-      if (o) {
-        o.i = i2 + 1;
+      if (o2) {
+        o2.i = i2 + 1;
       }
       if (p2 === '"') {
         return d2;
@@ -36762,51 +37028,51 @@ Gun$1.on("create", function(root) {
     this.to.next(msg);
     var ctx = msg._ || "", DBG = ctx.DBG = msg.DBG;
     DBG && (DBG.sg = +new Date());
-    var id = msg["#"], get2 = msg.get, soul = msg.get["#"], has2 = msg.get["."] || "", o = {}, graph, key, tmp, force;
+    var id = msg["#"], get2 = msg.get, soul = msg.get["#"], has2 = msg.get["."] || "", o2 = {}, graph, key, tmp, force;
     if (typeof soul == "string") {
       key = soul;
     } else if (soul) {
       if (u2 !== (tmp = soul["*"])) {
-        o.limit = force = 1;
+        o2.limit = force = 1;
       }
       if (u2 !== soul[">"]) {
-        o.start = soul[">"];
+        o2.start = soul[">"];
       }
       if (u2 !== soul["<"]) {
-        o.end = soul["<"];
+        o2.end = soul["<"];
       }
       key = force ? "" + tmp : tmp || soul["="];
       force = null;
     }
-    if (key && !o.limit) {
+    if (key && !o2.limit) {
       if (typeof has2 == "string") {
-        key = key + esc + (o.atom = has2);
+        key = key + esc + (o2.atom = has2);
       } else if (has2) {
         if (u2 !== has2[">"]) {
-          o.start = has2[">"];
-          o.limit = 1;
+          o2.start = has2[">"];
+          o2.limit = 1;
         }
         if (u2 !== has2["<"]) {
-          o.end = has2["<"];
-          o.limit = 1;
+          o2.end = has2["<"];
+          o2.limit = 1;
         }
         if (u2 !== (tmp = has2["*"])) {
-          o.limit = force = 1;
+          o2.limit = force = 1;
         }
         if (key) {
-          key = key + esc + (force ? "" + (tmp || "") : tmp || (o.atom = has2["="] || ""));
+          key = key + esc + (force ? "" + (tmp || "") : tmp || (o2.atom = has2["="] || ""));
         }
       }
     }
-    if ((tmp = get2["%"]) || o.limit) {
-      o.limit = tmp <= (o.pack || 1e3 * 100) ? tmp : 1;
+    if ((tmp = get2["%"]) || o2.limit) {
+      o2.limit = tmp <= (o2.pack || 1e3 * 100) ? tmp : 1;
     }
     if (has2["-"] || (soul || {})["-"] || get2["-"]) {
-      o.reverse = true;
+      o2.reverse = true;
     }
     if ((tmp = (root.next || "")[soul]) && tmp.put) {
-      if (o.atom) {
-        tmp = (tmp.next || "")[o.atom];
+      if (o2.atom) {
+        tmp = (tmp.next || "")[o2.atom];
         if (tmp && tmp.rad) {
           return;
         }
@@ -36839,16 +37105,16 @@ Gun$1.on("create", function(root) {
         root.$.get(so).get(ha2)._.rad = now2;
       } else if (data2) {
         if (typeof data2 !== "string") {
-          if (o.atom) {
+          if (o2.atom) {
             data2 = u2;
           } else {
-            Radix.map(data2, each, o);
+            Radix.map(data2, each, o2);
           }
         }
         if (!graph && data2) {
           each(data2, "");
         }
-        if (!o.atom && !has2 & typeof soul == "string" && !o.limit && !o.more) {
+        if (!o2.atom && !has2 & typeof soul == "string" && !o2.limit && !o2.more) {
           root.$.get(soul)._.rad = now2;
         }
       }
@@ -36866,7 +37132,7 @@ Gun$1.on("create", function(root) {
       root.on("in", { "@": id, put: graph, "%": info.more ? 1 : u2, err: err ? err : u2, _: faith, DBG });
       console.STAT && (ST = +new Date() - S2) > 9 && console.STAT(S2, ST, "got emit", Object.keys(graph || {}).length);
       graph = u2;
-    }, o, DBG && (DBG.r = DBG.r || {}));
+    }, o2, DBG && (DBG.r = DBG.r || {}));
     DBG && (DBG.sgd = +new Date());
     console.STAT && (ST = +new Date() - S2) > 9 && console.STAT(S2, ST, "get call");
     function each(val, has3, a2, b2) {
@@ -36877,7 +37143,7 @@ Gun$1.on("create", function(root) {
       has3 = (key + has3).split(esc);
       var soul2 = has3.slice(0, 1)[0];
       has3 = has3.slice(-1)[0];
-      if (o.limit && o.limit <= o.count) {
+      if (o2.limit && o2.limit <= o2.count) {
         return true;
       }
       var va2, ve, so = soul2, ha2 = has3;
@@ -36885,10 +37151,10 @@ Gun$1.on("create", function(root) {
         va2 = val[":"];
         ve = val[">"];
         (graph = graph || {})[so] = Gun$1.state.ify(graph[so], ha2, ve, va2, so);
-        o.count = (o.count || 0) + ((va2 || "").length || 9);
+        o2.count = (o2.count || 0) + ((va2 || "").length || 9);
         return;
       }
-      o.count = (o.count || 0) + val.length;
+      o2.count = (o2.count || 0) + val.length;
       var tmp2 = val.lastIndexOf(">");
       var state = Radisk.decode(val.slice(tmp2 + 1), null, esc);
       val = Radisk.decode(val.slice(0, tmp2), null, esc);
@@ -36935,14 +37201,14 @@ var rindexed = { exports: {} };
     } catch (e2) {
     }
     store.start = function() {
-      var o = indexedDB.open(opt.file, 1);
-      o.onupgradeneeded = function(eve) {
+      var o2 = indexedDB.open(opt.file, 1);
+      o2.onupgradeneeded = function(eve) {
         eve.target.result.createObjectStore(opt.file);
       };
-      o.onsuccess = function() {
-        db = o.result;
+      o2.onsuccess = function() {
+        db = o2.result;
       };
-      o.onerror = function(eve) {
+      o2.onerror = function(eve) {
         console.log(eve || 1);
       };
     };
@@ -37053,8 +37319,8 @@ var rindexed = { exports: {} };
       root.on("out", { rtc: { id: opt.pid, to: to2 } });
     };
     var mesh = opt.mesh = opt.mesh || Gun2.Mesh(root);
-    root.on("create", function(at) {
-      this.to.next(at);
+    root.on("create", function(at2) {
+      this.to.next(at2);
       setTimeout(opt.announce, 1);
     });
     root.on("in", function(msg) {
@@ -37147,9 +37413,9 @@ var lookup = [];
 var revLookup = [];
 var Arr = typeof Uint8Array !== "undefined" ? Uint8Array : Array;
 var code$1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-for (var i$1 = 0, len = code$1.length; i$1 < len; ++i$1) {
-  lookup[i$1] = code$1[i$1];
-  revLookup[code$1.charCodeAt(i$1)] = i$1;
+for (var i$2 = 0, len = code$1.length; i$2 < len; ++i$2) {
+  lookup[i$2] = code$1[i$2];
+  revLookup[code$1.charCodeAt(i$2)] = i$2;
 }
 revLookup["-".charCodeAt(0)] = 62;
 revLookup["_".charCodeAt(0)] = 63;
@@ -37266,7 +37532,7 @@ ieee754.write = function(buffer2, value, offset2, isLE, mLen, nBytes) {
   var eLen = nBytes * 8 - mLen - 1;
   var eMax = (1 << eLen) - 1;
   var eBias = eMax >> 1;
-  var rt = mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0;
+  var rt2 = mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0;
   var i2 = isLE ? 0 : nBytes - 1;
   var d2 = isLE ? 1 : -1;
   var s2 = value < 0 || value === 0 && 1 / value < 0 ? 1 : 0;
@@ -37281,9 +37547,9 @@ ieee754.write = function(buffer2, value, offset2, isLE, mLen, nBytes) {
       c2 *= 2;
     }
     if (e2 + eBias >= 1) {
-      value += rt / c2;
+      value += rt2 / c2;
     } else {
-      value += rt * Math.pow(2, 1 - eBias);
+      value += rt2 * Math.pow(2, 1 - eBias);
     }
     if (value * c2 >= 2) {
       e2++;
@@ -38946,12 +39212,12 @@ ieee754.write = function(buffer2, value, offset2, isLE, mLen, nBytes) {
     throw new Error("BigInt not supported");
   }
 })(buffer);
-var s = 1e3;
-var m = s * 60;
-var h = m * 60;
-var d = h * 24;
-var w = d * 7;
-var y = d * 365.25;
+var s$1 = 1e3;
+var m$1 = s$1 * 60;
+var h$1 = m$1 * 60;
+var d$1 = h$1 * 24;
+var w$1 = d$1 * 7;
+var y$1 = d$1 * 365.25;
 var ms = function(val, options) {
   options = options || {};
   var type = typeof val;
@@ -38979,33 +39245,33 @@ function parse$3(str) {
     case "yrs":
     case "yr":
     case "y":
-      return n2 * y;
+      return n2 * y$1;
     case "weeks":
     case "week":
     case "w":
-      return n2 * w;
+      return n2 * w$1;
     case "days":
     case "day":
     case "d":
-      return n2 * d;
+      return n2 * d$1;
     case "hours":
     case "hour":
     case "hrs":
     case "hr":
     case "h":
-      return n2 * h;
+      return n2 * h$1;
     case "minutes":
     case "minute":
     case "mins":
     case "min":
     case "m":
-      return n2 * m;
+      return n2 * m$1;
     case "seconds":
     case "second":
     case "secs":
     case "sec":
     case "s":
-      return n2 * s;
+      return n2 * s$1;
     case "milliseconds":
     case "millisecond":
     case "msecs":
@@ -39018,33 +39284,33 @@ function parse$3(str) {
 }
 function fmtShort(ms2) {
   var msAbs = Math.abs(ms2);
-  if (msAbs >= d) {
-    return Math.round(ms2 / d) + "d";
+  if (msAbs >= d$1) {
+    return Math.round(ms2 / d$1) + "d";
   }
-  if (msAbs >= h) {
-    return Math.round(ms2 / h) + "h";
+  if (msAbs >= h$1) {
+    return Math.round(ms2 / h$1) + "h";
   }
-  if (msAbs >= m) {
-    return Math.round(ms2 / m) + "m";
+  if (msAbs >= m$1) {
+    return Math.round(ms2 / m$1) + "m";
   }
-  if (msAbs >= s) {
-    return Math.round(ms2 / s) + "s";
+  if (msAbs >= s$1) {
+    return Math.round(ms2 / s$1) + "s";
   }
   return ms2 + "ms";
 }
 function fmtLong(ms2) {
   var msAbs = Math.abs(ms2);
-  if (msAbs >= d) {
-    return plural(ms2, msAbs, d, "day");
+  if (msAbs >= d$1) {
+    return plural(ms2, msAbs, d$1, "day");
   }
-  if (msAbs >= h) {
-    return plural(ms2, msAbs, h, "hour");
+  if (msAbs >= h$1) {
+    return plural(ms2, msAbs, h$1, "hour");
   }
-  if (msAbs >= m) {
-    return plural(ms2, msAbs, m, "minute");
+  if (msAbs >= m$1) {
+    return plural(ms2, msAbs, m$1, "minute");
   }
-  if (msAbs >= s) {
-    return plural(ms2, msAbs, s, "second");
+  if (msAbs >= s$1) {
+    return plural(ms2, msAbs, s$1, "second");
   }
   return ms2 + " ms";
 }
@@ -39052,15 +39318,16 @@ function plural(ms2, msAbs, n2, name) {
   var isPlural = msAbs >= n2 * 1.5;
   return Math.round(ms2 / n2) + " " + name + (isPlural ? "s" : "");
 }
+var ms$1 = ms;
 var sea = { exports: {} };
 (function(module2) {
   (function() {
     function USE(arg, req) {
-      return req ? commonjsRequire(arg) : arg.slice ? USE[R(arg)] : function(mod2, path2) {
+      return req ? commonjsRequire(arg) : arg.slice ? USE[R2(arg)] : function(mod2, path2) {
         arg(mod2 = { exports: {} });
-        USE[R(path2)] = mod2.exports;
+        USE[R2(path2)] = mod2.exports;
       };
-      function R(p2) {
+      function R2(p2) {
         return p2.split("/").slice(-1).toString().replace(".js", "");
       }
     }
@@ -39208,7 +39475,7 @@ var sea = { exports: {} };
     USE(function(module3) {
       const SEA2 = USE("./root");
       const api = { Buffer: USE("./buffer") };
-      var o = {}, u2;
+      var o2 = {}, u2;
       JSON.parseAsync = JSON.parseAsync || function(t2, cb, r2) {
         var u3;
         try {
@@ -39241,7 +39508,7 @@ var sea = { exports: {} };
       };
       if (SEA2.window) {
         api.crypto = window.crypto || window.msCrypto;
-        api.subtle = (api.crypto || o).subtle || (api.crypto || o).webkitSubtle;
+        api.subtle = (api.crypto || o2).subtle || (api.crypto || o2).webkitSubtle;
         api.TextEncoder = window.TextEncoder;
         api.TextDecoder = window.TextDecoder;
         api.random = (len2) => api.Buffer.from(api.crypto.getRandomValues(new Uint8Array(api.Buffer.alloc(len2))));
@@ -39288,8 +39555,8 @@ var sea = { exports: {} };
       };
       s2.keyToJwk = function(keyBytes) {
         const keyB64 = keyBytes.toString("base64");
-        const k = keyB64.replace(/\+/g, "-").replace(/\//g, "_").replace(/\=/g, "");
-        return { kty: "oct", k, ext: false, alg: "A256GCM" };
+        const k2 = keyB64.replace(/\+/g, "-").replace(/\//g, "_").replace(/\=/g, "");
+        return { kty: "oct", k: k2, ext: false, alg: "A256GCM" };
       };
       s2.recall = {
         validity: 12 * 60 * 60,
@@ -39316,9 +39583,9 @@ var sea = { exports: {} };
     })(USE, "./settings");
     USE(function(module3) {
       var shim = USE("./shim");
-      module3.exports = async function(d2, o) {
+      module3.exports = async function(d2, o2) {
         var t2 = typeof d2 == "string" ? d2 : await shim.stringify(d2);
-        var hash2 = await shim.subtle.digest({ name: o || "SHA-256" }, new shim.TextEncoder().encode(t2));
+        var hash2 = await shim.subtle.digest({ name: o2 || "SHA-256" }, new shim.TextEncoder().encode(t2));
         return shim.Buffer.from(hash2);
       };
     })(USE, "./sha256");
@@ -39795,7 +40062,7 @@ var sea = { exports: {} };
             var derivedBits = await ecdhSubtle.deriveBits(props, privKey, 256);
             var rawBits = new Uint8Array(derivedBits);
             var derivedKey = await ecdhSubtle.importKey("raw", rawBits, { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
-            return ecdhSubtle.exportKey("jwk", derivedKey).then(({ k }) => k);
+            return ecdhSubtle.exportKey("jwk", derivedKey).then(({ k: k2 }) => k2);
           });
           var r2 = derived;
           if (cb) {
@@ -39952,9 +40219,9 @@ var sea = { exports: {} };
         if (user = root.back("user")) {
           return user;
         }
-        var root = root._, at = root, uuid = at.opt.uuid || lex;
-        (at = (user = at.user = gun2.chain(new User()))._).opt = {};
-        at.opt.uuid = function(cb) {
+        var root = root._, at2 = root, uuid = at2.opt.uuid || lex;
+        (at2 = (user = at2.user = gun2.chain(new User()))._).opt = {};
+        at2.opt.uuid = function(cb) {
           var id = uuid(), pub2 = root.user;
           if (!pub2 || !(pub2 = pub2.is) || !(pub2 = pub2.pub)) {
             return id;
@@ -40124,11 +40391,11 @@ var sea = { exports: {} };
           }
           if (!data2.pub) {
             var tmp = [];
-            Object.keys(data2).forEach(function(k) {
-              if (k == "_") {
+            Object.keys(data2).forEach(function(k2) {
+              if (k2 == "_") {
                 return;
               }
-              tmp.push(data2[k]);
+              tmp.push(data2[k2]);
             });
             return act.b(tmp);
           }
@@ -40180,13 +40447,13 @@ var sea = { exports: {} };
             return act.b();
           }
           act.pair = pair2;
-          var user = root._.user, at = user._;
-          at.tag;
-          var upt = at.opt;
-          at = user._ = root.get("~" + pair2.pub)._;
-          at.opt = upt;
+          var user = root._.user, at2 = user._;
+          at2.tag;
+          var upt = at2.opt;
+          at2 = user._ = root.get("~" + pair2.pub)._;
+          at2.opt = upt;
           user.is = { pub: pair2.pub, epub: pair2.epub, alias: alias || pair2.pub };
-          at.sea = act.pair;
+          at2.sea = act.pair;
           cat.ing = false;
           try {
             if (pass && u2 == (obj_ify(cat.root.graph["~" + pair2.pub].auth) || "")[":"]) {
@@ -40194,7 +40461,7 @@ var sea = { exports: {} };
             }
           } catch (e2) {
           }
-          opt.change ? act.z() : (cb || noop2)(at);
+          opt.change ? act.z() : (cb || noop2)(at2);
           if (SEA2.window && (gun2.back("user")._.opt || opt).remember) {
             try {
               var sS = {};
@@ -40206,10 +40473,10 @@ var sea = { exports: {} };
           }
           try {
             if (root._.tag.auth) {
-              root._.on("auth", at);
+              root._.on("auth", at2);
             } else {
               setTimeout(function() {
-                root._.on("auth", at);
+                root._.on("auth", at2);
               }, 1);
             }
           } catch (e2) {
@@ -40230,8 +40497,8 @@ var sea = { exports: {} };
           if (opt.shuffle) {
             console.log("migrate core account from UTF8 & shuffle");
             var tmp = {};
-            Object.keys(act.data).forEach(function(k) {
-              tmp[k] = act.data[k];
+            Object.keys(act.data).forEach(function(k2) {
+              tmp[k2] = act.data[k2];
             });
             delete tmp._;
             tmp.auth = auth;
@@ -40264,16 +40531,16 @@ var sea = { exports: {} };
         }
         return gun2;
       };
-      function obj_ify(o) {
-        if (typeof o != "string") {
-          return o;
+      function obj_ify(o2) {
+        if (typeof o2 != "string") {
+          return o2;
         }
         try {
-          o = JSON.parse(o);
+          o2 = JSON.parse(o2);
         } catch (e2) {
-          o = {};
+          o2 = {};
         }
-        return o;
+        return o2;
       }
     })(USE, "./auth");
     USE(function(module3) {
@@ -40360,11 +40627,11 @@ var sea = { exports: {} };
       User.prototype.grant = function(to2, cb) {
         console.log("`.grant` API MAY BE DELETED OR CHANGED OR RENAMED, DO NOT USE!");
         var gun2 = this, user = gun2.back(-1).user(), pair = user._.sea, path2 = "";
-        gun2.back(function(at) {
-          if (at.is) {
+        gun2.back(function(at2) {
+          if (at2.is) {
             return;
           }
-          path2 += at.get || "";
+          path2 += at2.get || "";
         });
         (async function() {
           var enc, sec = await user.get("grant").get(pair.pub).get(path2).then();
@@ -40387,11 +40654,11 @@ var sea = { exports: {} };
       User.prototype.secret = function(data2, cb) {
         console.log("`.secret` API MAY BE DELETED OR CHANGED OR RENAMED, DO NOT USE!");
         var gun2 = this, user = gun2.back(-1).user(), pair = user.pair(), path2 = "";
-        gun2.back(function(at) {
-          if (at.is) {
+        gun2.back(function(at2) {
+          if (at2.is) {
             return;
           }
-          path2 += at.get || "";
+          path2 += at2.get || "";
         });
         (async function() {
           var enc, sec = await user.get("trust").get(pair.pub).get(path2).then();
@@ -40412,19 +40679,19 @@ var sea = { exports: {} };
       var SEA2 = USE("./sea"), S2 = USE("./settings"), noop2 = function() {
       }, u2;
       var Gun2 = "" + u2 != typeof window ? window.Gun || { on: noop2 } : USE(("" + u2 === typeof MODULE ? "." : "") + "./gun", 1);
-      Gun2.on("opt", function(at) {
-        if (!at.sea) {
-          at.sea = { own: {} };
-          at.on("put", check2, at);
+      Gun2.on("opt", function(at2) {
+        if (!at2.sea) {
+          at2.sea = { own: {} };
+          at2.on("put", check2, at2);
         }
-        this.to.next(at);
+        this.to.next(at2);
       });
       function check2(msg) {
-        var eve = this, at = eve.as, put = msg.put, soul = put["#"], key = put["."], val = put[":"], state = put[">"], id = msg["#"], tmp;
+        var eve = this, at2 = eve.as, put = msg.put, soul = put["#"], key = put["."], val = put[":"], state = put[">"], id = msg["#"], tmp;
         if (!soul || !key) {
           return;
         }
-        if ((msg._ || "").faith && (at.opt || "").faith && typeof msg._ == "function") {
+        if ((msg._ || "").faith && (at2.opt || "").faith && typeof msg._ == "function") {
           SEA2.opt.pack(put, function(raw) {
             SEA2.verify(raw, false, function(data2) {
               put["="] = SEA2.opt.unpack(data2);
@@ -40434,7 +40701,7 @@ var sea = { exports: {} };
           return;
         }
         var no = function(why) {
-          at.on("in", { "@": id, err: msg.err = why });
+          at2.on("in", { "@": id, err: msg.err = why });
         };
         (msg._ || "").DBG && ((msg._ || "").DBG.c = +new Date());
         if (0 <= soul.indexOf("<?")) {
@@ -40445,25 +40712,25 @@ var sea = { exports: {} };
           }
         }
         if (soul === "~@") {
-          check2.alias(eve, msg, val, key, soul, at, no);
+          check2.alias(eve, msg, val, key, soul, at2, no);
           return;
         }
         if (soul.slice(0, 2) === "~@") {
-          check2.pubs(eve, msg, val, key, soul, at, no);
+          check2.pubs(eve, msg, val, key, soul, at2, no);
           return;
         }
         if (tmp = SEA2.opt.pub(soul)) {
-          check2.pub(eve, msg, val, key, soul, at, no, at.user || "", tmp);
+          check2.pub(eve, msg, val, key, soul, at2, no, at2.user || "", tmp);
           return;
         }
         if (0 <= soul.indexOf("#")) {
-          check2.hash(eve, msg, val, key, soul, at, no);
+          check2.hash(eve, msg, val, key, soul, at2, no);
           return;
         }
-        check2.any(eve, msg, val, key, soul, at, no, at.user || "");
+        check2.any(eve, msg, val, key, soul, at2, no, at2.user || "");
         return;
       }
-      check2.hash = function(eve, msg, val, key, soul, at, no) {
+      check2.hash = function(eve, msg, val, key, soul, at2, no) {
         SEA2.work(val, null, function(data2) {
           if (data2 && data2 === key.split("#").slice(-1)[0]) {
             return eve.to.next(msg);
@@ -40471,7 +40738,7 @@ var sea = { exports: {} };
           no("Data hash not same as hash!");
         }, { name: "SHA-256" });
       };
-      check2.alias = function(eve, msg, val, key, soul, at, no) {
+      check2.alias = function(eve, msg, val, key, soul, at2, no) {
         if (!val) {
           return no("Data must exist!");
         }
@@ -40480,7 +40747,7 @@ var sea = { exports: {} };
         }
         no("Alias not same!");
       };
-      check2.pubs = function(eve, msg, val, key, soul, at, no) {
+      check2.pubs = function(eve, msg, val, key, soul, at2, no) {
         if (!val) {
           return no("Alias must exist!");
         }
@@ -40489,7 +40756,7 @@ var sea = { exports: {} };
         }
         no("Alias not same!");
       };
-      check2.pub = async function(eve, msg, val, key, soul, at, no, user, pub) {
+      check2.pub = async function(eve, msg, val, key, soul, at2, no, user, pub) {
         var tmp;
         const raw = await S2.parse(val) || {};
         const verify = (certificate, certificant, cb) => {
@@ -40537,7 +40804,7 @@ var sea = { exports: {} };
               msg.put["="] = tmp;
               if (pub === user.is.pub) {
                 if (tmp = link_is(val))
-                  (at.sea.own[tmp] = at.sea.own[tmp] || {})[pub] = 1;
+                  (at2.sea.own[tmp] = at2.sea.own[tmp] || {})[pub] = 1;
                 JSON.stringifyAsync(msg.put[":"], function(err, s2) {
                   if (err) {
                     return no(err || "Stringify error.");
@@ -40574,7 +40841,7 @@ var sea = { exports: {} };
             if (u2 === data2)
               return no("Unverified data.");
             if ((tmp2 = link_is(data2)) && pub === SEA2.opt.pub(tmp2))
-              (at.sea.own[tmp2] = at.sea.own[tmp2] || {})[pub] = 1;
+              (at2.sea.own[tmp2] = at2.sea.own[tmp2] || {})[pub] = 1;
             if (raw["+"] && raw["+"]["m"] && raw["+"]["s"] && raw["*"])
               verify(raw["+"], raw["*"], (_2) => {
                 msg.put["="] = data2;
@@ -40588,13 +40855,13 @@ var sea = { exports: {} };
         });
         return;
       };
-      check2.any = function(eve, msg, val, key, soul, at, no, user) {
-        if (at.opt.secure) {
+      check2.any = function(eve, msg, val, key, soul, at2, no, user) {
+        if (at2.opt.secure) {
           return no("Soul missing public key at '" + key + "'.");
         }
-        at.on("secure", function(msg2) {
+        at2.on("secure", function(msg2) {
           this.off();
-          if (!at.opt.secure) {
+          if (!at2.opt.secure) {
             return eve.to.next(msg2);
           }
           no("Data cannot be changed.");
@@ -40626,7 +40893,7 @@ var sea = { exports: {} };
       };
       SEA2.opt.stringy = function(t2) {
       };
-      SEA2.opt.pack = function(d2, cb, k, n2, s2) {
+      SEA2.opt.pack = function(d2, cb, k2, n2, s2) {
         var tmp, f2;
         if (SEA2.opt.check(d2)) {
           return cb(d2);
@@ -40641,11 +40908,11 @@ var sea = { exports: {} };
             cb(d2);
             return;
           }
-          cb({ m: { "#": s2 || d2["#"], ".": k || d2["."], ":": (meta || "")[":"], ">": d2[">"] || Gun2.state.is(n2, k) }, s: sig });
+          cb({ m: { "#": s2 || d2["#"], ".": k2 || d2["."], ":": (meta || "")[":"], ">": d2[">"] || Gun2.state.is(n2, k2) }, s: sig });
         });
       };
       var O2 = SEA2.opt;
-      SEA2.opt.unpack = function(d2, k, n2) {
+      SEA2.opt.unpack = function(d2, k2, n2) {
         var tmp;
         if (u2 === d2) {
           return;
@@ -40653,22 +40920,22 @@ var sea = { exports: {} };
         if (d2 && u2 !== (tmp = d2[":"])) {
           return tmp;
         }
-        k = k || O2.fall_key;
+        k2 = k2 || O2.fall_key;
         if (!n2 && O2.fall_val) {
           n2 = {};
-          n2[k] = O2.fall_val;
+          n2[k2] = O2.fall_val;
         }
-        if (!k || !n2) {
+        if (!k2 || !n2) {
           return;
         }
-        if (d2 === n2[k]) {
+        if (d2 === n2[k2]) {
           return d2;
         }
-        if (!SEA2.opt.check(n2[k])) {
+        if (!SEA2.opt.check(n2[k2])) {
           return d2;
         }
-        var soul = n2 && n2._ && n2._["#"] || O2.fall_soul, s2 = Gun2.state.is(n2, k) || O2.fall_state;
-        if (d2 && d2.length === 4 && soul === d2[0] && k === d2[1] && fl(s2) === fl(d2[3])) {
+        var soul = n2 && n2._ && n2._["#"] || O2.fall_soul, s2 = Gun2.state.is(n2, k2) || O2.fall_state;
+        if (d2 && d2.length === 4 && soul === d2[0] && k2 === d2[1] && fl(s2) === fl(d2[3])) {
           return d2[2];
         }
         if (s2 < SEA2.opt.shuffle_attack) {
@@ -40682,7 +40949,7 @@ var sea = { exports: {} };
 })(sea);
 var SEA = sea.exports;
 const word = "[a-fA-F\\d:]";
-const b = (options) => options && options.includeBoundaries ? `(?:(?<=\\s|^)(?=${word})|(?<=${word})(?=\\s|$))` : "";
+const b$1 = (options) => options && options.includeBoundaries ? `(?:(?<=\\s|^)(?=${word})|(?<=${word})(?=\\s|$))` : "";
 const v4 = "(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]\\d|\\d)(?:\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]\\d|\\d)){3}";
 const v6seg = "[a-fA-F\\d]{1,4}";
 const v6 = `
@@ -40700,9 +40967,9 @@ const v6 = `
 const v46Exact = new RegExp(`(?:^${v4}$)|(?:^${v6}$)`);
 const v4exact = new RegExp(`^${v4}$`);
 const v6exact = new RegExp(`^${v6}$`);
-const ip = (options) => options && options.exact ? v46Exact : new RegExp(`(?:${b(options)}${v4}${b(options)})|(?:${b(options)}${v6}${b(options)})`, "g");
-ip.v4 = (options) => options && options.exact ? v4exact : new RegExp(`${b(options)}${v4}${b(options)}`, "g");
-ip.v6 = (options) => options && options.exact ? v6exact : new RegExp(`${b(options)}${v6}${b(options)}`, "g");
+const ip = (options) => options && options.exact ? v46Exact : new RegExp(`(?:${b$1(options)}${v4}${b$1(options)})|(?:${b$1(options)}${v6}${b$1(options)})`, "g");
+ip.v4 = (options) => options && options.exact ? v4exact : new RegExp(`${b$1(options)}${v4}${b$1(options)}`, "g");
+ip.v6 = (options) => options && options.exact ? v6exact : new RegExp(`${b$1(options)}${v6}${b$1(options)}`, "g");
 var ipRegex$1 = ip;
 var require$$1$1 = [
   "aaa",
@@ -42226,9 +42493,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   !function(e2) {
     module2.exports = e2();
   }(function() {
-    return function s2(a2, o, h2) {
+    return function s2(a2, o2, h2) {
       function u2(r2, e3) {
-        if (!o[r2]) {
+        if (!o2[r2]) {
           if (!a2[r2]) {
             var t2 = typeof commonjsRequire == "function" && commonjsRequire;
             if (!e3 && t2)
@@ -42238,13 +42505,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             var n2 = new Error("Cannot find module '" + r2 + "'");
             throw n2.code = "MODULE_NOT_FOUND", n2;
           }
-          var i2 = o[r2] = { exports: {} };
+          var i2 = o2[r2] = { exports: {} };
           a2[r2][0].call(i2.exports, function(e4) {
             var t3 = a2[r2][1][e4];
             return u2(t3 || e4);
-          }, i2, i2.exports, s2, a2, o, h2);
+          }, i2, i2.exports, s2, a2, o2, h2);
         }
-        return o[r2].exports;
+        return o2[r2].exports;
       }
       for (var l2 = typeof commonjsRequire == "function" && commonjsRequire, e2 = 0; e2 < h2.length; e2++)
         u2(h2[e2]);
@@ -42252,26 +42519,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }({ 1: [function(e2, t2, r2) {
       var d2 = e2("./utils"), c2 = e2("./support"), p2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       r2.encode = function(e3) {
-        for (var t3, r3, n2, i2, s2, a2, o, h2 = [], u2 = 0, l2 = e3.length, f2 = l2, c3 = d2.getTypeOf(e3) !== "string"; u2 < e3.length; )
-          f2 = l2 - u2, n2 = c3 ? (t3 = e3[u2++], r3 = u2 < l2 ? e3[u2++] : 0, u2 < l2 ? e3[u2++] : 0) : (t3 = e3.charCodeAt(u2++), r3 = u2 < l2 ? e3.charCodeAt(u2++) : 0, u2 < l2 ? e3.charCodeAt(u2++) : 0), i2 = t3 >> 2, s2 = (3 & t3) << 4 | r3 >> 4, a2 = 1 < f2 ? (15 & r3) << 2 | n2 >> 6 : 64, o = 2 < f2 ? 63 & n2 : 64, h2.push(p2.charAt(i2) + p2.charAt(s2) + p2.charAt(a2) + p2.charAt(o));
+        for (var t3, r3, n2, i2, s2, a2, o2, h2 = [], u2 = 0, l2 = e3.length, f2 = l2, c3 = d2.getTypeOf(e3) !== "string"; u2 < e3.length; )
+          f2 = l2 - u2, n2 = c3 ? (t3 = e3[u2++], r3 = u2 < l2 ? e3[u2++] : 0, u2 < l2 ? e3[u2++] : 0) : (t3 = e3.charCodeAt(u2++), r3 = u2 < l2 ? e3.charCodeAt(u2++) : 0, u2 < l2 ? e3.charCodeAt(u2++) : 0), i2 = t3 >> 2, s2 = (3 & t3) << 4 | r3 >> 4, a2 = 1 < f2 ? (15 & r3) << 2 | n2 >> 6 : 64, o2 = 2 < f2 ? 63 & n2 : 64, h2.push(p2.charAt(i2) + p2.charAt(s2) + p2.charAt(a2) + p2.charAt(o2));
         return h2.join("");
       }, r2.decode = function(e3) {
-        var t3, r3, n2, i2, s2, a2, o = 0, h2 = 0, u2 = "data:";
+        var t3, r3, n2, i2, s2, a2, o2 = 0, h2 = 0, u2 = "data:";
         if (e3.substr(0, u2.length) === u2)
           throw new Error("Invalid base64 input, it looks like a data url.");
         var l2, f2 = 3 * (e3 = e3.replace(/[^A-Za-z0-9\+\/\=]/g, "")).length / 4;
         if (e3.charAt(e3.length - 1) === p2.charAt(64) && f2--, e3.charAt(e3.length - 2) === p2.charAt(64) && f2--, f2 % 1 != 0)
           throw new Error("Invalid base64 input, bad content length.");
-        for (l2 = c2.uint8array ? new Uint8Array(0 | f2) : new Array(0 | f2); o < e3.length; )
-          t3 = p2.indexOf(e3.charAt(o++)) << 2 | (i2 = p2.indexOf(e3.charAt(o++))) >> 4, r3 = (15 & i2) << 4 | (s2 = p2.indexOf(e3.charAt(o++))) >> 2, n2 = (3 & s2) << 6 | (a2 = p2.indexOf(e3.charAt(o++))), l2[h2++] = t3, s2 !== 64 && (l2[h2++] = r3), a2 !== 64 && (l2[h2++] = n2);
+        for (l2 = c2.uint8array ? new Uint8Array(0 | f2) : new Array(0 | f2); o2 < e3.length; )
+          t3 = p2.indexOf(e3.charAt(o2++)) << 2 | (i2 = p2.indexOf(e3.charAt(o2++))) >> 4, r3 = (15 & i2) << 4 | (s2 = p2.indexOf(e3.charAt(o2++))) >> 2, n2 = (3 & s2) << 6 | (a2 = p2.indexOf(e3.charAt(o2++))), l2[h2++] = t3, s2 !== 64 && (l2[h2++] = r3), a2 !== 64 && (l2[h2++] = n2);
         return l2;
       };
     }, { "./support": 30, "./utils": 32 }], 2: [function(e2, t2, r2) {
       var n2 = e2("./external"), i2 = e2("./stream/DataWorker"), s2 = e2("./stream/Crc32Probe"), a2 = e2("./stream/DataLengthProbe");
-      function o(e3, t3, r3, n3, i3) {
+      function o2(e3, t3, r3, n3, i3) {
         this.compressedSize = e3, this.uncompressedSize = t3, this.crc32 = r3, this.compression = n3, this.compressedContent = i3;
       }
-      o.prototype = { getContentWorker: function() {
+      o2.prototype = { getContentWorker: function() {
         var e3 = new i2(n2.Promise.resolve(this.compressedContent)).pipe(this.compression.uncompressWorker()).pipe(new a2("data_length")), t3 = this;
         return e3.on("end", function() {
           if (this.streamInfo.data_length !== t3.uncompressedSize)
@@ -42279,9 +42546,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }), e3;
       }, getCompressedWorker: function() {
         return new i2(n2.Promise.resolve(this.compressedContent)).withStreamInfo("compressedSize", this.compressedSize).withStreamInfo("uncompressedSize", this.uncompressedSize).withStreamInfo("crc32", this.crc32).withStreamInfo("compression", this.compression);
-      } }, o.createWorkerFrom = function(e3, t3, r3) {
+      } }, o2.createWorkerFrom = function(e3, t3, r3) {
         return e3.pipe(new s2()).pipe(new a2("uncompressedSize")).pipe(t3.compressWorker(r3)).pipe(new a2("compressedSize")).withStreamInfo("compression", t3);
-      }, t2.exports = o;
+      }, t2.exports = o2;
     }, { "./external": 6, "./stream/Crc32Probe": 25, "./stream/DataLengthProbe": 26, "./stream/DataWorker": 27 }], 3: [function(e2, t2, r2) {
       var n2 = e2("./stream/GenericWorker");
       r2.STORE = { magic: "\0\0", compressWorker: function(e3) {
@@ -42291,7 +42558,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       } }, r2.DEFLATE = e2("./flate");
     }, { "./flate": 7, "./stream/GenericWorker": 28 }], 4: [function(e2, t2, r2) {
       var n2 = e2("./utils");
-      var o = function() {
+      var o2 = function() {
         for (var e3, t3 = [], r3 = 0; r3 < 256; r3++) {
           e3 = r3;
           for (var n3 = 0; n3 < 8; n3++)
@@ -42302,13 +42569,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }();
       t2.exports = function(e3, t3) {
         return e3 !== void 0 && e3.length ? n2.getTypeOf(e3) !== "string" ? function(e4, t4, r3, n3) {
-          var i2 = o, s2 = n3 + r3;
+          var i2 = o2, s2 = n3 + r3;
           e4 ^= -1;
           for (var a2 = n3; a2 < s2; a2++)
             e4 = e4 >>> 8 ^ i2[255 & (e4 ^ t4[a2])];
           return -1 ^ e4;
         }(0 | t3, e3, e3.length, 0) : function(e4, t4, r3, n3) {
-          var i2 = o, s2 = n3 + r3;
+          var i2 = o2, s2 = n3 + r3;
           e4 ^= -1;
           for (var a2 = n3; a2 < s2; a2++)
             e4 = e4 >>> 8 ^ i2[255 & (e4 ^ t4.charCodeAt(a2))];
@@ -42321,12 +42588,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       var n2 = null;
       n2 = typeof Promise != "undefined" ? Promise : e2("lie"), t2.exports = { Promise: n2 };
     }, { lie: 37 }], 7: [function(e2, t2, r2) {
-      var n2 = typeof Uint8Array != "undefined" && typeof Uint16Array != "undefined" && typeof Uint32Array != "undefined", i2 = e2("pako"), s2 = e2("./utils"), a2 = e2("./stream/GenericWorker"), o = n2 ? "uint8array" : "array";
+      var n2 = typeof Uint8Array != "undefined" && typeof Uint16Array != "undefined" && typeof Uint32Array != "undefined", i2 = e2("pako"), s2 = e2("./utils"), a2 = e2("./stream/GenericWorker"), o2 = n2 ? "uint8array" : "array";
       function h2(e3, t3) {
         a2.call(this, "FlateWorker/" + e3), this._pako = null, this._pakoAction = e3, this._pakoOptions = t3, this.meta = {};
       }
       r2.magic = "\b\0", s2.inherits(h2, a2), h2.prototype.processChunk = function(e3) {
-        this.meta = e3.meta, this._pako === null && this._createPako(), this._pako.push(s2.transformTo(o, e3.data), false);
+        this.meta = e3.meta, this._pako === null && this._createPako(), this._pako.push(s2.transformTo(o2, e3.data), false);
       }, h2.prototype.flush = function() {
         a2.prototype.flush.call(this), this._pako === null && this._createPako(), this._pako.push([], true);
       }, h2.prototype.cleanUp = function() {
@@ -42343,28 +42610,28 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return new h2("Inflate", {});
       };
     }, { "./stream/GenericWorker": 28, "./utils": 32, pako: 38 }], 8: [function(e2, t2, r2) {
-      function A(e3, t3) {
+      function A2(e3, t3) {
         var r3, n3 = "";
         for (r3 = 0; r3 < t3; r3++)
           n3 += String.fromCharCode(255 & e3), e3 >>>= 8;
         return n3;
       }
       function n2(e3, t3, r3, n3, i3, s3) {
-        var a2, o, h2 = e3.file, u2 = e3.compression, l2 = s3 !== O2.utf8encode, f2 = I2.transformTo("string", s3(h2.name)), c2 = I2.transformTo("string", O2.utf8encode(h2.name)), d2 = h2.comment, p2 = I2.transformTo("string", s3(d2)), m2 = I2.transformTo("string", O2.utf8encode(d2)), _2 = c2.length !== h2.name.length, g = m2.length !== d2.length, b2 = "", v2 = "", y2 = "", w2 = h2.dir, k = h2.date, x2 = { crc32: 0, compressedSize: 0, uncompressedSize: 0 };
+        var a2, o2, h2 = e3.file, u2 = e3.compression, l2 = s3 !== O2.utf8encode, f2 = I2.transformTo("string", s3(h2.name)), c2 = I2.transformTo("string", O2.utf8encode(h2.name)), d2 = h2.comment, p2 = I2.transformTo("string", s3(d2)), m2 = I2.transformTo("string", O2.utf8encode(d2)), _2 = c2.length !== h2.name.length, g2 = m2.length !== d2.length, b2 = "", v2 = "", y2 = "", w2 = h2.dir, k2 = h2.date, x2 = { crc32: 0, compressedSize: 0, uncompressedSize: 0 };
         t3 && !r3 || (x2.crc32 = e3.crc32, x2.compressedSize = e3.compressedSize, x2.uncompressedSize = e3.uncompressedSize);
         var S2 = 0;
-        t3 && (S2 |= 8), l2 || !_2 && !g || (S2 |= 2048);
-        var z = 0, C2 = 0;
-        w2 && (z |= 16), i3 === "UNIX" ? (C2 = 798, z |= function(e4, t4) {
+        t3 && (S2 |= 8), l2 || !_2 && !g2 || (S2 |= 2048);
+        var z2 = 0, C2 = 0;
+        w2 && (z2 |= 16), i3 === "UNIX" ? (C2 = 798, z2 |= function(e4, t4) {
           var r4 = e4;
           return e4 || (r4 = t4 ? 16893 : 33204), (65535 & r4) << 16;
-        }(h2.unixPermissions, w2)) : (C2 = 20, z |= function(e4) {
+        }(h2.unixPermissions, w2)) : (C2 = 20, z2 |= function(e4) {
           return 63 & (e4 || 0);
-        }(h2.dosPermissions)), a2 = k.getUTCHours(), a2 <<= 6, a2 |= k.getUTCMinutes(), a2 <<= 5, a2 |= k.getUTCSeconds() / 2, o = k.getUTCFullYear() - 1980, o <<= 4, o |= k.getUTCMonth() + 1, o <<= 5, o |= k.getUTCDate(), _2 && (v2 = A(1, 1) + A(B(f2), 4) + c2, b2 += "up" + A(v2.length, 2) + v2), g && (y2 = A(1, 1) + A(B(p2), 4) + m2, b2 += "uc" + A(y2.length, 2) + y2);
+        }(h2.dosPermissions)), a2 = k2.getUTCHours(), a2 <<= 6, a2 |= k2.getUTCMinutes(), a2 <<= 5, a2 |= k2.getUTCSeconds() / 2, o2 = k2.getUTCFullYear() - 1980, o2 <<= 4, o2 |= k2.getUTCMonth() + 1, o2 <<= 5, o2 |= k2.getUTCDate(), _2 && (v2 = A2(1, 1) + A2(B2(f2), 4) + c2, b2 += "up" + A2(v2.length, 2) + v2), g2 && (y2 = A2(1, 1) + A2(B2(p2), 4) + m2, b2 += "uc" + A2(y2.length, 2) + y2);
         var E2 = "";
-        return E2 += "\n\0", E2 += A(S2, 2), E2 += u2.magic, E2 += A(a2, 2), E2 += A(o, 2), E2 += A(x2.crc32, 4), E2 += A(x2.compressedSize, 4), E2 += A(x2.uncompressedSize, 4), E2 += A(f2.length, 2), E2 += A(b2.length, 2), { fileRecord: R.LOCAL_FILE_HEADER + E2 + f2 + b2, dirRecord: R.CENTRAL_FILE_HEADER + A(C2, 2) + E2 + A(p2.length, 2) + "\0\0\0\0" + A(z, 4) + A(n3, 4) + f2 + b2 + p2 };
+        return E2 += "\n\0", E2 += A2(S2, 2), E2 += u2.magic, E2 += A2(a2, 2), E2 += A2(o2, 2), E2 += A2(x2.crc32, 4), E2 += A2(x2.compressedSize, 4), E2 += A2(x2.uncompressedSize, 4), E2 += A2(f2.length, 2), E2 += A2(b2.length, 2), { fileRecord: R2.LOCAL_FILE_HEADER + E2 + f2 + b2, dirRecord: R2.CENTRAL_FILE_HEADER + A2(C2, 2) + E2 + A2(p2.length, 2) + "\0\0\0\0" + A2(z2, 4) + A2(n3, 4) + f2 + b2 + p2 };
       }
-      var I2 = e2("../utils"), i2 = e2("../stream/GenericWorker"), O2 = e2("../utf8"), B = e2("../crc32"), R = e2("../signature");
+      var I2 = e2("../utils"), i2 = e2("../stream/GenericWorker"), O2 = e2("../utf8"), B2 = e2("../crc32"), R2 = e2("../signature");
       function s2(e3, t3, r3, n3) {
         i2.call(this, "ZipFileWorker"), this.bytesWritten = 0, this.zipComment = t3, this.zipPlatform = r3, this.encodeFileName = n3, this.streamFiles = e3, this.accumulate = false, this.contentBuffer = [], this.dirRecords = [], this.currentSourceOffset = 0, this.entriesCount = 0, this.currentFile = null, this._sources = [];
       }
@@ -42384,7 +42651,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var t3 = this.streamFiles && !e3.file.dir, r3 = n2(e3, t3, true, this.currentSourceOffset, this.zipPlatform, this.encodeFileName);
         if (this.dirRecords.push(r3.dirRecord), t3)
           this.push({ data: function(e4) {
-            return R.DATA_DESCRIPTOR + A(e4.crc32, 4) + A(e4.compressedSize, 4) + A(e4.uncompressedSize, 4);
+            return R2.DATA_DESCRIPTOR + A2(e4.crc32, 4) + A2(e4.compressedSize, 4) + A2(e4.uncompressedSize, 4);
           }(e3), meta: { percent: 100 } });
         else
           for (this.push({ data: r3.fileRecord, meta: { percent: 0 } }); this.contentBuffer.length; )
@@ -42395,7 +42662,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           this.push({ data: this.dirRecords[t3], meta: { percent: 100 } });
         var r3 = this.bytesWritten - e3, n3 = function(e4, t4, r4, n4, i3) {
           var s3 = I2.transformTo("string", i3(n4));
-          return R.CENTRAL_DIRECTORY_END + "\0\0\0\0" + A(e4, 2) + A(e4, 2) + A(t4, 4) + A(r4, 4) + A(s3.length, 2) + s3;
+          return R2.CENTRAL_DIRECTORY_END + "\0\0\0\0" + A2(e4, 2) + A2(e4, 2) + A2(t4, 4) + A2(r4, 4) + A2(s3.length, 2) + s3;
         }(this.dirRecords.length, r3, e3, this.zipComment, this.encodeFileName);
         this.push({ data: n3, meta: { percent: 100 } });
       }, s2.prototype.prepareNextSource = function() {
@@ -42430,7 +42697,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }, { "../crc32": 4, "../signature": 23, "../stream/GenericWorker": 28, "../utf8": 31, "../utils": 32 }], 9: [function(e2, t2, r2) {
       var u2 = e2("../compressions"), n2 = e2("./ZipFileWorker");
       r2.generateWorker = function(e3, a2, t3) {
-        var o = new n2(a2.streamFiles, t3, a2.platform, a2.encodeFileName), h2 = 0;
+        var o2 = new n2(a2.streamFiles, t3, a2.platform, a2.encodeFileName), h2 = 0;
         try {
           e3.forEach(function(e4, t4) {
             h2++;
@@ -42440,12 +42707,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 throw new Error(r4 + " is not a valid compression method !");
               return n4;
             }(t4.options.compression, a2.compression), n3 = t4.options.compressionOptions || a2.compressionOptions || {}, i2 = t4.dir, s2 = t4.date;
-            t4._compressWorker(r3, n3).withStreamInfo("file", { name: e4, dir: i2, date: s2, comment: t4.comment || "", unixPermissions: t4.unixPermissions, dosPermissions: t4.dosPermissions }).pipe(o);
-          }), o.entriesCount = h2;
+            t4._compressWorker(r3, n3).withStreamInfo("file", { name: e4, dir: i2, date: s2, comment: t4.comment || "", unixPermissions: t4.unixPermissions, dosPermissions: t4.dosPermissions }).pipe(o2);
+          }), o2.entriesCount = h2;
         } catch (e4) {
-          o.error(e4);
+          o2.error(e4);
         }
-        return o;
+        return o2;
       };
     }, { "../compressions": 3, "./ZipFileWorker": 8 }], 10: [function(e2, t2, r2) {
       function n2() {
@@ -42475,21 +42742,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           }).resume();
         });
       }
-      t2.exports = function(e3, o) {
+      t2.exports = function(e3, o2) {
         var h2 = this;
-        return o = u2.extend(o || {}, { base64: false, checkCRC32: false, optimizedBinaryString: false, createFolders: false, decodeFileName: n2.utf8decode }), l2.isNode && l2.isStream(e3) ? i2.Promise.reject(new Error("JSZip can't accept a stream when loading a zip file.")) : u2.prepareContent("the loaded zip file", e3, true, o.optimizedBinaryString, o.base64).then(function(e4) {
-          var t3 = new s2(o);
+        return o2 = u2.extend(o2 || {}, { base64: false, checkCRC32: false, optimizedBinaryString: false, createFolders: false, decodeFileName: n2.utf8decode }), l2.isNode && l2.isStream(e3) ? i2.Promise.reject(new Error("JSZip can't accept a stream when loading a zip file.")) : u2.prepareContent("the loaded zip file", e3, true, o2.optimizedBinaryString, o2.base64).then(function(e4) {
+          var t3 = new s2(o2);
           return t3.load(e4), t3;
         }).then(function(e4) {
           var t3 = [i2.Promise.resolve(e4)], r3 = e4.files;
-          if (o.checkCRC32)
+          if (o2.checkCRC32)
             for (var n3 = 0; n3 < r3.length; n3++)
               t3.push(f2(r3[n3]));
           return i2.Promise.all(t3);
         }).then(function(e4) {
           for (var t3 = e4.shift(), r3 = t3.files, n3 = 0; n3 < r3.length; n3++) {
             var i3 = r3[n3], s3 = i3.fileNameStr, a3 = u2.resolve(i3.fileNameStr);
-            h2.file(a3, i3.decompressed, { binary: true, optimizedBinaryString: true, date: i3.date, dir: i3.dir, comment: i3.fileCommentStr.length ? i3.fileCommentStr : null, unixPermissions: i3.unixPermissions, dosPermissions: i3.dosPermissions, createFolders: o.createFolders }), i3.dir || (h2.file(a3).unsafeOriginalName = s3);
+            h2.file(a3, i3.decompressed, { binary: true, optimizedBinaryString: true, date: i3.date, dir: i3.dir, comment: i3.fileCommentStr.length ? i3.fileCommentStr : null, unixPermissions: i3.unixPermissions, dosPermissions: i3.dosPermissions, createFolders: o2.createFolders }), i3.dir || (h2.file(a3).unsafeOriginalName = s3);
           }
           return t3.zipComment.length && (h2.comment = t3.zipComment), h2;
         });
@@ -42549,22 +42816,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }, {}], 15: [function(e2, t2, r2) {
       function s2(e3, t3, r3) {
         var n3, i3 = u2.getTypeOf(t3), s3 = u2.extend(r3 || {}, f2);
-        s3.date = s3.date || new Date(), s3.compression !== null && (s3.compression = s3.compression.toUpperCase()), typeof s3.unixPermissions == "string" && (s3.unixPermissions = parseInt(s3.unixPermissions, 8)), s3.unixPermissions && 16384 & s3.unixPermissions && (s3.dir = true), s3.dosPermissions && 16 & s3.dosPermissions && (s3.dir = true), s3.dir && (e3 = g(e3)), s3.createFolders && (n3 = _2(e3)) && b2.call(this, n3, true);
+        s3.date = s3.date || new Date(), s3.compression !== null && (s3.compression = s3.compression.toUpperCase()), typeof s3.unixPermissions == "string" && (s3.unixPermissions = parseInt(s3.unixPermissions, 8)), s3.unixPermissions && 16384 & s3.unixPermissions && (s3.dir = true), s3.dosPermissions && 16 & s3.dosPermissions && (s3.dir = true), s3.dir && (e3 = g2(e3)), s3.createFolders && (n3 = _2(e3)) && b2.call(this, n3, true);
         var a3 = i3 === "string" && s3.binary === false && s3.base64 === false;
         r3 && r3.binary !== void 0 || (s3.binary = !a3), (t3 instanceof c2 && t3.uncompressedSize === 0 || s3.dir || !t3 || t3.length === 0) && (s3.base64 = false, s3.binary = true, t3 = "", s3.compression = "STORE", i3 = "string");
-        var o2 = null;
-        o2 = t3 instanceof c2 || t3 instanceof l2 ? t3 : p2.isNode && p2.isStream(t3) ? new m2(e3, t3) : u2.prepareContent(e3, t3, s3.binary, s3.optimizedBinaryString, s3.base64);
-        var h3 = new d2(e3, o2, s3);
+        var o3 = null;
+        o3 = t3 instanceof c2 || t3 instanceof l2 ? t3 : p2.isNode && p2.isStream(t3) ? new m2(e3, t3) : u2.prepareContent(e3, t3, s3.binary, s3.optimizedBinaryString, s3.base64);
+        var h3 = new d2(e3, o3, s3);
         this.files[e3] = h3;
       }
-      var i2 = e2("./utf8"), u2 = e2("./utils"), l2 = e2("./stream/GenericWorker"), a2 = e2("./stream/StreamHelper"), f2 = e2("./defaults"), c2 = e2("./compressedObject"), d2 = e2("./zipObject"), o = e2("./generate"), p2 = e2("./nodejsUtils"), m2 = e2("./nodejs/NodejsStreamInputAdapter"), _2 = function(e3) {
+      var i2 = e2("./utf8"), u2 = e2("./utils"), l2 = e2("./stream/GenericWorker"), a2 = e2("./stream/StreamHelper"), f2 = e2("./defaults"), c2 = e2("./compressedObject"), d2 = e2("./zipObject"), o2 = e2("./generate"), p2 = e2("./nodejsUtils"), m2 = e2("./nodejs/NodejsStreamInputAdapter"), _2 = function(e3) {
         e3.slice(-1) === "/" && (e3 = e3.substring(0, e3.length - 1));
         var t3 = e3.lastIndexOf("/");
         return 0 < t3 ? e3.substring(0, t3) : "";
-      }, g = function(e3) {
+      }, g2 = function(e3) {
         return e3.slice(-1) !== "/" && (e3 += "/"), e3;
       }, b2 = function(e3, t3) {
-        return t3 = t3 !== void 0 ? t3 : f2.createFolders, e3 = g(e3), this.files[e3] || s2.call(this, e3, null, { dir: true, createFolders: t3 }), this.files[e3];
+        return t3 = t3 !== void 0 ? t3 : f2.createFolders, e3 = g2(e3), this.files[e3] || s2.call(this, e3, null, { dir: true, createFolders: t3 }), this.files[e3];
       };
       function h2(e3) {
         return Object.prototype.toString.call(e3) === "[object RegExp]";
@@ -42620,7 +42887,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             throw new Error("No output type specified.");
           u2.checkSupport(r3.type), r3.platform !== "darwin" && r3.platform !== "freebsd" && r3.platform !== "linux" && r3.platform !== "sunos" || (r3.platform = "UNIX"), r3.platform === "win32" && (r3.platform = "DOS");
           var n3 = r3.comment || this.comment || "";
-          t3 = o.generateWorker(this, r3, n3);
+          t3 = o2.generateWorker(this, r3, n3);
         } catch (e4) {
           (t3 = new l2("error")).error(e4);
         }
@@ -42723,10 +42990,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return this.index += e3, t3;
       }, t2.exports = i2;
     }, { "../utils": 32, "./ArrayReader": 17 }], 22: [function(e2, t2, r2) {
-      var n2 = e2("../utils"), i2 = e2("../support"), s2 = e2("./ArrayReader"), a2 = e2("./StringReader"), o = e2("./NodeBufferReader"), h2 = e2("./Uint8ArrayReader");
+      var n2 = e2("../utils"), i2 = e2("../support"), s2 = e2("./ArrayReader"), a2 = e2("./StringReader"), o2 = e2("./NodeBufferReader"), h2 = e2("./Uint8ArrayReader");
       t2.exports = function(e3) {
         var t3 = n2.getTypeOf(e3);
-        return n2.checkSupport(t3), t3 !== "string" || i2.uint8array ? t3 === "nodebuffer" ? new o(e3) : i2.uint8array ? new h2(n2.transformTo("uint8array", e3)) : new s2(n2.transformTo("array", e3)) : new a2(e3);
+        return n2.checkSupport(t3), t3 !== "string" || i2.uint8array ? t3 === "nodebuffer" ? new o2(e3) : i2.uint8array ? new h2(n2.transformTo("uint8array", e3)) : new s2(n2.transformTo("array", e3)) : new a2(e3);
       };
     }, { "../support": 30, "../utils": 32, "./ArrayReader": 17, "./NodeBufferReader": 19, "./StringReader": 20, "./Uint8ArrayReader": 21 }], 23: [function(e2, t2, r2) {
       r2.LOCAL_FILE_HEADER = "PK", r2.CENTRAL_FILE_HEADER = "PK", r2.CENTRAL_DIRECTORY_END = "PK", r2.ZIP64_CENTRAL_DIRECTORY_LOCATOR = "PK\x07", r2.ZIP64_CENTRAL_DIRECTORY_END = "PK", r2.DATA_DESCRIPTOR = "PK\x07\b";
@@ -42858,17 +43125,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return this.previous ? this.previous + " -> " + e3 : e3;
       } }, t2.exports = n2;
     }, {}], 29: [function(e2, t2, r2) {
-      var h2 = e2("../utils"), i2 = e2("./ConvertWorker"), s2 = e2("./GenericWorker"), u2 = e2("../base64"), n2 = e2("../support"), a2 = e2("../external"), o = null;
+      var h2 = e2("../utils"), i2 = e2("./ConvertWorker"), s2 = e2("./GenericWorker"), u2 = e2("../base64"), n2 = e2("../support"), a2 = e2("../external"), o2 = null;
       if (n2.nodestream)
         try {
-          o = e2("../nodejs/NodejsStreamOutputAdapter");
+          o2 = e2("../nodejs/NodejsStreamOutputAdapter");
         } catch (e3) {
         }
-      function l2(e3, o2) {
+      function l2(e3, o3) {
         return new a2.Promise(function(t3, r3) {
           var n3 = [], i3 = e3._internalType, s3 = e3._outputType, a3 = e3._mimeType;
           e3.on("data", function(e4, t4) {
-            n3.push(e4), o2 && o2(t4);
+            n3.push(e4), o3 && o3(t4);
           }).on("error", function(e4) {
             n3 = [], r3(e4);
           }).on("end", function() {
@@ -42941,7 +43208,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, toNodejsStream: function(e3) {
         if (h2.checkSupport("nodestream"), this._outputType !== "nodebuffer")
           throw new Error(this._outputType + " is not supported by this method");
-        return new o(this, { objectMode: this._outputType !== "nodebuffer" }, e3);
+        return new o2(this, { objectMode: this._outputType !== "nodebuffer" }, e3);
       } }, t2.exports = f2;
     }, { "../base64": 1, "../external": 6, "../nodejs/NodejsStreamOutputAdapter": 13, "../support": 30, "../utils": 32, "./ConvertWorker": 24, "./GenericWorker": 28 }], 30: [function(e2, t2, r2) {
       if (r2.base64 = true, r2.array = true, r2.string = true, r2.arraybuffer = typeof ArrayBuffer != "undefined" && typeof Uint8Array != "undefined", r2.nodebuffer = typeof Buffer != "undefined", r2.uint8array = typeof Uint8Array != "undefined", typeof ArrayBuffer == "undefined")
@@ -42965,7 +43232,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         r2.nodestream = false;
       }
     }, { "readable-stream": 16 }], 31: [function(e2, t2, s2) {
-      for (var o = e2("./utils"), h2 = e2("./support"), r2 = e2("./nodejsUtils"), n2 = e2("./stream/GenericWorker"), u2 = new Array(256), i2 = 0; i2 < 256; i2++)
+      for (var o2 = e2("./utils"), h2 = e2("./support"), r2 = e2("./nodejsUtils"), n2 = e2("./stream/GenericWorker"), u2 = new Array(256), i2 = 0; i2 < 256; i2++)
         u2[i2] = 252 <= i2 ? 6 : 248 <= i2 ? 5 : 240 <= i2 ? 4 : 224 <= i2 ? 3 : 192 <= i2 ? 2 : 1;
       u2[254] = u2[254] = 1;
       function a2() {
@@ -42976,15 +43243,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
       s2.utf8encode = function(e3) {
         return h2.nodebuffer ? r2.newBufferFrom(e3, "utf-8") : function(e4) {
-          var t3, r3, n3, i3, s3, a3 = e4.length, o2 = 0;
+          var t3, r3, n3, i3, s3, a3 = e4.length, o3 = 0;
           for (i3 = 0; i3 < a3; i3++)
-            (64512 & (r3 = e4.charCodeAt(i3))) == 55296 && i3 + 1 < a3 && (64512 & (n3 = e4.charCodeAt(i3 + 1))) == 56320 && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), o2 += r3 < 128 ? 1 : r3 < 2048 ? 2 : r3 < 65536 ? 3 : 4;
-          for (t3 = h2.uint8array ? new Uint8Array(o2) : new Array(o2), i3 = s3 = 0; s3 < o2; i3++)
+            (64512 & (r3 = e4.charCodeAt(i3))) == 55296 && i3 + 1 < a3 && (64512 & (n3 = e4.charCodeAt(i3 + 1))) == 56320 && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), o3 += r3 < 128 ? 1 : r3 < 2048 ? 2 : r3 < 65536 ? 3 : 4;
+          for (t3 = h2.uint8array ? new Uint8Array(o3) : new Array(o3), i3 = s3 = 0; s3 < o3; i3++)
             (64512 & (r3 = e4.charCodeAt(i3))) == 55296 && i3 + 1 < a3 && (64512 & (n3 = e4.charCodeAt(i3 + 1))) == 56320 && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), r3 < 128 ? t3[s3++] = r3 : (r3 < 2048 ? t3[s3++] = 192 | r3 >>> 6 : (r3 < 65536 ? t3[s3++] = 224 | r3 >>> 12 : (t3[s3++] = 240 | r3 >>> 18, t3[s3++] = 128 | r3 >>> 12 & 63), t3[s3++] = 128 | r3 >>> 6 & 63), t3[s3++] = 128 | 63 & r3);
           return t3;
         }(e3);
       }, s2.utf8decode = function(e3) {
-        return h2.nodebuffer ? o.transformTo("nodebuffer", e3).toString("utf-8") : function(e4) {
+        return h2.nodebuffer ? o2.transformTo("nodebuffer", e3).toString("utf-8") : function(e4) {
           var t3, r3, n3, i3, s3 = e4.length, a3 = new Array(2 * s3);
           for (t3 = r3 = 0; t3 < s3; )
             if ((n3 = e4[t3++]) < 128)
@@ -42996,10 +43263,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 n3 = n3 << 6 | 63 & e4[t3++], i3--;
               1 < i3 ? a3[r3++] = 65533 : n3 < 65536 ? a3[r3++] = n3 : (n3 -= 65536, a3[r3++] = 55296 | n3 >> 10 & 1023, a3[r3++] = 56320 | 1023 & n3);
             }
-          return a3.length !== r3 && (a3.subarray ? a3 = a3.subarray(0, r3) : a3.length = r3), o.applyFromCharCode(a3);
-        }(e3 = o.transformTo(h2.uint8array ? "uint8array" : "array", e3));
-      }, o.inherits(a2, n2), a2.prototype.processChunk = function(e3) {
-        var t3 = o.transformTo(h2.uint8array ? "uint8array" : "array", e3.data);
+          return a3.length !== r3 && (a3.subarray ? a3 = a3.subarray(0, r3) : a3.length = r3), o2.applyFromCharCode(a3);
+        }(e3 = o2.transformTo(h2.uint8array ? "uint8array" : "array", e3));
+      }, o2.inherits(a2, n2), a2.prototype.processChunk = function(e3) {
+        var t3 = o2.transformTo(h2.uint8array ? "uint8array" : "array", e3.data);
         if (this.leftOver && this.leftOver.length) {
           if (h2.uint8array) {
             var r3 = t3;
@@ -43017,11 +43284,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         n3 !== t3.length && (h2.uint8array ? (i3 = t3.subarray(0, n3), this.leftOver = t3.subarray(n3, t3.length)) : (i3 = t3.slice(0, n3), this.leftOver = t3.slice(n3, t3.length))), this.push({ data: s2.utf8decode(i3), meta: e3.meta });
       }, a2.prototype.flush = function() {
         this.leftOver && this.leftOver.length && (this.push({ data: s2.utf8decode(this.leftOver), meta: {} }), this.leftOver = null);
-      }, s2.Utf8DecodeWorker = a2, o.inherits(l2, n2), l2.prototype.processChunk = function(e3) {
+      }, s2.Utf8DecodeWorker = a2, o2.inherits(l2, n2), l2.prototype.processChunk = function(e3) {
         this.push({ data: s2.utf8encode(e3.data), meta: e3.meta });
       }, s2.Utf8EncodeWorker = l2;
     }, { "./nodejsUtils": 14, "./stream/GenericWorker": 28, "./support": 30, "./utils": 32 }], 32: [function(e2, t2, a2) {
-      var o = e2("./support"), h2 = e2("./base64"), r2 = e2("./nodejsUtils"), u2 = e2("./external");
+      var o2 = e2("./support"), h2 = e2("./base64"), r2 = e2("./nodejsUtils"), u2 = e2("./external");
       function n2(e3) {
         return e3;
       }
@@ -43056,13 +43323,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return t3;
       }, applyCanBeUsed: { uint8array: function() {
         try {
-          return o.uint8array && String.fromCharCode.apply(null, new Uint8Array(1)).length === 1;
+          return o2.uint8array && String.fromCharCode.apply(null, new Uint8Array(1)).length === 1;
         } catch (e3) {
           return false;
         }
       }(), nodebuffer: function() {
         try {
-          return o.nodebuffer && String.fromCharCode.apply(null, r2.allocBuffer(1)).length === 1;
+          return o2.nodebuffer && String.fromCharCode.apply(null, r2.allocBuffer(1)).length === 1;
         } catch (e3) {
           return false;
         }
@@ -43132,9 +43399,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }
         return r3.join("/");
       }, a2.getTypeOf = function(e3) {
-        return typeof e3 == "string" ? "string" : Object.prototype.toString.call(e3) === "[object Array]" ? "array" : o.nodebuffer && r2.isBuffer(e3) ? "nodebuffer" : o.uint8array && e3 instanceof Uint8Array ? "uint8array" : o.arraybuffer && e3 instanceof ArrayBuffer ? "arraybuffer" : void 0;
+        return typeof e3 == "string" ? "string" : Object.prototype.toString.call(e3) === "[object Array]" ? "array" : o2.nodebuffer && r2.isBuffer(e3) ? "nodebuffer" : o2.uint8array && e3 instanceof Uint8Array ? "uint8array" : o2.arraybuffer && e3 instanceof ArrayBuffer ? "arraybuffer" : void 0;
       }, a2.checkSupport = function(e3) {
-        if (!o[e3.toLowerCase()])
+        if (!o2[e3.toLowerCase()])
           throw new Error(e3 + " is not supported by this platform");
       }, a2.MAX_VALUE_16BITS = 65535, a2.MAX_VALUE_32BITS = -1, a2.pretty = function(e3) {
         var t3, r3, n3 = "";
@@ -43157,7 +43424,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return r3;
       }, a2.prepareContent = function(r3, e3, n3, i3, s3) {
         return u2.Promise.resolve(e3).then(function(n4) {
-          return o.blob && (n4 instanceof Blob || ["[object File]", "[object Blob]"].indexOf(Object.prototype.toString.call(n4)) !== -1) && typeof FileReader != "undefined" ? new u2.Promise(function(t3, r4) {
+          return o2.blob && (n4 instanceof Blob || ["[object File]", "[object Blob]"].indexOf(Object.prototype.toString.call(n4)) !== -1) && typeof FileReader != "undefined" ? new u2.Promise(function(t3, r4) {
             var e4 = new FileReader();
             e4.onload = function(e5) {
               t3(e5.target.result);
@@ -43168,12 +43435,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }).then(function(e4) {
           var t3 = a2.getTypeOf(e4);
           return t3 ? (t3 === "arraybuffer" ? e4 = a2.transformTo("uint8array", e4) : t3 === "string" && (s3 ? e4 = h2.decode(e4) : n3 && i3 !== true && (e4 = function(e5) {
-            return l2(e5, o.uint8array ? new Uint8Array(e5.length) : new Array(e5.length));
+            return l2(e5, o2.uint8array ? new Uint8Array(e5.length) : new Array(e5.length));
           }(e4))), e4) : u2.Promise.reject(new Error("Can't read the data of '" + r3 + "'. Is it in a supported JavaScript type (String, Blob, ArrayBuffer, etc) ?"));
         });
       };
     }, { "./base64": 1, "./external": 6, "./nodejsUtils": 14, "./support": 30, setimmediate: 54 }], 33: [function(e2, t2, r2) {
-      var n2 = e2("./reader/readerFor"), i2 = e2("./utils"), s2 = e2("./signature"), a2 = e2("./zipEntry"), o = (e2("./utf8"), e2("./support"));
+      var n2 = e2("./reader/readerFor"), i2 = e2("./utils"), s2 = e2("./signature"), a2 = e2("./zipEntry"), o2 = (e2("./utf8"), e2("./support"));
       function h2(e3) {
         this.files = [], this.loadOptions = e3;
       }
@@ -43190,7 +43457,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return this.reader.setIndex(r3), n3;
       }, readBlockEndOfCentral: function() {
         this.diskNumber = this.reader.readInt(2), this.diskWithCentralDirStart = this.reader.readInt(2), this.centralDirRecordsOnThisDisk = this.reader.readInt(2), this.centralDirRecords = this.reader.readInt(2), this.centralDirSize = this.reader.readInt(4), this.centralDirOffset = this.reader.readInt(4), this.zipCommentLength = this.reader.readInt(2);
-        var e3 = this.reader.readData(this.zipCommentLength), t3 = o.uint8array ? "uint8array" : "array", r3 = i2.transformTo(t3, e3);
+        var e3 = this.reader.readData(this.zipCommentLength), t3 = o2.uint8array ? "uint8array" : "array", r3 = i2.transformTo(t3, e3);
         this.zipComment = this.loadOptions.decodeFileName(r3);
       }, readBlockZip64EndOfCentral: function() {
         this.zip64EndOfCentralSize = this.reader.readInt(8), this.reader.skip(4), this.diskNumber = this.reader.readInt(4), this.diskWithCentralDirStart = this.reader.readInt(4), this.centralDirRecordsOnThisDisk = this.reader.readInt(8), this.centralDirRecords = this.reader.readInt(8), this.centralDirSize = this.reader.readInt(8), this.centralDirOffset = this.reader.readInt(8), this.zip64ExtensibleData = {};
@@ -43235,7 +43502,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         this.prepareReader(e3), this.readEndOfCentral(), this.readCentralDir(), this.readLocalFiles();
       } }, t2.exports = h2;
     }, { "./reader/readerFor": 22, "./signature": 23, "./support": 30, "./utf8": 31, "./utils": 32, "./zipEntry": 34 }], 34: [function(e2, t2, r2) {
-      var n2 = e2("./reader/readerFor"), s2 = e2("./utils"), i2 = e2("./compressedObject"), a2 = e2("./crc32"), o = e2("./utf8"), h2 = e2("./compressions"), u2 = e2("./support");
+      var n2 = e2("./reader/readerFor"), s2 = e2("./utils"), i2 = e2("./compressedObject"), a2 = e2("./crc32"), o2 = e2("./utf8"), h2 = e2("./compressions"), u2 = e2("./support");
       function l2(e3, t3) {
         this.options = e3, this.loadOptions = t3;
       }
@@ -43278,7 +43545,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, handleUTF8: function() {
         var e3 = u2.uint8array ? "uint8array" : "array";
         if (this.useUTF8())
-          this.fileNameStr = o.utf8decode(this.fileName), this.fileCommentStr = o.utf8decode(this.fileComment);
+          this.fileNameStr = o2.utf8decode(this.fileName), this.fileCommentStr = o2.utf8decode(this.fileComment);
         else {
           var t3 = this.findExtraFieldUnicodePath();
           if (t3 !== null)
@@ -43299,14 +43566,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var e3 = this.extraFields[28789];
         if (e3) {
           var t3 = n2(e3.value);
-          return t3.readInt(1) !== 1 ? null : a2(this.fileName) !== t3.readInt(4) ? null : o.utf8decode(t3.readData(e3.length - 5));
+          return t3.readInt(1) !== 1 ? null : a2(this.fileName) !== t3.readInt(4) ? null : o2.utf8decode(t3.readData(e3.length - 5));
         }
         return null;
       }, findExtraFieldUnicodeComment: function() {
         var e3 = this.extraFields[25461];
         if (e3) {
           var t3 = n2(e3.value);
-          return t3.readInt(1) !== 1 ? null : a2(this.fileComment) !== t3.readInt(4) ? null : o.utf8decode(t3.readData(e3.length - 5));
+          return t3.readInt(1) !== 1 ? null : a2(this.fileComment) !== t3.readInt(4) ? null : o2.utf8decode(t3.readData(e3.length - 5));
         }
         return null;
       } }, t2.exports = l2;
@@ -43314,7 +43581,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       function n2(e3, t3, r3) {
         this.name = e3, this.dir = r3.dir, this.date = r3.date, this.comment = r3.comment, this.unixPermissions = r3.unixPermissions, this.dosPermissions = r3.dosPermissions, this._data = t3, this._dataBinary = r3.binary, this.options = { compression: r3.compression, compressionOptions: r3.compressionOptions };
       }
-      var s2 = e2("./stream/StreamHelper"), i2 = e2("./stream/DataWorker"), a2 = e2("./utf8"), o = e2("./compressedObject"), h2 = e2("./stream/GenericWorker");
+      var s2 = e2("./stream/StreamHelper"), i2 = e2("./stream/DataWorker"), a2 = e2("./utf8"), o2 = e2("./compressedObject"), h2 = e2("./stream/GenericWorker");
       n2.prototype = { internalStream: function(e3) {
         var t3 = null, r3 = "string";
         try {
@@ -43333,12 +43600,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, nodeStream: function(e3, t3) {
         return this.internalStream(e3 || "nodebuffer").toNodejsStream(t3);
       }, _compressWorker: function(e3, t3) {
-        if (this._data instanceof o && this._data.compression.magic === e3.magic)
+        if (this._data instanceof o2 && this._data.compression.magic === e3.magic)
           return this._data.getCompressedWorker();
         var r3 = this._decompressWorker();
-        return this._dataBinary || (r3 = r3.pipe(new a2.Utf8EncodeWorker())), o.createWorkerFrom(r3, e3, t3);
+        return this._dataBinary || (r3 = r3.pipe(new a2.Utf8EncodeWorker())), o2.createWorkerFrom(r3, e3, t3);
       }, _decompressWorker: function() {
-        return this._data instanceof o ? this._data.getContentWorker() : this._data instanceof h2 ? this._data : new i2(this._data);
+        return this._data instanceof o2 ? this._data.getContentWorker() : this._data instanceof h2 ? this._data : new i2(this._data);
       } };
       for (var u2 = ["asText", "asBinary", "asNodeBuffer", "asUint8Array", "asArrayBuffer"], l2 = function() {
         throw new Error("This method has been removed in JSZip 3.0, please check the upgrade guide.");
@@ -43363,9 +43630,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             setTimeout(u2, 0);
           };
         else {
-          var o = new t3.MessageChannel();
-          o.port1.onmessage = u2, r2 = function() {
-            o.port2.postMessage(0);
+          var o2 = new t3.MessageChannel();
+          o2.port1.onmessage = u2, r2 = function() {
+            o2.port2.postMessage(0);
           };
         }
         var h2 = [];
@@ -43388,7 +43655,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       function u2() {
       }
       var l2 = {}, s2 = ["REJECTED"], a2 = ["FULFILLED"], n2 = ["PENDING"];
-      function o(e3) {
+      function o2(e3) {
         if (typeof e3 != "function")
           throw new TypeError("resolver must be a function");
         this.state = n2, this.queue = [], this.outcome = void 0, e3 !== u2 && d2(this, e3);
@@ -43436,7 +43703,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }
         return r3;
       }
-      (t2.exports = o).prototype.finally = function(t3) {
+      (t2.exports = o2).prototype.finally = function(t3) {
         if (typeof t3 != "function")
           return this;
         var r3 = this.constructor;
@@ -43449,9 +43716,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             throw e3;
           });
         });
-      }, o.prototype.catch = function(e3) {
+      }, o2.prototype.catch = function(e3) {
         return this.then(null, e3);
-      }, o.prototype.then = function(e3, t3) {
+      }, o2.prototype.then = function(e3, t3) {
         if (typeof e3 != "function" && this.state === a2 || typeof t3 != "function" && this.state === s2)
           return this;
         var r3 = new this.constructor(u2);
@@ -43483,32 +43750,32 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         for (var r3 = -1, n3 = e3.queue.length; ++r3 < n3; )
           e3.queue[r3].callRejected(t3);
         return e3;
-      }, o.resolve = function(e3) {
+      }, o2.resolve = function(e3) {
         if (e3 instanceof this)
           return e3;
         return l2.resolve(new this(u2), e3);
-      }, o.reject = function(e3) {
+      }, o2.reject = function(e3) {
         var t3 = new this(u2);
         return l2.reject(t3, e3);
-      }, o.all = function(e3) {
+      }, o2.all = function(e3) {
         var r3 = this;
         if (Object.prototype.toString.call(e3) !== "[object Array]")
           return this.reject(new TypeError("must be an array"));
         var n3 = e3.length, i3 = false;
         if (!n3)
           return this.resolve([]);
-        var s3 = new Array(n3), a3 = 0, t3 = -1, o2 = new this(u2);
+        var s3 = new Array(n3), a3 = 0, t3 = -1, o3 = new this(u2);
         for (; ++t3 < n3; )
           h3(e3[t3], t3);
-        return o2;
+        return o3;
         function h3(e4, t4) {
           r3.resolve(e4).then(function(e5) {
-            s3[t4] = e5, ++a3 !== n3 || i3 || (i3 = true, l2.resolve(o2, s3));
+            s3[t4] = e5, ++a3 !== n3 || i3 || (i3 = true, l2.resolve(o3, s3));
           }, function(e5) {
-            i3 || (i3 = true, l2.reject(o2, e5));
+            i3 || (i3 = true, l2.reject(o3, e5));
           });
         }
-      }, o.race = function(e3) {
+      }, o2.race = function(e3) {
         var t3 = this;
         if (Object.prototype.toString.call(e3) !== "[object Array]")
           return this.reject(new TypeError("must be an array"));
@@ -43529,11 +43796,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       var n2 = {};
       (0, e2("./lib/utils/common").assign)(n2, e2("./lib/deflate"), e2("./lib/inflate"), e2("./lib/zlib/constants")), t2.exports = n2;
     }, { "./lib/deflate": 39, "./lib/inflate": 40, "./lib/utils/common": 41, "./lib/zlib/constants": 44 }], 39: [function(e2, t2, r2) {
-      var a2 = e2("./zlib/deflate"), o = e2("./utils/common"), h2 = e2("./utils/strings"), i2 = e2("./zlib/messages"), s2 = e2("./zlib/zstream"), u2 = Object.prototype.toString, l2 = 0, f2 = -1, c2 = 0, d2 = 8;
+      var a2 = e2("./zlib/deflate"), o2 = e2("./utils/common"), h2 = e2("./utils/strings"), i2 = e2("./zlib/messages"), s2 = e2("./zlib/zstream"), u2 = Object.prototype.toString, l2 = 0, f2 = -1, c2 = 0, d2 = 8;
       function p2(e3) {
         if (!(this instanceof p2))
           return new p2(e3);
-        this.options = o.assign({ level: f2, method: d2, chunkSize: 16384, windowBits: 15, memLevel: 8, strategy: c2, to: "" }, e3 || {});
+        this.options = o2.assign({ level: f2, method: d2, chunkSize: 16384, windowBits: 15, memLevel: 8, strategy: c2, to: "" }, e3 || {});
         var t3 = this.options;
         t3.raw && 0 < t3.windowBits ? t3.windowBits = -t3.windowBits : t3.gzip && 0 < t3.windowBits && t3.windowBits < 16 && (t3.windowBits += 16), this.err = 0, this.msg = "", this.ended = false, this.chunks = [], this.strm = new s2(), this.strm.avail_out = 0;
         var r3 = a2.deflateInit2(this.strm, t3.level, t3.method, t3.windowBits, t3.memLevel, t3.strategy);
@@ -43558,15 +43825,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           return false;
         n3 = t3 === ~~t3 ? t3 : t3 === true ? 4 : 0, typeof e3 == "string" ? i3.input = h2.string2buf(e3) : u2.call(e3) === "[object ArrayBuffer]" ? i3.input = new Uint8Array(e3) : i3.input = e3, i3.next_in = 0, i3.avail_in = i3.input.length;
         do {
-          if (i3.avail_out === 0 && (i3.output = new o.Buf8(s3), i3.next_out = 0, i3.avail_out = s3), (r3 = a2.deflate(i3, n3)) !== 1 && r3 !== l2)
+          if (i3.avail_out === 0 && (i3.output = new o2.Buf8(s3), i3.next_out = 0, i3.avail_out = s3), (r3 = a2.deflate(i3, n3)) !== 1 && r3 !== l2)
             return this.onEnd(r3), !(this.ended = true);
-          i3.avail_out !== 0 && (i3.avail_in !== 0 || n3 !== 4 && n3 !== 2) || (this.options.to === "string" ? this.onData(h2.buf2binstring(o.shrinkBuf(i3.output, i3.next_out))) : this.onData(o.shrinkBuf(i3.output, i3.next_out)));
+          i3.avail_out !== 0 && (i3.avail_in !== 0 || n3 !== 4 && n3 !== 2) || (this.options.to === "string" ? this.onData(h2.buf2binstring(o2.shrinkBuf(i3.output, i3.next_out))) : this.onData(o2.shrinkBuf(i3.output, i3.next_out)));
         } while ((0 < i3.avail_in || i3.avail_out === 0) && r3 !== 1);
         return n3 === 4 ? (r3 = a2.deflateEnd(this.strm), this.onEnd(r3), this.ended = true, r3 === l2) : n3 !== 2 || (this.onEnd(l2), !(i3.avail_out = 0));
       }, p2.prototype.onData = function(e3) {
         this.chunks.push(e3);
       }, p2.prototype.onEnd = function(e3) {
-        e3 === l2 && (this.options.to === "string" ? this.result = this.chunks.join("") : this.result = o.flattenChunks(this.chunks)), this.chunks = [], this.err = e3, this.msg = this.strm.msg;
+        e3 === l2 && (this.options.to === "string" ? this.result = this.chunks.join("") : this.result = o2.flattenChunks(this.chunks)), this.chunks = [], this.err = e3, this.msg = this.strm.msg;
       }, r2.Deflate = p2, r2.deflate = n2, r2.deflateRaw = function(e3, t3) {
         return (t3 = t3 || {}).raw = true, n2(e3, t3);
       }, r2.gzip = function(e3, t3) {
@@ -43585,19 +43852,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           throw new Error(n2[r3]);
         this.header = new s2(), c2.inflateGetHeader(this.strm, this.header);
       }
-      function o(e3, t3) {
+      function o2(e3, t3) {
         var r3 = new a2(t3);
         if (r3.push(e3, true), r3.err)
           throw r3.msg || n2[r3.err];
         return r3.result;
       }
       a2.prototype.push = function(e3, t3) {
-        var r3, n3, i3, s3, a3, o2, h2 = this.strm, u2 = this.options.chunkSize, l2 = this.options.dictionary, f2 = false;
+        var r3, n3, i3, s3, a3, o3, h2 = this.strm, u2 = this.options.chunkSize, l2 = this.options.dictionary, f2 = false;
         if (this.ended)
           return false;
         n3 = t3 === ~~t3 ? t3 : t3 === true ? m2.Z_FINISH : m2.Z_NO_FLUSH, typeof e3 == "string" ? h2.input = p2.binstring2buf(e3) : _2.call(e3) === "[object ArrayBuffer]" ? h2.input = new Uint8Array(e3) : h2.input = e3, h2.next_in = 0, h2.avail_in = h2.input.length;
         do {
-          if (h2.avail_out === 0 && (h2.output = new d2.Buf8(u2), h2.next_out = 0, h2.avail_out = u2), (r3 = c2.inflate(h2, m2.Z_NO_FLUSH)) === m2.Z_NEED_DICT && l2 && (o2 = typeof l2 == "string" ? p2.string2buf(l2) : _2.call(l2) === "[object ArrayBuffer]" ? new Uint8Array(l2) : l2, r3 = c2.inflateSetDictionary(this.strm, o2)), r3 === m2.Z_BUF_ERROR && f2 === true && (r3 = m2.Z_OK, f2 = false), r3 !== m2.Z_STREAM_END && r3 !== m2.Z_OK)
+          if (h2.avail_out === 0 && (h2.output = new d2.Buf8(u2), h2.next_out = 0, h2.avail_out = u2), (r3 = c2.inflate(h2, m2.Z_NO_FLUSH)) === m2.Z_NEED_DICT && l2 && (o3 = typeof l2 == "string" ? p2.string2buf(l2) : _2.call(l2) === "[object ArrayBuffer]" ? new Uint8Array(l2) : l2, r3 = c2.inflateSetDictionary(this.strm, o3)), r3 === m2.Z_BUF_ERROR && f2 === true && (r3 = m2.Z_OK, f2 = false), r3 !== m2.Z_STREAM_END && r3 !== m2.Z_OK)
             return this.onEnd(r3), !(this.ended = true);
           h2.next_out && (h2.avail_out !== 0 && r3 !== m2.Z_STREAM_END && (h2.avail_in !== 0 || n3 !== m2.Z_FINISH && n3 !== m2.Z_SYNC_FLUSH) || (this.options.to === "string" ? (i3 = p2.utf8border(h2.output, h2.next_out), s3 = h2.next_out - i3, a3 = p2.buf2string(h2.output, i3), h2.next_out = s3, h2.avail_out = u2 - s3, s3 && d2.arraySet(h2.output, h2.output, i3, s3, 0), this.onData(a3)) : this.onData(d2.shrinkBuf(h2.output, h2.next_out)))), h2.avail_in === 0 && h2.avail_out === 0 && (f2 = true);
         } while ((0 < h2.avail_in || h2.avail_out === 0) && r3 !== m2.Z_STREAM_END);
@@ -43606,9 +43873,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         this.chunks.push(e3);
       }, a2.prototype.onEnd = function(e3) {
         e3 === m2.Z_OK && (this.options.to === "string" ? this.result = this.chunks.join("") : this.result = d2.flattenChunks(this.chunks)), this.chunks = [], this.err = e3, this.msg = this.strm.msg;
-      }, r2.Inflate = a2, r2.inflate = o, r2.inflateRaw = function(e3, t3) {
-        return (t3 = t3 || {}).raw = true, o(e3, t3);
-      }, r2.ungzip = o;
+      }, r2.Inflate = a2, r2.inflate = o2, r2.inflateRaw = function(e3, t3) {
+        return (t3 = t3 || {}).raw = true, o2(e3, t3);
+      }, r2.ungzip = o2;
     }, { "./utils/common": 41, "./utils/strings": 42, "./zlib/constants": 44, "./zlib/gzheader": 47, "./zlib/inflate": 49, "./zlib/messages": 51, "./zlib/zstream": 53 }], 41: [function(e2, t2, r2) {
       var n2 = typeof Uint8Array != "undefined" && typeof Uint16Array != "undefined" && typeof Int32Array != "undefined";
       r2.assign = function(e3) {
@@ -43669,10 +43936,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return r3;
       }
       u2[254] = u2[254] = 1, r2.string2buf = function(e3) {
-        var t3, r3, n3, i3, s3, a2 = e3.length, o = 0;
+        var t3, r3, n3, i3, s3, a2 = e3.length, o2 = 0;
         for (i3 = 0; i3 < a2; i3++)
-          (64512 & (r3 = e3.charCodeAt(i3))) == 55296 && i3 + 1 < a2 && (64512 & (n3 = e3.charCodeAt(i3 + 1))) == 56320 && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), o += r3 < 128 ? 1 : r3 < 2048 ? 2 : r3 < 65536 ? 3 : 4;
-        for (t3 = new h2.Buf8(o), i3 = s3 = 0; s3 < o; i3++)
+          (64512 & (r3 = e3.charCodeAt(i3))) == 55296 && i3 + 1 < a2 && (64512 & (n3 = e3.charCodeAt(i3 + 1))) == 56320 && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), o2 += r3 < 128 ? 1 : r3 < 2048 ? 2 : r3 < 65536 ? 3 : 4;
+        for (t3 = new h2.Buf8(o2), i3 = s3 = 0; s3 < o2; i3++)
           (64512 & (r3 = e3.charCodeAt(i3))) == 55296 && i3 + 1 < a2 && (64512 & (n3 = e3.charCodeAt(i3 + 1))) == 56320 && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), r3 < 128 ? t3[s3++] = r3 : (r3 < 2048 ? t3[s3++] = 192 | r3 >>> 6 : (r3 < 65536 ? t3[s3++] = 224 | r3 >>> 12 : (t3[s3++] = 240 | r3 >>> 18, t3[s3++] = 128 | r3 >>> 12 & 63), t3[s3++] = 128 | r3 >>> 6 & 63), t3[s3++] = 128 | 63 & r3);
         return t3;
       }, r2.buf2binstring = function(e3) {
@@ -43682,18 +43949,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           t3[r3] = e3.charCodeAt(r3);
         return t3;
       }, r2.buf2string = function(e3, t3) {
-        var r3, n3, i3, s3, a2 = t3 || e3.length, o = new Array(2 * a2);
+        var r3, n3, i3, s3, a2 = t3 || e3.length, o2 = new Array(2 * a2);
         for (r3 = n3 = 0; r3 < a2; )
           if ((i3 = e3[r3++]) < 128)
-            o[n3++] = i3;
+            o2[n3++] = i3;
           else if (4 < (s3 = u2[i3]))
-            o[n3++] = 65533, r3 += s3 - 1;
+            o2[n3++] = 65533, r3 += s3 - 1;
           else {
             for (i3 &= s3 === 2 ? 31 : s3 === 3 ? 15 : 7; 1 < s3 && r3 < a2; )
               i3 = i3 << 6 | 63 & e3[r3++], s3--;
-            1 < s3 ? o[n3++] = 65533 : i3 < 65536 ? o[n3++] = i3 : (i3 -= 65536, o[n3++] = 55296 | i3 >> 10 & 1023, o[n3++] = 56320 | 1023 & i3);
+            1 < s3 ? o2[n3++] = 65533 : i3 < 65536 ? o2[n3++] = i3 : (i3 -= 65536, o2[n3++] = 55296 | i3 >> 10 & 1023, o2[n3++] = 56320 | 1023 & i3);
           }
-        return l2(o, n3);
+        return l2(o2, n3);
       }, r2.utf8border = function(e3, t3) {
         var r3;
         for ((t3 = t3 || e3.length) > e3.length && (t3 = e3.length), r3 = t3 - 1; 0 <= r3 && (192 & e3[r3]) == 128; )
@@ -43712,7 +43979,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }, {}], 44: [function(e2, t2, r2) {
       t2.exports = { Z_NO_FLUSH: 0, Z_PARTIAL_FLUSH: 1, Z_SYNC_FLUSH: 2, Z_FULL_FLUSH: 3, Z_FINISH: 4, Z_BLOCK: 5, Z_TREES: 6, Z_OK: 0, Z_STREAM_END: 1, Z_NEED_DICT: 2, Z_ERRNO: -1, Z_STREAM_ERROR: -2, Z_DATA_ERROR: -3, Z_BUF_ERROR: -5, Z_NO_COMPRESSION: 0, Z_BEST_SPEED: 1, Z_BEST_COMPRESSION: 9, Z_DEFAULT_COMPRESSION: -1, Z_FILTERED: 1, Z_HUFFMAN_ONLY: 2, Z_RLE: 3, Z_FIXED: 4, Z_DEFAULT_STRATEGY: 0, Z_BINARY: 0, Z_TEXT: 1, Z_UNKNOWN: 2, Z_DEFLATED: 8 };
     }, {}], 45: [function(e2, t2, r2) {
-      var o = function() {
+      var o2 = function() {
         for (var e3, t3 = [], r3 = 0; r3 < 256; r3++) {
           e3 = r3;
           for (var n2 = 0; n2 < 8; n2++)
@@ -43722,15 +43989,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return t3;
       }();
       t2.exports = function(e3, t3, r3, n2) {
-        var i2 = o, s2 = n2 + r3;
+        var i2 = o2, s2 = n2 + r3;
         e3 ^= -1;
         for (var a2 = n2; a2 < s2; a2++)
           e3 = e3 >>> 8 ^ i2[255 & (e3 ^ t3[a2])];
         return -1 ^ e3;
       };
     }, {}], 46: [function(e2, t2, r2) {
-      var h2, c2 = e2("../utils/common"), u2 = e2("./trees"), d2 = e2("./adler32"), p2 = e2("./crc32"), n2 = e2("./messages"), l2 = 0, f2 = 4, m2 = 0, _2 = -2, g = -1, b2 = 4, i2 = 2, v2 = 8, y2 = 9, s2 = 286, a2 = 30, o = 19, w2 = 2 * s2 + 1, k = 15, x2 = 3, S2 = 258, z = S2 + x2 + 1, C2 = 42, E2 = 113, A = 1, I2 = 2, O2 = 3, B = 4;
-      function R(e3, t3) {
+      var h2, c2 = e2("../utils/common"), u2 = e2("./trees"), d2 = e2("./adler32"), p2 = e2("./crc32"), n2 = e2("./messages"), l2 = 0, f2 = 4, m2 = 0, _2 = -2, g2 = -1, b2 = 4, i2 = 2, v2 = 8, y2 = 9, s2 = 286, a2 = 30, o2 = 19, w2 = 2 * s2 + 1, k2 = 15, x2 = 3, S2 = 258, z2 = S2 + x2 + 1, C2 = 42, E2 = 113, A2 = 1, I2 = 2, O2 = 3, B2 = 4;
+      function R2(e3, t3) {
         return e3.msg = n2[t3], t3;
       }
       function T2(e3) {
@@ -43754,15 +44021,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         e3.pending_buf[e3.pending++] = t3 >>> 8 & 255, e3.pending_buf[e3.pending++] = 255 & t3;
       }
       function L2(e3, t3) {
-        var r3, n3, i3 = e3.max_chain_length, s3 = e3.strstart, a3 = e3.prev_length, o2 = e3.nice_match, h3 = e3.strstart > e3.w_size - z ? e3.strstart - (e3.w_size - z) : 0, u3 = e3.window, l3 = e3.w_mask, f3 = e3.prev, c3 = e3.strstart + S2, d3 = u3[s3 + a3 - 1], p3 = u3[s3 + a3];
-        e3.prev_length >= e3.good_match && (i3 >>= 2), o2 > e3.lookahead && (o2 = e3.lookahead);
+        var r3, n3, i3 = e3.max_chain_length, s3 = e3.strstart, a3 = e3.prev_length, o3 = e3.nice_match, h3 = e3.strstart > e3.w_size - z2 ? e3.strstart - (e3.w_size - z2) : 0, u3 = e3.window, l3 = e3.w_mask, f3 = e3.prev, c3 = e3.strstart + S2, d3 = u3[s3 + a3 - 1], p3 = u3[s3 + a3];
+        e3.prev_length >= e3.good_match && (i3 >>= 2), o3 > e3.lookahead && (o3 = e3.lookahead);
         do {
           if (u3[(r3 = t3) + a3] === p3 && u3[r3 + a3 - 1] === d3 && u3[r3] === u3[s3] && u3[++r3] === u3[s3 + 1]) {
             s3 += 2, r3++;
             do {
             } while (u3[++s3] === u3[++r3] && u3[++s3] === u3[++r3] && u3[++s3] === u3[++r3] && u3[++s3] === u3[++r3] && u3[++s3] === u3[++r3] && u3[++s3] === u3[++r3] && u3[++s3] === u3[++r3] && u3[++s3] === u3[++r3] && s3 < c3);
             if (n3 = S2 - (c3 - s3), s3 = c3 - S2, a3 < n3) {
-              if (e3.match_start = t3, o2 <= (a3 = n3))
+              if (e3.match_start = t3, o3 <= (a3 = n3))
                 break;
               d3 = u3[s3 + a3 - 1], p3 = u3[s3 + a3];
             }
@@ -43771,9 +44038,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return a3 <= e3.lookahead ? a3 : e3.lookahead;
       }
       function j2(e3) {
-        var t3, r3, n3, i3, s3, a3, o2, h3, u3, l3, f3 = e3.w_size;
+        var t3, r3, n3, i3, s3, a3, o3, h3, u3, l3, f3 = e3.w_size;
         do {
-          if (i3 = e3.window_size - e3.lookahead - e3.strstart, e3.strstart >= f3 + (f3 - z)) {
+          if (i3 = e3.window_size - e3.lookahead - e3.strstart, e3.strstart >= f3 + (f3 - z2)) {
             for (c2.arraySet(e3.window, e3.window, f3, f3, 0), e3.match_start -= f3, e3.strstart -= f3, e3.block_start -= f3, t3 = r3 = e3.hash_size; n3 = e3.head[--t3], e3.head[t3] = f3 <= n3 ? n3 - f3 : 0, --r3; )
               ;
             for (t3 = r3 = f3; n3 = e3.prev[--t3], e3.prev[t3] = f3 <= n3 ? n3 - f3 : 0, --r3; )
@@ -43782,20 +44049,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           }
           if (e3.strm.avail_in === 0)
             break;
-          if (a3 = e3.strm, o2 = e3.window, h3 = e3.strstart + e3.lookahead, u3 = i3, l3 = void 0, l3 = a3.avail_in, u3 < l3 && (l3 = u3), r3 = l3 === 0 ? 0 : (a3.avail_in -= l3, c2.arraySet(o2, a3.input, a3.next_in, l3, h3), a3.state.wrap === 1 ? a3.adler = d2(a3.adler, o2, l3, h3) : a3.state.wrap === 2 && (a3.adler = p2(a3.adler, o2, l3, h3)), a3.next_in += l3, a3.total_in += l3, l3), e3.lookahead += r3, e3.lookahead + e3.insert >= x2)
+          if (a3 = e3.strm, o3 = e3.window, h3 = e3.strstart + e3.lookahead, u3 = i3, l3 = void 0, l3 = a3.avail_in, u3 < l3 && (l3 = u3), r3 = l3 === 0 ? 0 : (a3.avail_in -= l3, c2.arraySet(o3, a3.input, a3.next_in, l3, h3), a3.state.wrap === 1 ? a3.adler = d2(a3.adler, o3, l3, h3) : a3.state.wrap === 2 && (a3.adler = p2(a3.adler, o3, l3, h3)), a3.next_in += l3, a3.total_in += l3, l3), e3.lookahead += r3, e3.lookahead + e3.insert >= x2)
             for (s3 = e3.strstart - e3.insert, e3.ins_h = e3.window[s3], e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[s3 + 1]) & e3.hash_mask; e3.insert && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[s3 + x2 - 1]) & e3.hash_mask, e3.prev[s3 & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = s3, s3++, e3.insert--, !(e3.lookahead + e3.insert < x2)); )
               ;
-        } while (e3.lookahead < z && e3.strm.avail_in !== 0);
+        } while (e3.lookahead < z2 && e3.strm.avail_in !== 0);
       }
       function Z2(e3, t3) {
         for (var r3, n3; ; ) {
-          if (e3.lookahead < z) {
-            if (j2(e3), e3.lookahead < z && t3 === l2)
-              return A;
+          if (e3.lookahead < z2) {
+            if (j2(e3), e3.lookahead < z2 && t3 === l2)
+              return A2;
             if (e3.lookahead === 0)
               break;
           }
-          if (r3 = 0, e3.lookahead >= x2 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), r3 !== 0 && e3.strstart - r3 <= e3.w_size - z && (e3.match_length = L2(e3, r3)), e3.match_length >= x2)
+          if (r3 = 0, e3.lookahead >= x2 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), r3 !== 0 && e3.strstart - r3 <= e3.w_size - z2 && (e3.match_length = L2(e3, r3)), e3.match_length >= x2)
             if (n3 = u2._tr_tally(e3, e3.strstart - e3.match_start, e3.match_length - x2), e3.lookahead -= e3.match_length, e3.match_length <= e3.max_lazy_match && e3.lookahead >= x2) {
               for (e3.match_length--; e3.strstart++, e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart, --e3.match_length != 0; )
                 ;
@@ -43805,40 +44072,40 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           else
             n3 = u2._tr_tally(e3, 0, e3.window[e3.strstart]), e3.lookahead--, e3.strstart++;
           if (n3 && (N2(e3, false), e3.strm.avail_out === 0))
-            return A;
+            return A2;
         }
-        return e3.insert = e3.strstart < x2 - 1 ? e3.strstart : x2 - 1, t3 === f2 ? (N2(e3, true), e3.strm.avail_out === 0 ? O2 : B) : e3.last_lit && (N2(e3, false), e3.strm.avail_out === 0) ? A : I2;
+        return e3.insert = e3.strstart < x2 - 1 ? e3.strstart : x2 - 1, t3 === f2 ? (N2(e3, true), e3.strm.avail_out === 0 ? O2 : B2) : e3.last_lit && (N2(e3, false), e3.strm.avail_out === 0) ? A2 : I2;
       }
       function W2(e3, t3) {
         for (var r3, n3, i3; ; ) {
-          if (e3.lookahead < z) {
-            if (j2(e3), e3.lookahead < z && t3 === l2)
-              return A;
+          if (e3.lookahead < z2) {
+            if (j2(e3), e3.lookahead < z2 && t3 === l2)
+              return A2;
             if (e3.lookahead === 0)
               break;
           }
-          if (r3 = 0, e3.lookahead >= x2 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), e3.prev_length = e3.match_length, e3.prev_match = e3.match_start, e3.match_length = x2 - 1, r3 !== 0 && e3.prev_length < e3.max_lazy_match && e3.strstart - r3 <= e3.w_size - z && (e3.match_length = L2(e3, r3), e3.match_length <= 5 && (e3.strategy === 1 || e3.match_length === x2 && 4096 < e3.strstart - e3.match_start) && (e3.match_length = x2 - 1)), e3.prev_length >= x2 && e3.match_length <= e3.prev_length) {
+          if (r3 = 0, e3.lookahead >= x2 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), e3.prev_length = e3.match_length, e3.prev_match = e3.match_start, e3.match_length = x2 - 1, r3 !== 0 && e3.prev_length < e3.max_lazy_match && e3.strstart - r3 <= e3.w_size - z2 && (e3.match_length = L2(e3, r3), e3.match_length <= 5 && (e3.strategy === 1 || e3.match_length === x2 && 4096 < e3.strstart - e3.match_start) && (e3.match_length = x2 - 1)), e3.prev_length >= x2 && e3.match_length <= e3.prev_length) {
             for (i3 = e3.strstart + e3.lookahead - x2, n3 = u2._tr_tally(e3, e3.strstart - 1 - e3.prev_match, e3.prev_length - x2), e3.lookahead -= e3.prev_length - 1, e3.prev_length -= 2; ++e3.strstart <= i3 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), --e3.prev_length != 0; )
               ;
             if (e3.match_available = 0, e3.match_length = x2 - 1, e3.strstart++, n3 && (N2(e3, false), e3.strm.avail_out === 0))
-              return A;
+              return A2;
           } else if (e3.match_available) {
             if ((n3 = u2._tr_tally(e3, 0, e3.window[e3.strstart - 1])) && N2(e3, false), e3.strstart++, e3.lookahead--, e3.strm.avail_out === 0)
-              return A;
+              return A2;
           } else
             e3.match_available = 1, e3.strstart++, e3.lookahead--;
         }
-        return e3.match_available && (n3 = u2._tr_tally(e3, 0, e3.window[e3.strstart - 1]), e3.match_available = 0), e3.insert = e3.strstart < x2 - 1 ? e3.strstart : x2 - 1, t3 === f2 ? (N2(e3, true), e3.strm.avail_out === 0 ? O2 : B) : e3.last_lit && (N2(e3, false), e3.strm.avail_out === 0) ? A : I2;
+        return e3.match_available && (n3 = u2._tr_tally(e3, 0, e3.window[e3.strstart - 1]), e3.match_available = 0), e3.insert = e3.strstart < x2 - 1 ? e3.strstart : x2 - 1, t3 === f2 ? (N2(e3, true), e3.strm.avail_out === 0 ? O2 : B2) : e3.last_lit && (N2(e3, false), e3.strm.avail_out === 0) ? A2 : I2;
       }
       function M2(e3, t3, r3, n3, i3) {
         this.good_length = e3, this.max_lazy = t3, this.nice_length = r3, this.max_chain = n3, this.func = i3;
       }
-      function H() {
-        this.strm = null, this.status = 0, this.pending_buf = null, this.pending_buf_size = 0, this.pending_out = 0, this.pending = 0, this.wrap = 0, this.gzhead = null, this.gzindex = 0, this.method = v2, this.last_flush = -1, this.w_size = 0, this.w_bits = 0, this.w_mask = 0, this.window = null, this.window_size = 0, this.prev = null, this.head = null, this.ins_h = 0, this.hash_size = 0, this.hash_bits = 0, this.hash_mask = 0, this.hash_shift = 0, this.block_start = 0, this.match_length = 0, this.prev_match = 0, this.match_available = 0, this.strstart = 0, this.match_start = 0, this.lookahead = 0, this.prev_length = 0, this.max_chain_length = 0, this.max_lazy_match = 0, this.level = 0, this.strategy = 0, this.good_match = 0, this.nice_match = 0, this.dyn_ltree = new c2.Buf16(2 * w2), this.dyn_dtree = new c2.Buf16(2 * (2 * a2 + 1)), this.bl_tree = new c2.Buf16(2 * (2 * o + 1)), D2(this.dyn_ltree), D2(this.dyn_dtree), D2(this.bl_tree), this.l_desc = null, this.d_desc = null, this.bl_desc = null, this.bl_count = new c2.Buf16(k + 1), this.heap = new c2.Buf16(2 * s2 + 1), D2(this.heap), this.heap_len = 0, this.heap_max = 0, this.depth = new c2.Buf16(2 * s2 + 1), D2(this.depth), this.l_buf = 0, this.lit_bufsize = 0, this.last_lit = 0, this.d_buf = 0, this.opt_len = 0, this.static_len = 0, this.matches = 0, this.insert = 0, this.bi_buf = 0, this.bi_valid = 0;
+      function H2() {
+        this.strm = null, this.status = 0, this.pending_buf = null, this.pending_buf_size = 0, this.pending_out = 0, this.pending = 0, this.wrap = 0, this.gzhead = null, this.gzindex = 0, this.method = v2, this.last_flush = -1, this.w_size = 0, this.w_bits = 0, this.w_mask = 0, this.window = null, this.window_size = 0, this.prev = null, this.head = null, this.ins_h = 0, this.hash_size = 0, this.hash_bits = 0, this.hash_mask = 0, this.hash_shift = 0, this.block_start = 0, this.match_length = 0, this.prev_match = 0, this.match_available = 0, this.strstart = 0, this.match_start = 0, this.lookahead = 0, this.prev_length = 0, this.max_chain_length = 0, this.max_lazy_match = 0, this.level = 0, this.strategy = 0, this.good_match = 0, this.nice_match = 0, this.dyn_ltree = new c2.Buf16(2 * w2), this.dyn_dtree = new c2.Buf16(2 * (2 * a2 + 1)), this.bl_tree = new c2.Buf16(2 * (2 * o2 + 1)), D2(this.dyn_ltree), D2(this.dyn_dtree), D2(this.bl_tree), this.l_desc = null, this.d_desc = null, this.bl_desc = null, this.bl_count = new c2.Buf16(k2 + 1), this.heap = new c2.Buf16(2 * s2 + 1), D2(this.heap), this.heap_len = 0, this.heap_max = 0, this.depth = new c2.Buf16(2 * s2 + 1), D2(this.depth), this.l_buf = 0, this.lit_bufsize = 0, this.last_lit = 0, this.d_buf = 0, this.opt_len = 0, this.static_len = 0, this.matches = 0, this.insert = 0, this.bi_buf = 0, this.bi_valid = 0;
       }
       function G2(e3) {
         var t3;
-        return e3 && e3.state ? (e3.total_in = e3.total_out = 0, e3.data_type = i2, (t3 = e3.state).pending = 0, t3.pending_out = 0, t3.wrap < 0 && (t3.wrap = -t3.wrap), t3.status = t3.wrap ? C2 : E2, e3.adler = t3.wrap === 2 ? 0 : 1, t3.last_flush = l2, u2._tr_init(t3), m2) : R(e3, _2);
+        return e3 && e3.state ? (e3.total_in = e3.total_out = 0, e3.data_type = i2, (t3 = e3.state).pending = 0, t3.pending_out = 0, t3.wrap < 0 && (t3.wrap = -t3.wrap), t3.status = t3.wrap ? C2 : E2, e3.adler = t3.wrap === 2 ? 0 : 1, t3.last_flush = l2, u2._tr_init(t3), m2) : R2(e3, _2);
       }
       function K2(e3) {
         var t3 = G2(e3);
@@ -43850,29 +44117,29 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         if (!e3)
           return _2;
         var a3 = 1;
-        if (t3 === g && (t3 = 6), n3 < 0 ? (a3 = 0, n3 = -n3) : 15 < n3 && (a3 = 2, n3 -= 16), i3 < 1 || y2 < i3 || r3 !== v2 || n3 < 8 || 15 < n3 || t3 < 0 || 9 < t3 || s3 < 0 || b2 < s3)
-          return R(e3, _2);
+        if (t3 === g2 && (t3 = 6), n3 < 0 ? (a3 = 0, n3 = -n3) : 15 < n3 && (a3 = 2, n3 -= 16), i3 < 1 || y2 < i3 || r3 !== v2 || n3 < 8 || 15 < n3 || t3 < 0 || 9 < t3 || s3 < 0 || b2 < s3)
+          return R2(e3, _2);
         n3 === 8 && (n3 = 9);
-        var o2 = new H();
-        return (e3.state = o2).strm = e3, o2.wrap = a3, o2.gzhead = null, o2.w_bits = n3, o2.w_size = 1 << o2.w_bits, o2.w_mask = o2.w_size - 1, o2.hash_bits = i3 + 7, o2.hash_size = 1 << o2.hash_bits, o2.hash_mask = o2.hash_size - 1, o2.hash_shift = ~~((o2.hash_bits + x2 - 1) / x2), o2.window = new c2.Buf8(2 * o2.w_size), o2.head = new c2.Buf16(o2.hash_size), o2.prev = new c2.Buf16(o2.w_size), o2.lit_bufsize = 1 << i3 + 6, o2.pending_buf_size = 4 * o2.lit_bufsize, o2.pending_buf = new c2.Buf8(o2.pending_buf_size), o2.d_buf = 1 * o2.lit_bufsize, o2.l_buf = 3 * o2.lit_bufsize, o2.level = t3, o2.strategy = s3, o2.method = r3, K2(e3);
+        var o3 = new H2();
+        return (e3.state = o3).strm = e3, o3.wrap = a3, o3.gzhead = null, o3.w_bits = n3, o3.w_size = 1 << o3.w_bits, o3.w_mask = o3.w_size - 1, o3.hash_bits = i3 + 7, o3.hash_size = 1 << o3.hash_bits, o3.hash_mask = o3.hash_size - 1, o3.hash_shift = ~~((o3.hash_bits + x2 - 1) / x2), o3.window = new c2.Buf8(2 * o3.w_size), o3.head = new c2.Buf16(o3.hash_size), o3.prev = new c2.Buf16(o3.w_size), o3.lit_bufsize = 1 << i3 + 6, o3.pending_buf_size = 4 * o3.lit_bufsize, o3.pending_buf = new c2.Buf8(o3.pending_buf_size), o3.d_buf = 1 * o3.lit_bufsize, o3.l_buf = 3 * o3.lit_bufsize, o3.level = t3, o3.strategy = s3, o3.method = r3, K2(e3);
       }
       h2 = [new M2(0, 0, 0, 0, function(e3, t3) {
         var r3 = 65535;
         for (r3 > e3.pending_buf_size - 5 && (r3 = e3.pending_buf_size - 5); ; ) {
           if (e3.lookahead <= 1) {
             if (j2(e3), e3.lookahead === 0 && t3 === l2)
-              return A;
+              return A2;
             if (e3.lookahead === 0)
               break;
           }
           e3.strstart += e3.lookahead, e3.lookahead = 0;
           var n3 = e3.block_start + r3;
           if ((e3.strstart === 0 || e3.strstart >= n3) && (e3.lookahead = e3.strstart - n3, e3.strstart = n3, N2(e3, false), e3.strm.avail_out === 0))
-            return A;
-          if (e3.strstart - e3.block_start >= e3.w_size - z && (N2(e3, false), e3.strm.avail_out === 0))
-            return A;
+            return A2;
+          if (e3.strstart - e3.block_start >= e3.w_size - z2 && (N2(e3, false), e3.strm.avail_out === 0))
+            return A2;
         }
-        return e3.insert = 0, t3 === f2 ? (N2(e3, true), e3.strm.avail_out === 0 ? O2 : B) : (e3.strstart > e3.block_start && (N2(e3, false), e3.strm.avail_out), A);
+        return e3.insert = 0, t3 === f2 ? (N2(e3, true), e3.strm.avail_out === 0 ? O2 : B2) : (e3.strstart > e3.block_start && (N2(e3, false), e3.strm.avail_out), A2);
       }), new M2(4, 4, 8, 4, Z2), new M2(4, 5, 16, 8, Z2), new M2(4, 6, 32, 32, Z2), new M2(4, 4, 16, 16, W2), new M2(8, 16, 32, 32, W2), new M2(8, 16, 128, 128, W2), new M2(8, 32, 128, 256, W2), new M2(32, 128, 258, 1024, W2), new M2(32, 258, 258, 4096, W2)], r2.deflateInit = function(e3, t3) {
         return Y2(e3, t3, v2, 15, 8, 0);
       }, r2.deflateInit2 = Y2, r2.deflateReset = K2, r2.deflateResetKeep = G2, r2.deflateSetHeader = function(e3, t3) {
@@ -43880,9 +44147,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, r2.deflate = function(e3, t3) {
         var r3, n3, i3, s3;
         if (!e3 || !e3.state || 5 < t3 || t3 < 0)
-          return e3 ? R(e3, _2) : _2;
+          return e3 ? R2(e3, _2) : _2;
         if (n3 = e3.state, !e3.output || !e3.input && e3.avail_in !== 0 || n3.status === 666 && t3 !== f2)
-          return R(e3, e3.avail_out === 0 ? -5 : _2);
+          return R2(e3, e3.avail_out === 0 ? -5 : _2);
         if (n3.strm = e3, r3 = n3.last_flush, n3.last_flush = t3, n3.status === C2)
           if (n3.wrap === 2)
             e3.adler = 0, U2(n3, 31), U2(n3, 139), U2(n3, 8), n3.gzhead ? (U2(n3, (n3.gzhead.text ? 1 : 0) + (n3.gzhead.hcrc ? 2 : 0) + (n3.gzhead.extra ? 4 : 0) + (n3.gzhead.name ? 8 : 0) + (n3.gzhead.comment ? 16 : 0)), U2(n3, 255 & n3.gzhead.time), U2(n3, n3.gzhead.time >> 8 & 255), U2(n3, n3.gzhead.time >> 16 & 255), U2(n3, n3.gzhead.time >> 24 & 255), U2(n3, n3.level === 9 ? 2 : 2 <= n3.strategy || n3.level < 2 ? 4 : 0), U2(n3, 255 & n3.gzhead.os), n3.gzhead.extra && n3.gzhead.extra.length && (U2(n3, 255 & n3.gzhead.extra.length), U2(n3, n3.gzhead.extra.length >> 8 & 255)), n3.gzhead.hcrc && (e3.adler = p2(e3.adler, n3.pending_buf, n3.pending, 0)), n3.gzindex = 0, n3.status = 69) : (U2(n3, 0), U2(n3, 0), U2(n3, 0), U2(n3, 0), U2(n3, 0), U2(n3, n3.level === 9 ? 2 : 2 <= n3.strategy || n3.level < 2 ? 4 : 0), U2(n3, 3), n3.status = E2);
@@ -43927,26 +44194,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           if (F2(e3), e3.avail_out === 0)
             return n3.last_flush = -1, m2;
         } else if (e3.avail_in === 0 && T2(t3) <= T2(r3) && t3 !== f2)
-          return R(e3, -5);
+          return R2(e3, -5);
         if (n3.status === 666 && e3.avail_in !== 0)
-          return R(e3, -5);
+          return R2(e3, -5);
         if (e3.avail_in !== 0 || n3.lookahead !== 0 || t3 !== l2 && n3.status !== 666) {
-          var o2 = n3.strategy === 2 ? function(e4, t4) {
+          var o3 = n3.strategy === 2 ? function(e4, t4) {
             for (var r4; ; ) {
               if (e4.lookahead === 0 && (j2(e4), e4.lookahead === 0)) {
                 if (t4 === l2)
-                  return A;
+                  return A2;
                 break;
               }
               if (e4.match_length = 0, r4 = u2._tr_tally(e4, 0, e4.window[e4.strstart]), e4.lookahead--, e4.strstart++, r4 && (N2(e4, false), e4.strm.avail_out === 0))
-                return A;
+                return A2;
             }
-            return e4.insert = 0, t4 === f2 ? (N2(e4, true), e4.strm.avail_out === 0 ? O2 : B) : e4.last_lit && (N2(e4, false), e4.strm.avail_out === 0) ? A : I2;
+            return e4.insert = 0, t4 === f2 ? (N2(e4, true), e4.strm.avail_out === 0 ? O2 : B2) : e4.last_lit && (N2(e4, false), e4.strm.avail_out === 0) ? A2 : I2;
           }(n3, t3) : n3.strategy === 3 ? function(e4, t4) {
             for (var r4, n4, i4, s4, a4 = e4.window; ; ) {
               if (e4.lookahead <= S2) {
                 if (j2(e4), e4.lookahead <= S2 && t4 === l2)
-                  return A;
+                  return A2;
                 if (e4.lookahead === 0)
                   break;
               }
@@ -43957,31 +44224,31 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 e4.match_length = S2 - (s4 - i4), e4.match_length > e4.lookahead && (e4.match_length = e4.lookahead);
               }
               if (e4.match_length >= x2 ? (r4 = u2._tr_tally(e4, 1, e4.match_length - x2), e4.lookahead -= e4.match_length, e4.strstart += e4.match_length, e4.match_length = 0) : (r4 = u2._tr_tally(e4, 0, e4.window[e4.strstart]), e4.lookahead--, e4.strstart++), r4 && (N2(e4, false), e4.strm.avail_out === 0))
-                return A;
+                return A2;
             }
-            return e4.insert = 0, t4 === f2 ? (N2(e4, true), e4.strm.avail_out === 0 ? O2 : B) : e4.last_lit && (N2(e4, false), e4.strm.avail_out === 0) ? A : I2;
+            return e4.insert = 0, t4 === f2 ? (N2(e4, true), e4.strm.avail_out === 0 ? O2 : B2) : e4.last_lit && (N2(e4, false), e4.strm.avail_out === 0) ? A2 : I2;
           }(n3, t3) : h2[n3.level].func(n3, t3);
-          if (o2 !== O2 && o2 !== B || (n3.status = 666), o2 === A || o2 === O2)
+          if (o3 !== O2 && o3 !== B2 || (n3.status = 666), o3 === A2 || o3 === O2)
             return e3.avail_out === 0 && (n3.last_flush = -1), m2;
-          if (o2 === I2 && (t3 === 1 ? u2._tr_align(n3) : t3 !== 5 && (u2._tr_stored_block(n3, 0, 0, false), t3 === 3 && (D2(n3.head), n3.lookahead === 0 && (n3.strstart = 0, n3.block_start = 0, n3.insert = 0))), F2(e3), e3.avail_out === 0))
+          if (o3 === I2 && (t3 === 1 ? u2._tr_align(n3) : t3 !== 5 && (u2._tr_stored_block(n3, 0, 0, false), t3 === 3 && (D2(n3.head), n3.lookahead === 0 && (n3.strstart = 0, n3.block_start = 0, n3.insert = 0))), F2(e3), e3.avail_out === 0))
             return n3.last_flush = -1, m2;
         }
         return t3 !== f2 ? m2 : n3.wrap <= 0 ? 1 : (n3.wrap === 2 ? (U2(n3, 255 & e3.adler), U2(n3, e3.adler >> 8 & 255), U2(n3, e3.adler >> 16 & 255), U2(n3, e3.adler >> 24 & 255), U2(n3, 255 & e3.total_in), U2(n3, e3.total_in >> 8 & 255), U2(n3, e3.total_in >> 16 & 255), U2(n3, e3.total_in >> 24 & 255)) : (P2(n3, e3.adler >>> 16), P2(n3, 65535 & e3.adler)), F2(e3), 0 < n3.wrap && (n3.wrap = -n3.wrap), n3.pending !== 0 ? m2 : 1);
       }, r2.deflateEnd = function(e3) {
         var t3;
-        return e3 && e3.state ? (t3 = e3.state.status) !== C2 && t3 !== 69 && t3 !== 73 && t3 !== 91 && t3 !== 103 && t3 !== E2 && t3 !== 666 ? R(e3, _2) : (e3.state = null, t3 === E2 ? R(e3, -3) : m2) : _2;
+        return e3 && e3.state ? (t3 = e3.state.status) !== C2 && t3 !== 69 && t3 !== 73 && t3 !== 91 && t3 !== 103 && t3 !== E2 && t3 !== 666 ? R2(e3, _2) : (e3.state = null, t3 === E2 ? R2(e3, -3) : m2) : _2;
       }, r2.deflateSetDictionary = function(e3, t3) {
-        var r3, n3, i3, s3, a3, o2, h3, u3, l3 = t3.length;
+        var r3, n3, i3, s3, a3, o3, h3, u3, l3 = t3.length;
         if (!e3 || !e3.state)
           return _2;
         if ((s3 = (r3 = e3.state).wrap) === 2 || s3 === 1 && r3.status !== C2 || r3.lookahead)
           return _2;
-        for (s3 === 1 && (e3.adler = d2(e3.adler, t3, l3, 0)), r3.wrap = 0, l3 >= r3.w_size && (s3 === 0 && (D2(r3.head), r3.strstart = 0, r3.block_start = 0, r3.insert = 0), u3 = new c2.Buf8(r3.w_size), c2.arraySet(u3, t3, l3 - r3.w_size, r3.w_size, 0), t3 = u3, l3 = r3.w_size), a3 = e3.avail_in, o2 = e3.next_in, h3 = e3.input, e3.avail_in = l3, e3.next_in = 0, e3.input = t3, j2(r3); r3.lookahead >= x2; ) {
+        for (s3 === 1 && (e3.adler = d2(e3.adler, t3, l3, 0)), r3.wrap = 0, l3 >= r3.w_size && (s3 === 0 && (D2(r3.head), r3.strstart = 0, r3.block_start = 0, r3.insert = 0), u3 = new c2.Buf8(r3.w_size), c2.arraySet(u3, t3, l3 - r3.w_size, r3.w_size, 0), t3 = u3, l3 = r3.w_size), a3 = e3.avail_in, o3 = e3.next_in, h3 = e3.input, e3.avail_in = l3, e3.next_in = 0, e3.input = t3, j2(r3); r3.lookahead >= x2; ) {
           for (n3 = r3.strstart, i3 = r3.lookahead - (x2 - 1); r3.ins_h = (r3.ins_h << r3.hash_shift ^ r3.window[n3 + x2 - 1]) & r3.hash_mask, r3.prev[n3 & r3.w_mask] = r3.head[r3.ins_h], r3.head[r3.ins_h] = n3, n3++, --i3; )
             ;
           r3.strstart = n3, r3.lookahead = x2 - 1, j2(r3);
         }
-        return r3.strstart += r3.lookahead, r3.block_start = r3.strstart, r3.insert = r3.lookahead, r3.lookahead = 0, r3.match_length = r3.prev_length = x2 - 1, r3.match_available = 0, e3.next_in = o2, e3.input = h3, e3.avail_in = a3, r3.wrap = s3, m2;
+        return r3.strstart += r3.lookahead, r3.block_start = r3.strstart, r3.insert = r3.lookahead, r3.lookahead = 0, r3.match_length = r3.prev_length = x2 - 1, r3.match_available = 0, e3.next_in = o3, e3.input = h3, e3.avail_in = a3, r3.wrap = s3, m2;
       }, r2.deflateInfo = "pako deflate (from Nodeca project)";
     }, { "../utils/common": 41, "./adler32": 43, "./crc32": 45, "./messages": 51, "./trees": 52 }], 47: [function(e2, t2, r2) {
       t2.exports = function() {
@@ -43989,11 +44256,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       };
     }, {}], 48: [function(e2, t2, r2) {
       t2.exports = function(e3, t3) {
-        var r3, n2, i2, s2, a2, o, h2, u2, l2, f2, c2, d2, p2, m2, _2, g, b2, v2, y2, w2, k, x2, S2, z, C2;
-        r3 = e3.state, n2 = e3.next_in, z = e3.input, i2 = n2 + (e3.avail_in - 5), s2 = e3.next_out, C2 = e3.output, a2 = s2 - (t3 - e3.avail_out), o = s2 + (e3.avail_out - 257), h2 = r3.dmax, u2 = r3.wsize, l2 = r3.whave, f2 = r3.wnext, c2 = r3.window, d2 = r3.hold, p2 = r3.bits, m2 = r3.lencode, _2 = r3.distcode, g = (1 << r3.lenbits) - 1, b2 = (1 << r3.distbits) - 1;
+        var r3, n2, i2, s2, a2, o2, h2, u2, l2, f2, c2, d2, p2, m2, _2, g2, b2, v2, y2, w2, k2, x2, S2, z2, C2;
+        r3 = e3.state, n2 = e3.next_in, z2 = e3.input, i2 = n2 + (e3.avail_in - 5), s2 = e3.next_out, C2 = e3.output, a2 = s2 - (t3 - e3.avail_out), o2 = s2 + (e3.avail_out - 257), h2 = r3.dmax, u2 = r3.wsize, l2 = r3.whave, f2 = r3.wnext, c2 = r3.window, d2 = r3.hold, p2 = r3.bits, m2 = r3.lencode, _2 = r3.distcode, g2 = (1 << r3.lenbits) - 1, b2 = (1 << r3.distbits) - 1;
         e:
           do {
-            p2 < 15 && (d2 += z[n2++] << p2, p2 += 8, d2 += z[n2++] << p2, p2 += 8), v2 = m2[d2 & g];
+            p2 < 15 && (d2 += z2[n2++] << p2, p2 += 8, d2 += z2[n2++] << p2, p2 += 8), v2 = m2[d2 & g2];
             t:
               for (; ; ) {
                 if (d2 >>>= y2 = v2 >>> 24, p2 -= y2, (y2 = v2 >>> 16 & 255) === 0)
@@ -44011,7 +44278,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                     e3.msg = "invalid literal/length code", r3.mode = 30;
                     break e;
                   }
-                  w2 = 65535 & v2, (y2 &= 15) && (p2 < y2 && (d2 += z[n2++] << p2, p2 += 8), w2 += d2 & (1 << y2) - 1, d2 >>>= y2, p2 -= y2), p2 < 15 && (d2 += z[n2++] << p2, p2 += 8, d2 += z[n2++] << p2, p2 += 8), v2 = _2[d2 & b2];
+                  w2 = 65535 & v2, (y2 &= 15) && (p2 < y2 && (d2 += z2[n2++] << p2, p2 += 8), w2 += d2 & (1 << y2) - 1, d2 >>>= y2, p2 -= y2), p2 < 15 && (d2 += z2[n2++] << p2, p2 += 8, d2 += z2[n2++] << p2, p2 += 8), v2 = _2[d2 & b2];
                   r:
                     for (; ; ) {
                       if (d2 >>>= y2 = v2 >>> 24, p2 -= y2, !(16 & (y2 = v2 >>> 16 & 255))) {
@@ -44022,12 +44289,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                         e3.msg = "invalid distance code", r3.mode = 30;
                         break e;
                       }
-                      if (k = 65535 & v2, p2 < (y2 &= 15) && (d2 += z[n2++] << p2, (p2 += 8) < y2 && (d2 += z[n2++] << p2, p2 += 8)), h2 < (k += d2 & (1 << y2) - 1)) {
+                      if (k2 = 65535 & v2, p2 < (y2 &= 15) && (d2 += z2[n2++] << p2, (p2 += 8) < y2 && (d2 += z2[n2++] << p2, p2 += 8)), h2 < (k2 += d2 & (1 << y2) - 1)) {
                         e3.msg = "invalid distance too far back", r3.mode = 30;
                         break e;
                       }
-                      if (d2 >>>= y2, p2 -= y2, (y2 = s2 - a2) < k) {
-                        if (l2 < (y2 = k - y2) && r3.sane) {
+                      if (d2 >>>= y2, p2 -= y2, (y2 = s2 - a2) < k2) {
+                        if (l2 < (y2 = k2 - y2) && r3.sane) {
                           e3.msg = "invalid distance too far back", r3.mode = 30;
                           break e;
                         }
@@ -44035,7 +44302,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                           if (x2 += u2 - y2, y2 < w2) {
                             for (w2 -= y2; C2[s2++] = c2[x2++], --y2; )
                               ;
-                            x2 = s2 - k, S2 = C2;
+                            x2 = s2 - k2, S2 = C2;
                           }
                         } else if (f2 < y2) {
                           if (x2 += u2 + f2 - y2, (y2 -= f2) < w2) {
@@ -44044,19 +44311,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                             if (x2 = 0, f2 < w2) {
                               for (w2 -= y2 = f2; C2[s2++] = c2[x2++], --y2; )
                                 ;
-                              x2 = s2 - k, S2 = C2;
+                              x2 = s2 - k2, S2 = C2;
                             }
                           }
                         } else if (x2 += f2 - y2, y2 < w2) {
                           for (w2 -= y2; C2[s2++] = c2[x2++], --y2; )
                             ;
-                          x2 = s2 - k, S2 = C2;
+                          x2 = s2 - k2, S2 = C2;
                         }
                         for (; 2 < w2; )
                           C2[s2++] = S2[x2++], C2[s2++] = S2[x2++], C2[s2++] = S2[x2++], w2 -= 3;
                         w2 && (C2[s2++] = S2[x2++], 1 < w2 && (C2[s2++] = S2[x2++]));
                       } else {
-                        for (x2 = s2 - k; C2[s2++] = C2[x2++], C2[s2++] = C2[x2++], C2[s2++] = C2[x2++], 2 < (w2 -= 3); )
+                        for (x2 = s2 - k2; C2[s2++] = C2[x2++], C2[s2++] = C2[x2++], C2[s2++] = C2[x2++], 2 < (w2 -= 3); )
                           ;
                         w2 && (C2[s2++] = C2[x2++], 1 < w2 && (C2[s2++] = C2[x2++]));
                       }
@@ -44065,11 +44332,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 }
                 break;
               }
-          } while (n2 < i2 && s2 < o);
-        n2 -= w2 = p2 >> 3, d2 &= (1 << (p2 -= w2 << 3)) - 1, e3.next_in = n2, e3.next_out = s2, e3.avail_in = n2 < i2 ? i2 - n2 + 5 : 5 - (n2 - i2), e3.avail_out = s2 < o ? o - s2 + 257 : 257 - (s2 - o), r3.hold = d2, r3.bits = p2;
+          } while (n2 < i2 && s2 < o2);
+        n2 -= w2 = p2 >> 3, d2 &= (1 << (p2 -= w2 << 3)) - 1, e3.next_in = n2, e3.next_out = s2, e3.avail_in = n2 < i2 ? i2 - n2 + 5 : 5 - (n2 - i2), e3.avail_out = s2 < o2 ? o2 - s2 + 257 : 257 - (s2 - o2), r3.hold = d2, r3.bits = p2;
       };
     }, {}], 49: [function(e2, t2, r2) {
-      var I2 = e2("../utils/common"), O2 = e2("./adler32"), B = e2("./crc32"), R = e2("./inffast"), T2 = e2("./inftrees"), D2 = 1, F2 = 2, N2 = 0, U2 = -2, P2 = 1, n2 = 852, i2 = 592;
+      var I2 = e2("../utils/common"), O2 = e2("./adler32"), B2 = e2("./crc32"), R2 = e2("./inffast"), T2 = e2("./inftrees"), D2 = 1, F2 = 2, N2 = 0, U2 = -2, P2 = 1, n2 = 852, i2 = 592;
       function L2(e3) {
         return (e3 >>> 24 & 255) + (e3 >>> 8 & 65280) + ((65280 & e3) << 8) + ((255 & e3) << 24);
       }
@@ -44080,13 +44347,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var t3;
         return e3 && e3.state ? (t3 = e3.state, e3.total_in = e3.total_out = t3.total = 0, e3.msg = "", t3.wrap && (e3.adler = 1 & t3.wrap), t3.mode = P2, t3.last = 0, t3.havedict = 0, t3.dmax = 32768, t3.head = null, t3.hold = 0, t3.bits = 0, t3.lencode = t3.lendyn = new I2.Buf32(n2), t3.distcode = t3.distdyn = new I2.Buf32(i2), t3.sane = 1, t3.back = -1, N2) : U2;
       }
-      function o(e3) {
+      function o2(e3) {
         var t3;
         return e3 && e3.state ? ((t3 = e3.state).wsize = 0, t3.whave = 0, t3.wnext = 0, a2(e3)) : U2;
       }
       function h2(e3, t3) {
         var r3, n3;
-        return e3 && e3.state ? (n3 = e3.state, t3 < 0 ? (r3 = 0, t3 = -t3) : (r3 = 1 + (t3 >> 4), t3 < 48 && (t3 &= 15)), t3 && (t3 < 8 || 15 < t3) ? U2 : (n3.window !== null && n3.wbits !== t3 && (n3.window = null), n3.wrap = r3, n3.wbits = t3, o(e3))) : U2;
+        return e3 && e3.state ? (n3 = e3.state, t3 < 0 ? (r3 = 0, t3 = -t3) : (r3 = 1 + (t3 >> 4), t3 < 48 && (t3 &= 15)), t3 && (t3 < 8 || 15 < t3) ? U2 : (n3.window !== null && n3.wbits !== t3 && (n3.window = null), n3.wrap = r3, n3.wbits = t3, o2(e3))) : U2;
       }
       function u2(e3, t3) {
         var r3, n3;
@@ -44114,13 +44381,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var i3, s3 = e3.state;
         return s3.window === null && (s3.wsize = 1 << s3.wbits, s3.wnext = 0, s3.whave = 0, s3.window = new I2.Buf8(s3.wsize)), n3 >= s3.wsize ? (I2.arraySet(s3.window, t3, r3 - s3.wsize, s3.wsize, 0), s3.wnext = 0, s3.whave = s3.wsize) : (n3 < (i3 = s3.wsize - s3.wnext) && (i3 = n3), I2.arraySet(s3.window, t3, r3 - n3, i3, s3.wnext), (n3 -= i3) ? (I2.arraySet(s3.window, t3, r3 - n3, n3, 0), s3.wnext = n3, s3.whave = s3.wsize) : (s3.wnext += i3, s3.wnext === s3.wsize && (s3.wnext = 0), s3.whave < s3.wsize && (s3.whave += i3))), 0;
       }
-      r2.inflateReset = o, r2.inflateReset2 = h2, r2.inflateResetKeep = a2, r2.inflateInit = function(e3) {
+      r2.inflateReset = o2, r2.inflateReset2 = h2, r2.inflateResetKeep = a2, r2.inflateInit = function(e3) {
         return u2(e3, 15);
       }, r2.inflateInit2 = u2, r2.inflate = function(e3, t3) {
-        var r3, n3, i3, s3, a3, o2, h3, u3, l3, f3, c3, d2, p2, m2, _2, g, b2, v2, y2, w2, k, x2, S2, z, C2 = 0, E2 = new I2.Buf8(4), A = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+        var r3, n3, i3, s3, a3, o3, h3, u3, l3, f3, c3, d2, p2, m2, _2, g2, b2, v2, y2, w2, k2, x2, S2, z2, C2 = 0, E2 = new I2.Buf8(4), A2 = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
         if (!e3 || !e3.state || !e3.output || !e3.input && e3.avail_in !== 0)
           return U2;
-        (r3 = e3.state).mode === 12 && (r3.mode = 13), a3 = e3.next_out, i3 = e3.output, h3 = e3.avail_out, s3 = e3.next_in, n3 = e3.input, o2 = e3.avail_in, u3 = r3.hold, l3 = r3.bits, f3 = o2, c3 = h3, x2 = N2;
+        (r3 = e3.state).mode === 12 && (r3.mode = 13), a3 = e3.next_out, i3 = e3.output, h3 = e3.avail_out, s3 = e3.next_in, n3 = e3.input, o3 = e3.avail_in, u3 = r3.hold, l3 = r3.bits, f3 = o3, c3 = h3, x2 = N2;
         e:
           for (; ; )
             switch (r3.mode) {
@@ -44130,12 +44397,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   break;
                 }
                 for (; l3 < 16; ) {
-                  if (o2 === 0)
+                  if (o3 === 0)
                     break e;
-                  o2--, u3 += n3[s3++] << l3, l3 += 8;
+                  o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
                 if (2 & r3.wrap && u3 === 35615) {
-                  E2[r3.check = 0] = 255 & u3, E2[1] = u3 >>> 8 & 255, r3.check = B(r3.check, E2, 2, 0), l3 = u3 = 0, r3.mode = 2;
+                  E2[r3.check = 0] = 255 & u3, E2[1] = u3 >>> 8 & 255, r3.check = B2(r3.check, E2, 2, 0), l3 = u3 = 0, r3.mode = 2;
                   break;
                 }
                 if (r3.flags = 0, r3.head && (r3.head.done = false), !(1 & r3.wrap) || (((255 & u3) << 8) + (u3 >> 8)) % 31) {
@@ -44146,19 +44413,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   e3.msg = "unknown compression method", r3.mode = 30;
                   break;
                 }
-                if (l3 -= 4, k = 8 + (15 & (u3 >>>= 4)), r3.wbits === 0)
-                  r3.wbits = k;
-                else if (k > r3.wbits) {
+                if (l3 -= 4, k2 = 8 + (15 & (u3 >>>= 4)), r3.wbits === 0)
+                  r3.wbits = k2;
+                else if (k2 > r3.wbits) {
                   e3.msg = "invalid window size", r3.mode = 30;
                   break;
                 }
-                r3.dmax = 1 << k, e3.adler = r3.check = 1, r3.mode = 512 & u3 ? 10 : 12, l3 = u3 = 0;
+                r3.dmax = 1 << k2, e3.adler = r3.check = 1, r3.mode = 512 & u3 ? 10 : 12, l3 = u3 = 0;
                 break;
               case 2:
                 for (; l3 < 16; ) {
-                  if (o2 === 0)
+                  if (o3 === 0)
                     break e;
-                  o2--, u3 += n3[s3++] << l3, l3 += 8;
+                  o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
                 if (r3.flags = u3, (255 & r3.flags) != 8) {
                   e3.msg = "unknown compression method", r3.mode = 30;
@@ -44168,54 +44435,54 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   e3.msg = "unknown header flags set", r3.mode = 30;
                   break;
                 }
-                r3.head && (r3.head.text = u3 >> 8 & 1), 512 & r3.flags && (E2[0] = 255 & u3, E2[1] = u3 >>> 8 & 255, r3.check = B(r3.check, E2, 2, 0)), l3 = u3 = 0, r3.mode = 3;
+                r3.head && (r3.head.text = u3 >> 8 & 1), 512 & r3.flags && (E2[0] = 255 & u3, E2[1] = u3 >>> 8 & 255, r3.check = B2(r3.check, E2, 2, 0)), l3 = u3 = 0, r3.mode = 3;
               case 3:
                 for (; l3 < 32; ) {
-                  if (o2 === 0)
+                  if (o3 === 0)
                     break e;
-                  o2--, u3 += n3[s3++] << l3, l3 += 8;
+                  o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
-                r3.head && (r3.head.time = u3), 512 & r3.flags && (E2[0] = 255 & u3, E2[1] = u3 >>> 8 & 255, E2[2] = u3 >>> 16 & 255, E2[3] = u3 >>> 24 & 255, r3.check = B(r3.check, E2, 4, 0)), l3 = u3 = 0, r3.mode = 4;
+                r3.head && (r3.head.time = u3), 512 & r3.flags && (E2[0] = 255 & u3, E2[1] = u3 >>> 8 & 255, E2[2] = u3 >>> 16 & 255, E2[3] = u3 >>> 24 & 255, r3.check = B2(r3.check, E2, 4, 0)), l3 = u3 = 0, r3.mode = 4;
               case 4:
                 for (; l3 < 16; ) {
-                  if (o2 === 0)
+                  if (o3 === 0)
                     break e;
-                  o2--, u3 += n3[s3++] << l3, l3 += 8;
+                  o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
-                r3.head && (r3.head.xflags = 255 & u3, r3.head.os = u3 >> 8), 512 & r3.flags && (E2[0] = 255 & u3, E2[1] = u3 >>> 8 & 255, r3.check = B(r3.check, E2, 2, 0)), l3 = u3 = 0, r3.mode = 5;
+                r3.head && (r3.head.xflags = 255 & u3, r3.head.os = u3 >> 8), 512 & r3.flags && (E2[0] = 255 & u3, E2[1] = u3 >>> 8 & 255, r3.check = B2(r3.check, E2, 2, 0)), l3 = u3 = 0, r3.mode = 5;
               case 5:
                 if (1024 & r3.flags) {
                   for (; l3 < 16; ) {
-                    if (o2 === 0)
+                    if (o3 === 0)
                       break e;
-                    o2--, u3 += n3[s3++] << l3, l3 += 8;
+                    o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
-                  r3.length = u3, r3.head && (r3.head.extra_len = u3), 512 & r3.flags && (E2[0] = 255 & u3, E2[1] = u3 >>> 8 & 255, r3.check = B(r3.check, E2, 2, 0)), l3 = u3 = 0;
+                  r3.length = u3, r3.head && (r3.head.extra_len = u3), 512 & r3.flags && (E2[0] = 255 & u3, E2[1] = u3 >>> 8 & 255, r3.check = B2(r3.check, E2, 2, 0)), l3 = u3 = 0;
                 } else
                   r3.head && (r3.head.extra = null);
                 r3.mode = 6;
               case 6:
-                if (1024 & r3.flags && (o2 < (d2 = r3.length) && (d2 = o2), d2 && (r3.head && (k = r3.head.extra_len - r3.length, r3.head.extra || (r3.head.extra = new Array(r3.head.extra_len)), I2.arraySet(r3.head.extra, n3, s3, d2, k)), 512 & r3.flags && (r3.check = B(r3.check, n3, d2, s3)), o2 -= d2, s3 += d2, r3.length -= d2), r3.length))
+                if (1024 & r3.flags && (o3 < (d2 = r3.length) && (d2 = o3), d2 && (r3.head && (k2 = r3.head.extra_len - r3.length, r3.head.extra || (r3.head.extra = new Array(r3.head.extra_len)), I2.arraySet(r3.head.extra, n3, s3, d2, k2)), 512 & r3.flags && (r3.check = B2(r3.check, n3, d2, s3)), o3 -= d2, s3 += d2, r3.length -= d2), r3.length))
                   break e;
                 r3.length = 0, r3.mode = 7;
               case 7:
                 if (2048 & r3.flags) {
-                  if (o2 === 0)
+                  if (o3 === 0)
                     break e;
-                  for (d2 = 0; k = n3[s3 + d2++], r3.head && k && r3.length < 65536 && (r3.head.name += String.fromCharCode(k)), k && d2 < o2; )
+                  for (d2 = 0; k2 = n3[s3 + d2++], r3.head && k2 && r3.length < 65536 && (r3.head.name += String.fromCharCode(k2)), k2 && d2 < o3; )
                     ;
-                  if (512 & r3.flags && (r3.check = B(r3.check, n3, d2, s3)), o2 -= d2, s3 += d2, k)
+                  if (512 & r3.flags && (r3.check = B2(r3.check, n3, d2, s3)), o3 -= d2, s3 += d2, k2)
                     break e;
                 } else
                   r3.head && (r3.head.name = null);
                 r3.length = 0, r3.mode = 8;
               case 8:
                 if (4096 & r3.flags) {
-                  if (o2 === 0)
+                  if (o3 === 0)
                     break e;
-                  for (d2 = 0; k = n3[s3 + d2++], r3.head && k && r3.length < 65536 && (r3.head.comment += String.fromCharCode(k)), k && d2 < o2; )
+                  for (d2 = 0; k2 = n3[s3 + d2++], r3.head && k2 && r3.length < 65536 && (r3.head.comment += String.fromCharCode(k2)), k2 && d2 < o3; )
                     ;
-                  if (512 & r3.flags && (r3.check = B(r3.check, n3, d2, s3)), o2 -= d2, s3 += d2, k)
+                  if (512 & r3.flags && (r3.check = B2(r3.check, n3, d2, s3)), o3 -= d2, s3 += d2, k2)
                     break e;
                 } else
                   r3.head && (r3.head.comment = null);
@@ -44223,9 +44490,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 9:
                 if (512 & r3.flags) {
                   for (; l3 < 16; ) {
-                    if (o2 === 0)
+                    if (o3 === 0)
                       break e;
-                    o2--, u3 += n3[s3++] << l3, l3 += 8;
+                    o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
                   if (u3 !== (65535 & r3.check)) {
                     e3.msg = "header crc mismatch", r3.mode = 30;
@@ -44237,14 +44504,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 break;
               case 10:
                 for (; l3 < 32; ) {
-                  if (o2 === 0)
+                  if (o3 === 0)
                     break e;
-                  o2--, u3 += n3[s3++] << l3, l3 += 8;
+                  o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
                 e3.adler = r3.check = L2(u3), l3 = u3 = 0, r3.mode = 11;
               case 11:
                 if (r3.havedict === 0)
-                  return e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o2, r3.hold = u3, r3.bits = l3, 2;
+                  return e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o3, r3.hold = u3, r3.bits = l3, 2;
                 e3.adler = r3.check = 1, r3.mode = 12;
               case 12:
                 if (t3 === 5 || t3 === 6)
@@ -44255,9 +44522,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   break;
                 }
                 for (; l3 < 3; ) {
-                  if (o2 === 0)
+                  if (o3 === 0)
                     break e;
-                  o2--, u3 += n3[s3++] << l3, l3 += 8;
+                  o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
                 switch (r3.last = 1 & u3, l3 -= 1, 3 & (u3 >>>= 1)) {
                   case 0:
@@ -44278,9 +44545,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 break;
               case 14:
                 for (u3 >>>= 7 & l3, l3 -= 7 & l3; l3 < 32; ) {
-                  if (o2 === 0)
+                  if (o3 === 0)
                     break e;
-                  o2--, u3 += n3[s3++] << l3, l3 += 8;
+                  o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
                 if ((65535 & u3) != (u3 >>> 16 ^ 65535)) {
                   e3.msg = "invalid stored block lengths", r3.mode = 30;
@@ -44292,18 +44559,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 r3.mode = 16;
               case 16:
                 if (d2 = r3.length) {
-                  if (o2 < d2 && (d2 = o2), h3 < d2 && (d2 = h3), d2 === 0)
+                  if (o3 < d2 && (d2 = o3), h3 < d2 && (d2 = h3), d2 === 0)
                     break e;
-                  I2.arraySet(i3, n3, s3, d2, a3), o2 -= d2, s3 += d2, h3 -= d2, a3 += d2, r3.length -= d2;
+                  I2.arraySet(i3, n3, s3, d2, a3), o3 -= d2, s3 += d2, h3 -= d2, a3 += d2, r3.length -= d2;
                   break;
                 }
                 r3.mode = 12;
                 break;
               case 17:
                 for (; l3 < 14; ) {
-                  if (o2 === 0)
+                  if (o3 === 0)
                     break e;
-                  o2--, u3 += n3[s3++] << l3, l3 += 8;
+                  o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
                 if (r3.nlen = 257 + (31 & u3), u3 >>>= 5, l3 -= 5, r3.ndist = 1 + (31 & u3), u3 >>>= 5, l3 -= 5, r3.ncode = 4 + (15 & u3), u3 >>>= 4, l3 -= 4, 286 < r3.nlen || 30 < r3.ndist) {
                   e3.msg = "too many length or distance symbols", r3.mode = 30;
@@ -44313,14 +44580,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 18:
                 for (; r3.have < r3.ncode; ) {
                   for (; l3 < 3; ) {
-                    if (o2 === 0)
+                    if (o3 === 0)
                       break e;
-                    o2--, u3 += n3[s3++] << l3, l3 += 8;
+                    o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
-                  r3.lens[A[r3.have++]] = 7 & u3, u3 >>>= 3, l3 -= 3;
+                  r3.lens[A2[r3.have++]] = 7 & u3, u3 >>>= 3, l3 -= 3;
                 }
                 for (; r3.have < 19; )
-                  r3.lens[A[r3.have++]] = 0;
+                  r3.lens[A2[r3.have++]] = 0;
                 if (r3.lencode = r3.lendyn, r3.lenbits = 7, S2 = { bits: r3.lenbits }, x2 = T2(0, r3.lens, 0, 19, r3.lencode, 0, r3.work, S2), r3.lenbits = S2.bits, x2) {
                   e3.msg = "invalid code lengths set", r3.mode = 30;
                   break;
@@ -44328,46 +44595,46 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 r3.have = 0, r3.mode = 19;
               case 19:
                 for (; r3.have < r3.nlen + r3.ndist; ) {
-                  for (; g = (C2 = r3.lencode[u3 & (1 << r3.lenbits) - 1]) >>> 16 & 255, b2 = 65535 & C2, !((_2 = C2 >>> 24) <= l3); ) {
-                    if (o2 === 0)
+                  for (; g2 = (C2 = r3.lencode[u3 & (1 << r3.lenbits) - 1]) >>> 16 & 255, b2 = 65535 & C2, !((_2 = C2 >>> 24) <= l3); ) {
+                    if (o3 === 0)
                       break e;
-                    o2--, u3 += n3[s3++] << l3, l3 += 8;
+                    o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
                   if (b2 < 16)
                     u3 >>>= _2, l3 -= _2, r3.lens[r3.have++] = b2;
                   else {
                     if (b2 === 16) {
-                      for (z = _2 + 2; l3 < z; ) {
-                        if (o2 === 0)
+                      for (z2 = _2 + 2; l3 < z2; ) {
+                        if (o3 === 0)
                           break e;
-                        o2--, u3 += n3[s3++] << l3, l3 += 8;
+                        o3--, u3 += n3[s3++] << l3, l3 += 8;
                       }
                       if (u3 >>>= _2, l3 -= _2, r3.have === 0) {
                         e3.msg = "invalid bit length repeat", r3.mode = 30;
                         break;
                       }
-                      k = r3.lens[r3.have - 1], d2 = 3 + (3 & u3), u3 >>>= 2, l3 -= 2;
+                      k2 = r3.lens[r3.have - 1], d2 = 3 + (3 & u3), u3 >>>= 2, l3 -= 2;
                     } else if (b2 === 17) {
-                      for (z = _2 + 3; l3 < z; ) {
-                        if (o2 === 0)
+                      for (z2 = _2 + 3; l3 < z2; ) {
+                        if (o3 === 0)
                           break e;
-                        o2--, u3 += n3[s3++] << l3, l3 += 8;
+                        o3--, u3 += n3[s3++] << l3, l3 += 8;
                       }
-                      l3 -= _2, k = 0, d2 = 3 + (7 & (u3 >>>= _2)), u3 >>>= 3, l3 -= 3;
+                      l3 -= _2, k2 = 0, d2 = 3 + (7 & (u3 >>>= _2)), u3 >>>= 3, l3 -= 3;
                     } else {
-                      for (z = _2 + 7; l3 < z; ) {
-                        if (o2 === 0)
+                      for (z2 = _2 + 7; l3 < z2; ) {
+                        if (o3 === 0)
                           break e;
-                        o2--, u3 += n3[s3++] << l3, l3 += 8;
+                        o3--, u3 += n3[s3++] << l3, l3 += 8;
                       }
-                      l3 -= _2, k = 0, d2 = 11 + (127 & (u3 >>>= _2)), u3 >>>= 7, l3 -= 7;
+                      l3 -= _2, k2 = 0, d2 = 11 + (127 & (u3 >>>= _2)), u3 >>>= 7, l3 -= 7;
                     }
                     if (r3.have + d2 > r3.nlen + r3.ndist) {
                       e3.msg = "invalid bit length repeat", r3.mode = 30;
                       break;
                     }
                     for (; d2--; )
-                      r3.lens[r3.have++] = k;
+                      r3.lens[r3.have++] = k2;
                   }
                 }
                 if (r3.mode === 30)
@@ -44389,71 +44656,71 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 20:
                 r3.mode = 21;
               case 21:
-                if (6 <= o2 && 258 <= h3) {
-                  e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o2, r3.hold = u3, r3.bits = l3, R(e3, c3), a3 = e3.next_out, i3 = e3.output, h3 = e3.avail_out, s3 = e3.next_in, n3 = e3.input, o2 = e3.avail_in, u3 = r3.hold, l3 = r3.bits, r3.mode === 12 && (r3.back = -1);
+                if (6 <= o3 && 258 <= h3) {
+                  e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o3, r3.hold = u3, r3.bits = l3, R2(e3, c3), a3 = e3.next_out, i3 = e3.output, h3 = e3.avail_out, s3 = e3.next_in, n3 = e3.input, o3 = e3.avail_in, u3 = r3.hold, l3 = r3.bits, r3.mode === 12 && (r3.back = -1);
                   break;
                 }
-                for (r3.back = 0; g = (C2 = r3.lencode[u3 & (1 << r3.lenbits) - 1]) >>> 16 & 255, b2 = 65535 & C2, !((_2 = C2 >>> 24) <= l3); ) {
-                  if (o2 === 0)
+                for (r3.back = 0; g2 = (C2 = r3.lencode[u3 & (1 << r3.lenbits) - 1]) >>> 16 & 255, b2 = 65535 & C2, !((_2 = C2 >>> 24) <= l3); ) {
+                  if (o3 === 0)
                     break e;
-                  o2--, u3 += n3[s3++] << l3, l3 += 8;
+                  o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
-                if (g && (240 & g) == 0) {
-                  for (v2 = _2, y2 = g, w2 = b2; g = (C2 = r3.lencode[w2 + ((u3 & (1 << v2 + y2) - 1) >> v2)]) >>> 16 & 255, b2 = 65535 & C2, !(v2 + (_2 = C2 >>> 24) <= l3); ) {
-                    if (o2 === 0)
+                if (g2 && (240 & g2) == 0) {
+                  for (v2 = _2, y2 = g2, w2 = b2; g2 = (C2 = r3.lencode[w2 + ((u3 & (1 << v2 + y2) - 1) >> v2)]) >>> 16 & 255, b2 = 65535 & C2, !(v2 + (_2 = C2 >>> 24) <= l3); ) {
+                    if (o3 === 0)
                       break e;
-                    o2--, u3 += n3[s3++] << l3, l3 += 8;
+                    o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
                   u3 >>>= v2, l3 -= v2, r3.back += v2;
                 }
-                if (u3 >>>= _2, l3 -= _2, r3.back += _2, r3.length = b2, g === 0) {
+                if (u3 >>>= _2, l3 -= _2, r3.back += _2, r3.length = b2, g2 === 0) {
                   r3.mode = 26;
                   break;
                 }
-                if (32 & g) {
+                if (32 & g2) {
                   r3.back = -1, r3.mode = 12;
                   break;
                 }
-                if (64 & g) {
+                if (64 & g2) {
                   e3.msg = "invalid literal/length code", r3.mode = 30;
                   break;
                 }
-                r3.extra = 15 & g, r3.mode = 22;
+                r3.extra = 15 & g2, r3.mode = 22;
               case 22:
                 if (r3.extra) {
-                  for (z = r3.extra; l3 < z; ) {
-                    if (o2 === 0)
+                  for (z2 = r3.extra; l3 < z2; ) {
+                    if (o3 === 0)
                       break e;
-                    o2--, u3 += n3[s3++] << l3, l3 += 8;
+                    o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
                   r3.length += u3 & (1 << r3.extra) - 1, u3 >>>= r3.extra, l3 -= r3.extra, r3.back += r3.extra;
                 }
                 r3.was = r3.length, r3.mode = 23;
               case 23:
-                for (; g = (C2 = r3.distcode[u3 & (1 << r3.distbits) - 1]) >>> 16 & 255, b2 = 65535 & C2, !((_2 = C2 >>> 24) <= l3); ) {
-                  if (o2 === 0)
+                for (; g2 = (C2 = r3.distcode[u3 & (1 << r3.distbits) - 1]) >>> 16 & 255, b2 = 65535 & C2, !((_2 = C2 >>> 24) <= l3); ) {
+                  if (o3 === 0)
                     break e;
-                  o2--, u3 += n3[s3++] << l3, l3 += 8;
+                  o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
-                if ((240 & g) == 0) {
-                  for (v2 = _2, y2 = g, w2 = b2; g = (C2 = r3.distcode[w2 + ((u3 & (1 << v2 + y2) - 1) >> v2)]) >>> 16 & 255, b2 = 65535 & C2, !(v2 + (_2 = C2 >>> 24) <= l3); ) {
-                    if (o2 === 0)
+                if ((240 & g2) == 0) {
+                  for (v2 = _2, y2 = g2, w2 = b2; g2 = (C2 = r3.distcode[w2 + ((u3 & (1 << v2 + y2) - 1) >> v2)]) >>> 16 & 255, b2 = 65535 & C2, !(v2 + (_2 = C2 >>> 24) <= l3); ) {
+                    if (o3 === 0)
                       break e;
-                    o2--, u3 += n3[s3++] << l3, l3 += 8;
+                    o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
                   u3 >>>= v2, l3 -= v2, r3.back += v2;
                 }
-                if (u3 >>>= _2, l3 -= _2, r3.back += _2, 64 & g) {
+                if (u3 >>>= _2, l3 -= _2, r3.back += _2, 64 & g2) {
                   e3.msg = "invalid distance code", r3.mode = 30;
                   break;
                 }
-                r3.offset = b2, r3.extra = 15 & g, r3.mode = 24;
+                r3.offset = b2, r3.extra = 15 & g2, r3.mode = 24;
               case 24:
                 if (r3.extra) {
-                  for (z = r3.extra; l3 < z; ) {
-                    if (o2 === 0)
+                  for (z2 = r3.extra; l3 < z2; ) {
+                    if (o3 === 0)
                       break e;
-                    o2--, u3 += n3[s3++] << l3, l3 += 8;
+                    o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
                   r3.offset += u3 & (1 << r3.extra) - 1, u3 >>>= r3.extra, l3 -= r3.extra, r3.back += r3.extra;
                 }
@@ -44485,11 +44752,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 27:
                 if (r3.wrap) {
                   for (; l3 < 32; ) {
-                    if (o2 === 0)
+                    if (o3 === 0)
                       break e;
-                    o2--, u3 |= n3[s3++] << l3, l3 += 8;
+                    o3--, u3 |= n3[s3++] << l3, l3 += 8;
                   }
-                  if (c3 -= h3, e3.total_out += c3, r3.total += c3, c3 && (e3.adler = r3.check = r3.flags ? B(r3.check, i3, c3, a3 - c3) : O2(r3.check, i3, c3, a3 - c3)), c3 = h3, (r3.flags ? u3 : L2(u3)) !== r3.check) {
+                  if (c3 -= h3, e3.total_out += c3, r3.total += c3, c3 && (e3.adler = r3.check = r3.flags ? B2(r3.check, i3, c3, a3 - c3) : O2(r3.check, i3, c3, a3 - c3)), c3 = h3, (r3.flags ? u3 : L2(u3)) !== r3.check) {
                     e3.msg = "incorrect data check", r3.mode = 30;
                     break;
                   }
@@ -44499,9 +44766,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 28:
                 if (r3.wrap && r3.flags) {
                   for (; l3 < 32; ) {
-                    if (o2 === 0)
+                    if (o3 === 0)
                       break e;
-                    o2--, u3 += n3[s3++] << l3, l3 += 8;
+                    o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
                   if (u3 !== (4294967295 & r3.total)) {
                     e3.msg = "incorrect length check", r3.mode = 30;
@@ -44522,7 +44789,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               default:
                 return U2;
             }
-        return e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o2, r3.hold = u3, r3.bits = l3, (r3.wsize || c3 !== e3.avail_out && r3.mode < 30 && (r3.mode < 27 || t3 !== 4)) && Z2(e3, e3.output, e3.next_out, c3 - e3.avail_out) ? (r3.mode = 31, -4) : (f3 -= e3.avail_in, c3 -= e3.avail_out, e3.total_in += f3, e3.total_out += c3, r3.total += c3, r3.wrap && c3 && (e3.adler = r3.check = r3.flags ? B(r3.check, i3, c3, e3.next_out - c3) : O2(r3.check, i3, c3, e3.next_out - c3)), e3.data_type = r3.bits + (r3.last ? 64 : 0) + (r3.mode === 12 ? 128 : 0) + (r3.mode === 20 || r3.mode === 15 ? 256 : 0), (f3 == 0 && c3 === 0 || t3 === 4) && x2 === N2 && (x2 = -5), x2);
+        return e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o3, r3.hold = u3, r3.bits = l3, (r3.wsize || c3 !== e3.avail_out && r3.mode < 30 && (r3.mode < 27 || t3 !== 4)) && Z2(e3, e3.output, e3.next_out, c3 - e3.avail_out) ? (r3.mode = 31, -4) : (f3 -= e3.avail_in, c3 -= e3.avail_out, e3.total_in += f3, e3.total_out += c3, r3.total += c3, r3.wrap && c3 && (e3.adler = r3.check = r3.flags ? B2(r3.check, i3, c3, e3.next_out - c3) : O2(r3.check, i3, c3, e3.next_out - c3)), e3.data_type = r3.bits + (r3.last ? 64 : 0) + (r3.mode === 12 ? 128 : 0) + (r3.mode === 20 || r3.mode === 15 ? 256 : 0), (f3 == 0 && c3 === 0 || t3 === 4) && x2 === N2 && (x2 = -5), x2);
       }, r2.inflateEnd = function(e3) {
         if (!e3 || !e3.state)
           return U2;
@@ -44537,31 +44804,31 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, r2.inflateInfo = "pako inflate (from Nodeca project)";
     }, { "../utils/common": 41, "./adler32": 43, "./crc32": 45, "./inffast": 48, "./inftrees": 50 }], 50: [function(e2, t2, r2) {
       var D2 = e2("../utils/common"), F2 = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0], N2 = [16, 16, 16, 16, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 16, 72, 78], U2 = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577, 0, 0], P2 = [16, 16, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 64, 64];
-      t2.exports = function(e3, t3, r3, n2, i2, s2, a2, o) {
-        var h2, u2, l2, f2, c2, d2, p2, m2, _2, g = o.bits, b2 = 0, v2 = 0, y2 = 0, w2 = 0, k = 0, x2 = 0, S2 = 0, z = 0, C2 = 0, E2 = 0, A = null, I2 = 0, O2 = new D2.Buf16(16), B = new D2.Buf16(16), R = null, T2 = 0;
+      t2.exports = function(e3, t3, r3, n2, i2, s2, a2, o2) {
+        var h2, u2, l2, f2, c2, d2, p2, m2, _2, g2 = o2.bits, b2 = 0, v2 = 0, y2 = 0, w2 = 0, k2 = 0, x2 = 0, S2 = 0, z2 = 0, C2 = 0, E2 = 0, A2 = null, I2 = 0, O2 = new D2.Buf16(16), B2 = new D2.Buf16(16), R2 = null, T2 = 0;
         for (b2 = 0; b2 <= 15; b2++)
           O2[b2] = 0;
         for (v2 = 0; v2 < n2; v2++)
           O2[t3[r3 + v2]]++;
-        for (k = g, w2 = 15; 1 <= w2 && O2[w2] === 0; w2--)
+        for (k2 = g2, w2 = 15; 1 <= w2 && O2[w2] === 0; w2--)
           ;
-        if (w2 < k && (k = w2), w2 === 0)
-          return i2[s2++] = 20971520, i2[s2++] = 20971520, o.bits = 1, 0;
+        if (w2 < k2 && (k2 = w2), w2 === 0)
+          return i2[s2++] = 20971520, i2[s2++] = 20971520, o2.bits = 1, 0;
         for (y2 = 1; y2 < w2 && O2[y2] === 0; y2++)
           ;
-        for (k < y2 && (k = y2), b2 = z = 1; b2 <= 15; b2++)
-          if (z <<= 1, (z -= O2[b2]) < 0)
+        for (k2 < y2 && (k2 = y2), b2 = z2 = 1; b2 <= 15; b2++)
+          if (z2 <<= 1, (z2 -= O2[b2]) < 0)
             return -1;
-        if (0 < z && (e3 === 0 || w2 !== 1))
+        if (0 < z2 && (e3 === 0 || w2 !== 1))
           return -1;
-        for (B[1] = 0, b2 = 1; b2 < 15; b2++)
-          B[b2 + 1] = B[b2] + O2[b2];
+        for (B2[1] = 0, b2 = 1; b2 < 15; b2++)
+          B2[b2 + 1] = B2[b2] + O2[b2];
         for (v2 = 0; v2 < n2; v2++)
-          t3[r3 + v2] !== 0 && (a2[B[t3[r3 + v2]]++] = v2);
-        if (d2 = e3 === 0 ? (A = R = a2, 19) : e3 === 1 ? (A = F2, I2 -= 257, R = N2, T2 -= 257, 256) : (A = U2, R = P2, -1), b2 = y2, c2 = s2, S2 = v2 = E2 = 0, l2 = -1, f2 = (C2 = 1 << (x2 = k)) - 1, e3 === 1 && 852 < C2 || e3 === 2 && 592 < C2)
+          t3[r3 + v2] !== 0 && (a2[B2[t3[r3 + v2]]++] = v2);
+        if (d2 = e3 === 0 ? (A2 = R2 = a2, 19) : e3 === 1 ? (A2 = F2, I2 -= 257, R2 = N2, T2 -= 257, 256) : (A2 = U2, R2 = P2, -1), b2 = y2, c2 = s2, S2 = v2 = E2 = 0, l2 = -1, f2 = (C2 = 1 << (x2 = k2)) - 1, e3 === 1 && 852 < C2 || e3 === 2 && 592 < C2)
           return 1;
         for (; ; ) {
-          for (p2 = b2 - S2, _2 = a2[v2] < d2 ? (m2 = 0, a2[v2]) : a2[v2] > d2 ? (m2 = R[T2 + a2[v2]], A[I2 + a2[v2]]) : (m2 = 96, 0), h2 = 1 << b2 - S2, y2 = u2 = 1 << x2; i2[c2 + (E2 >> S2) + (u2 -= h2)] = p2 << 24 | m2 << 16 | _2 | 0, u2 !== 0; )
+          for (p2 = b2 - S2, _2 = a2[v2] < d2 ? (m2 = 0, a2[v2]) : a2[v2] > d2 ? (m2 = R2[T2 + a2[v2]], A2[I2 + a2[v2]]) : (m2 = 96, 0), h2 = 1 << b2 - S2, y2 = u2 = 1 << x2; i2[c2 + (E2 >> S2) + (u2 -= h2)] = p2 << 24 | m2 << 16 | _2 | 0, u2 !== 0; )
             ;
           for (h2 = 1 << b2 - 1; E2 & h2; )
             h2 >>= 1;
@@ -44570,35 +44837,35 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               break;
             b2 = t3[r3 + a2[v2]];
           }
-          if (k < b2 && (E2 & f2) !== l2) {
-            for (S2 === 0 && (S2 = k), c2 += y2, z = 1 << (x2 = b2 - S2); x2 + S2 < w2 && !((z -= O2[x2 + S2]) <= 0); )
-              x2++, z <<= 1;
+          if (k2 < b2 && (E2 & f2) !== l2) {
+            for (S2 === 0 && (S2 = k2), c2 += y2, z2 = 1 << (x2 = b2 - S2); x2 + S2 < w2 && !((z2 -= O2[x2 + S2]) <= 0); )
+              x2++, z2 <<= 1;
             if (C2 += 1 << x2, e3 === 1 && 852 < C2 || e3 === 2 && 592 < C2)
               return 1;
-            i2[l2 = E2 & f2] = k << 24 | x2 << 16 | c2 - s2 | 0;
+            i2[l2 = E2 & f2] = k2 << 24 | x2 << 16 | c2 - s2 | 0;
           }
         }
-        return E2 !== 0 && (i2[c2 + E2] = b2 - S2 << 24 | 64 << 16 | 0), o.bits = k, 0;
+        return E2 !== 0 && (i2[c2 + E2] = b2 - S2 << 24 | 64 << 16 | 0), o2.bits = k2, 0;
       };
     }, { "../utils/common": 41 }], 51: [function(e2, t2, r2) {
       t2.exports = { 2: "need dictionary", 1: "stream end", 0: "", "-1": "file error", "-2": "stream error", "-3": "data error", "-4": "insufficient memory", "-5": "buffer error", "-6": "incompatible version" };
     }, {}], 52: [function(e2, t2, r2) {
-      var i2 = e2("../utils/common"), o = 0, h2 = 1;
+      var i2 = e2("../utils/common"), o2 = 0, h2 = 1;
       function n2(e3) {
         for (var t3 = e3.length; 0 <= --t3; )
           e3[t3] = 0;
       }
-      var s2 = 0, a2 = 29, u2 = 256, l2 = u2 + 1 + a2, f2 = 30, c2 = 19, _2 = 2 * l2 + 1, g = 15, d2 = 16, p2 = 7, m2 = 256, b2 = 16, v2 = 17, y2 = 18, w2 = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0], k = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13], x2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 7], S2 = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15], z = new Array(2 * (l2 + 2));
-      n2(z);
+      var s2 = 0, a2 = 29, u2 = 256, l2 = u2 + 1 + a2, f2 = 30, c2 = 19, _2 = 2 * l2 + 1, g2 = 15, d2 = 16, p2 = 7, m2 = 256, b2 = 16, v2 = 17, y2 = 18, w2 = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0], k2 = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13], x2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 7], S2 = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15], z2 = new Array(2 * (l2 + 2));
+      n2(z2);
       var C2 = new Array(2 * f2);
       n2(C2);
       var E2 = new Array(512);
       n2(E2);
-      var A = new Array(256);
-      n2(A);
+      var A2 = new Array(256);
+      n2(A2);
       var I2 = new Array(a2);
       n2(I2);
-      var O2, B, R, T2 = new Array(f2);
+      var O2, B2, R2, T2 = new Array(f2);
       function D2(e3, t3, r3, n3, i3) {
         this.static_tree = e3, this.extra_bits = t3, this.extra_base = r3, this.elems = n3, this.max_length = i3, this.has_stree = e3 && e3.length;
       }
@@ -44623,12 +44890,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return r3 >>> 1;
       }
       function Z2(e3, t3, r3) {
-        var n3, i3, s3 = new Array(g + 1), a3 = 0;
-        for (n3 = 1; n3 <= g; n3++)
+        var n3, i3, s3 = new Array(g2 + 1), a3 = 0;
+        for (n3 = 1; n3 <= g2; n3++)
           s3[n3] = a3 = a3 + r3[n3 - 1] << 1;
         for (i3 = 0; i3 <= t3; i3++) {
-          var o2 = e3[2 * i3 + 1];
-          o2 !== 0 && (e3[2 * i3] = j2(s3[o2]++, o2));
+          var o3 = e3[2 * i3 + 1];
+          o3 !== 0 && (e3[2 * i3] = j2(s3[o3]++, o3));
         }
       }
       function W2(e3) {
@@ -44644,38 +44911,38 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       function M2(e3) {
         8 < e3.bi_valid ? U2(e3, e3.bi_buf) : 0 < e3.bi_valid && (e3.pending_buf[e3.pending++] = e3.bi_buf), e3.bi_buf = 0, e3.bi_valid = 0;
       }
-      function H(e3, t3, r3, n3) {
+      function H2(e3, t3, r3, n3) {
         var i3 = 2 * t3, s3 = 2 * r3;
         return e3[i3] < e3[s3] || e3[i3] === e3[s3] && n3[t3] <= n3[r3];
       }
       function G2(e3, t3, r3) {
-        for (var n3 = e3.heap[r3], i3 = r3 << 1; i3 <= e3.heap_len && (i3 < e3.heap_len && H(t3, e3.heap[i3 + 1], e3.heap[i3], e3.depth) && i3++, !H(t3, n3, e3.heap[i3], e3.depth)); )
+        for (var n3 = e3.heap[r3], i3 = r3 << 1; i3 <= e3.heap_len && (i3 < e3.heap_len && H2(t3, e3.heap[i3 + 1], e3.heap[i3], e3.depth) && i3++, !H2(t3, n3, e3.heap[i3], e3.depth)); )
           e3.heap[r3] = e3.heap[i3], r3 = i3, i3 <<= 1;
         e3.heap[r3] = n3;
       }
       function K2(e3, t3, r3) {
-        var n3, i3, s3, a3, o2 = 0;
+        var n3, i3, s3, a3, o3 = 0;
         if (e3.last_lit !== 0)
-          for (; n3 = e3.pending_buf[e3.d_buf + 2 * o2] << 8 | e3.pending_buf[e3.d_buf + 2 * o2 + 1], i3 = e3.pending_buf[e3.l_buf + o2], o2++, n3 === 0 ? L2(e3, i3, t3) : (L2(e3, (s3 = A[i3]) + u2 + 1, t3), (a3 = w2[s3]) !== 0 && P2(e3, i3 -= I2[s3], a3), L2(e3, s3 = N2(--n3), r3), (a3 = k[s3]) !== 0 && P2(e3, n3 -= T2[s3], a3)), o2 < e3.last_lit; )
+          for (; n3 = e3.pending_buf[e3.d_buf + 2 * o3] << 8 | e3.pending_buf[e3.d_buf + 2 * o3 + 1], i3 = e3.pending_buf[e3.l_buf + o3], o3++, n3 === 0 ? L2(e3, i3, t3) : (L2(e3, (s3 = A2[i3]) + u2 + 1, t3), (a3 = w2[s3]) !== 0 && P2(e3, i3 -= I2[s3], a3), L2(e3, s3 = N2(--n3), r3), (a3 = k2[s3]) !== 0 && P2(e3, n3 -= T2[s3], a3)), o3 < e3.last_lit; )
             ;
         L2(e3, m2, t3);
       }
       function Y2(e3, t3) {
-        var r3, n3, i3, s3 = t3.dyn_tree, a3 = t3.stat_desc.static_tree, o2 = t3.stat_desc.has_stree, h3 = t3.stat_desc.elems, u3 = -1;
+        var r3, n3, i3, s3 = t3.dyn_tree, a3 = t3.stat_desc.static_tree, o3 = t3.stat_desc.has_stree, h3 = t3.stat_desc.elems, u3 = -1;
         for (e3.heap_len = 0, e3.heap_max = _2, r3 = 0; r3 < h3; r3++)
           s3[2 * r3] !== 0 ? (e3.heap[++e3.heap_len] = u3 = r3, e3.depth[r3] = 0) : s3[2 * r3 + 1] = 0;
         for (; e3.heap_len < 2; )
-          s3[2 * (i3 = e3.heap[++e3.heap_len] = u3 < 2 ? ++u3 : 0)] = 1, e3.depth[i3] = 0, e3.opt_len--, o2 && (e3.static_len -= a3[2 * i3 + 1]);
+          s3[2 * (i3 = e3.heap[++e3.heap_len] = u3 < 2 ? ++u3 : 0)] = 1, e3.depth[i3] = 0, e3.opt_len--, o3 && (e3.static_len -= a3[2 * i3 + 1]);
         for (t3.max_code = u3, r3 = e3.heap_len >> 1; 1 <= r3; r3--)
           G2(e3, s3, r3);
         for (i3 = h3; r3 = e3.heap[1], e3.heap[1] = e3.heap[e3.heap_len--], G2(e3, s3, 1), n3 = e3.heap[1], e3.heap[--e3.heap_max] = r3, e3.heap[--e3.heap_max] = n3, s3[2 * i3] = s3[2 * r3] + s3[2 * n3], e3.depth[i3] = (e3.depth[r3] >= e3.depth[n3] ? e3.depth[r3] : e3.depth[n3]) + 1, s3[2 * r3 + 1] = s3[2 * n3 + 1] = i3, e3.heap[1] = i3++, G2(e3, s3, 1), 2 <= e3.heap_len; )
           ;
         e3.heap[--e3.heap_max] = e3.heap[1], function(e4, t4) {
-          var r4, n4, i4, s4, a4, o3, h4 = t4.dyn_tree, u4 = t4.max_code, l3 = t4.stat_desc.static_tree, f3 = t4.stat_desc.has_stree, c3 = t4.stat_desc.extra_bits, d3 = t4.stat_desc.extra_base, p3 = t4.stat_desc.max_length, m3 = 0;
-          for (s4 = 0; s4 <= g; s4++)
+          var r4, n4, i4, s4, a4, o4, h4 = t4.dyn_tree, u4 = t4.max_code, l3 = t4.stat_desc.static_tree, f3 = t4.stat_desc.has_stree, c3 = t4.stat_desc.extra_bits, d3 = t4.stat_desc.extra_base, p3 = t4.stat_desc.max_length, m3 = 0;
+          for (s4 = 0; s4 <= g2; s4++)
             e4.bl_count[s4] = 0;
           for (h4[2 * e4.heap[e4.heap_max] + 1] = 0, r4 = e4.heap_max + 1; r4 < _2; r4++)
-            p3 < (s4 = h4[2 * h4[2 * (n4 = e4.heap[r4]) + 1] + 1] + 1) && (s4 = p3, m3++), h4[2 * n4 + 1] = s4, u4 < n4 || (e4.bl_count[s4]++, a4 = 0, d3 <= n4 && (a4 = c3[n4 - d3]), o3 = h4[2 * n4], e4.opt_len += o3 * (s4 + a4), f3 && (e4.static_len += o3 * (l3[2 * n4 + 1] + a4)));
+            p3 < (s4 = h4[2 * h4[2 * (n4 = e4.heap[r4]) + 1] + 1] + 1) && (s4 = p3, m3++), h4[2 * n4 + 1] = s4, u4 < n4 || (e4.bl_count[s4]++, a4 = 0, d3 <= n4 && (a4 = c3[n4 - d3]), o4 = h4[2 * n4], e4.opt_len += o4 * (s4 + a4), f3 && (e4.static_len += o4 * (l3[2 * n4 + 1] + a4)));
           if (m3 !== 0) {
             do {
               for (s4 = p3 - 1; e4.bl_count[s4] === 0; )
@@ -44688,84 +44955,84 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           }
         }(e3, t3), Z2(s3, u3, e3.bl_count);
       }
-      function X(e3, t3, r3) {
-        var n3, i3, s3 = -1, a3 = t3[1], o2 = 0, h3 = 7, u3 = 4;
+      function X2(e3, t3, r3) {
+        var n3, i3, s3 = -1, a3 = t3[1], o3 = 0, h3 = 7, u3 = 4;
         for (a3 === 0 && (h3 = 138, u3 = 3), t3[2 * (r3 + 1) + 1] = 65535, n3 = 0; n3 <= r3; n3++)
-          i3 = a3, a3 = t3[2 * (n3 + 1) + 1], ++o2 < h3 && i3 === a3 || (o2 < u3 ? e3.bl_tree[2 * i3] += o2 : i3 !== 0 ? (i3 !== s3 && e3.bl_tree[2 * i3]++, e3.bl_tree[2 * b2]++) : o2 <= 10 ? e3.bl_tree[2 * v2]++ : e3.bl_tree[2 * y2]++, s3 = i3, u3 = (o2 = 0) === a3 ? (h3 = 138, 3) : i3 === a3 ? (h3 = 6, 3) : (h3 = 7, 4));
+          i3 = a3, a3 = t3[2 * (n3 + 1) + 1], ++o3 < h3 && i3 === a3 || (o3 < u3 ? e3.bl_tree[2 * i3] += o3 : i3 !== 0 ? (i3 !== s3 && e3.bl_tree[2 * i3]++, e3.bl_tree[2 * b2]++) : o3 <= 10 ? e3.bl_tree[2 * v2]++ : e3.bl_tree[2 * y2]++, s3 = i3, u3 = (o3 = 0) === a3 ? (h3 = 138, 3) : i3 === a3 ? (h3 = 6, 3) : (h3 = 7, 4));
       }
       function V2(e3, t3, r3) {
-        var n3, i3, s3 = -1, a3 = t3[1], o2 = 0, h3 = 7, u3 = 4;
+        var n3, i3, s3 = -1, a3 = t3[1], o3 = 0, h3 = 7, u3 = 4;
         for (a3 === 0 && (h3 = 138, u3 = 3), n3 = 0; n3 <= r3; n3++)
-          if (i3 = a3, a3 = t3[2 * (n3 + 1) + 1], !(++o2 < h3 && i3 === a3)) {
-            if (o2 < u3)
-              for (; L2(e3, i3, e3.bl_tree), --o2 != 0; )
+          if (i3 = a3, a3 = t3[2 * (n3 + 1) + 1], !(++o3 < h3 && i3 === a3)) {
+            if (o3 < u3)
+              for (; L2(e3, i3, e3.bl_tree), --o3 != 0; )
                 ;
             else
-              i3 !== 0 ? (i3 !== s3 && (L2(e3, i3, e3.bl_tree), o2--), L2(e3, b2, e3.bl_tree), P2(e3, o2 - 3, 2)) : o2 <= 10 ? (L2(e3, v2, e3.bl_tree), P2(e3, o2 - 3, 3)) : (L2(e3, y2, e3.bl_tree), P2(e3, o2 - 11, 7));
-            s3 = i3, u3 = (o2 = 0) === a3 ? (h3 = 138, 3) : i3 === a3 ? (h3 = 6, 3) : (h3 = 7, 4);
+              i3 !== 0 ? (i3 !== s3 && (L2(e3, i3, e3.bl_tree), o3--), L2(e3, b2, e3.bl_tree), P2(e3, o3 - 3, 2)) : o3 <= 10 ? (L2(e3, v2, e3.bl_tree), P2(e3, o3 - 3, 3)) : (L2(e3, y2, e3.bl_tree), P2(e3, o3 - 11, 7));
+            s3 = i3, u3 = (o3 = 0) === a3 ? (h3 = 138, 3) : i3 === a3 ? (h3 = 6, 3) : (h3 = 7, 4);
           }
       }
       n2(T2);
-      var q = false;
+      var q2 = false;
       function J2(e3, t3, r3, n3) {
         P2(e3, (s2 << 1) + (n3 ? 1 : 0), 3), function(e4, t4, r4, n4) {
           M2(e4), n4 && (U2(e4, r4), U2(e4, ~r4)), i2.arraySet(e4.pending_buf, e4.window, t4, r4, e4.pending), e4.pending += r4;
         }(e3, t3, r3, true);
       }
       r2._tr_init = function(e3) {
-        q || (function() {
-          var e4, t3, r3, n3, i3, s3 = new Array(g + 1);
+        q2 || (function() {
+          var e4, t3, r3, n3, i3, s3 = new Array(g2 + 1);
           for (n3 = r3 = 0; n3 < a2 - 1; n3++)
             for (I2[n3] = r3, e4 = 0; e4 < 1 << w2[n3]; e4++)
-              A[r3++] = n3;
-          for (A[r3 - 1] = n3, n3 = i3 = 0; n3 < 16; n3++)
-            for (T2[n3] = i3, e4 = 0; e4 < 1 << k[n3]; e4++)
+              A2[r3++] = n3;
+          for (A2[r3 - 1] = n3, n3 = i3 = 0; n3 < 16; n3++)
+            for (T2[n3] = i3, e4 = 0; e4 < 1 << k2[n3]; e4++)
               E2[i3++] = n3;
           for (i3 >>= 7; n3 < f2; n3++)
-            for (T2[n3] = i3 << 7, e4 = 0; e4 < 1 << k[n3] - 7; e4++)
+            for (T2[n3] = i3 << 7, e4 = 0; e4 < 1 << k2[n3] - 7; e4++)
               E2[256 + i3++] = n3;
-          for (t3 = 0; t3 <= g; t3++)
+          for (t3 = 0; t3 <= g2; t3++)
             s3[t3] = 0;
           for (e4 = 0; e4 <= 143; )
-            z[2 * e4 + 1] = 8, e4++, s3[8]++;
+            z2[2 * e4 + 1] = 8, e4++, s3[8]++;
           for (; e4 <= 255; )
-            z[2 * e4 + 1] = 9, e4++, s3[9]++;
+            z2[2 * e4 + 1] = 9, e4++, s3[9]++;
           for (; e4 <= 279; )
-            z[2 * e4 + 1] = 7, e4++, s3[7]++;
+            z2[2 * e4 + 1] = 7, e4++, s3[7]++;
           for (; e4 <= 287; )
-            z[2 * e4 + 1] = 8, e4++, s3[8]++;
-          for (Z2(z, l2 + 1, s3), e4 = 0; e4 < f2; e4++)
+            z2[2 * e4 + 1] = 8, e4++, s3[8]++;
+          for (Z2(z2, l2 + 1, s3), e4 = 0; e4 < f2; e4++)
             C2[2 * e4 + 1] = 5, C2[2 * e4] = j2(e4, 5);
-          O2 = new D2(z, w2, u2 + 1, l2, g), B = new D2(C2, k, 0, f2, g), R = new D2(new Array(0), x2, 0, c2, p2);
-        }(), q = true), e3.l_desc = new F2(e3.dyn_ltree, O2), e3.d_desc = new F2(e3.dyn_dtree, B), e3.bl_desc = new F2(e3.bl_tree, R), e3.bi_buf = 0, e3.bi_valid = 0, W2(e3);
+          O2 = new D2(z2, w2, u2 + 1, l2, g2), B2 = new D2(C2, k2, 0, f2, g2), R2 = new D2(new Array(0), x2, 0, c2, p2);
+        }(), q2 = true), e3.l_desc = new F2(e3.dyn_ltree, O2), e3.d_desc = new F2(e3.dyn_dtree, B2), e3.bl_desc = new F2(e3.bl_tree, R2), e3.bi_buf = 0, e3.bi_valid = 0, W2(e3);
       }, r2._tr_stored_block = J2, r2._tr_flush_block = function(e3, t3, r3, n3) {
         var i3, s3, a3 = 0;
         0 < e3.level ? (e3.strm.data_type === 2 && (e3.strm.data_type = function(e4) {
           var t4, r4 = 4093624447;
           for (t4 = 0; t4 <= 31; t4++, r4 >>>= 1)
             if (1 & r4 && e4.dyn_ltree[2 * t4] !== 0)
-              return o;
+              return o2;
           if (e4.dyn_ltree[18] !== 0 || e4.dyn_ltree[20] !== 0 || e4.dyn_ltree[26] !== 0)
             return h2;
           for (t4 = 32; t4 < u2; t4++)
             if (e4.dyn_ltree[2 * t4] !== 0)
               return h2;
-          return o;
+          return o2;
         }(e3)), Y2(e3, e3.l_desc), Y2(e3, e3.d_desc), a3 = function(e4) {
           var t4;
-          for (X(e4, e4.dyn_ltree, e4.l_desc.max_code), X(e4, e4.dyn_dtree, e4.d_desc.max_code), Y2(e4, e4.bl_desc), t4 = c2 - 1; 3 <= t4 && e4.bl_tree[2 * S2[t4] + 1] === 0; t4--)
+          for (X2(e4, e4.dyn_ltree, e4.l_desc.max_code), X2(e4, e4.dyn_dtree, e4.d_desc.max_code), Y2(e4, e4.bl_desc), t4 = c2 - 1; 3 <= t4 && e4.bl_tree[2 * S2[t4] + 1] === 0; t4--)
             ;
           return e4.opt_len += 3 * (t4 + 1) + 5 + 5 + 4, t4;
-        }(e3), i3 = e3.opt_len + 3 + 7 >>> 3, (s3 = e3.static_len + 3 + 7 >>> 3) <= i3 && (i3 = s3)) : i3 = s3 = r3 + 5, r3 + 4 <= i3 && t3 !== -1 ? J2(e3, t3, r3, n3) : e3.strategy === 4 || s3 === i3 ? (P2(e3, 2 + (n3 ? 1 : 0), 3), K2(e3, z, C2)) : (P2(e3, 4 + (n3 ? 1 : 0), 3), function(e4, t4, r4, n4) {
+        }(e3), i3 = e3.opt_len + 3 + 7 >>> 3, (s3 = e3.static_len + 3 + 7 >>> 3) <= i3 && (i3 = s3)) : i3 = s3 = r3 + 5, r3 + 4 <= i3 && t3 !== -1 ? J2(e3, t3, r3, n3) : e3.strategy === 4 || s3 === i3 ? (P2(e3, 2 + (n3 ? 1 : 0), 3), K2(e3, z2, C2)) : (P2(e3, 4 + (n3 ? 1 : 0), 3), function(e4, t4, r4, n4) {
           var i4;
           for (P2(e4, t4 - 257, 5), P2(e4, r4 - 1, 5), P2(e4, n4 - 4, 4), i4 = 0; i4 < n4; i4++)
             P2(e4, e4.bl_tree[2 * S2[i4] + 1], 3);
           V2(e4, e4.dyn_ltree, t4 - 1), V2(e4, e4.dyn_dtree, r4 - 1);
         }(e3, e3.l_desc.max_code + 1, e3.d_desc.max_code + 1, a3 + 1), K2(e3, e3.dyn_ltree, e3.dyn_dtree)), W2(e3), n3 && M2(e3);
       }, r2._tr_tally = function(e3, t3, r3) {
-        return e3.pending_buf[e3.d_buf + 2 * e3.last_lit] = t3 >>> 8 & 255, e3.pending_buf[e3.d_buf + 2 * e3.last_lit + 1] = 255 & t3, e3.pending_buf[e3.l_buf + e3.last_lit] = 255 & r3, e3.last_lit++, t3 === 0 ? e3.dyn_ltree[2 * r3]++ : (e3.matches++, t3--, e3.dyn_ltree[2 * (A[r3] + u2 + 1)]++, e3.dyn_dtree[2 * N2(t3)]++), e3.last_lit === e3.lit_bufsize - 1;
+        return e3.pending_buf[e3.d_buf + 2 * e3.last_lit] = t3 >>> 8 & 255, e3.pending_buf[e3.d_buf + 2 * e3.last_lit + 1] = 255 & t3, e3.pending_buf[e3.l_buf + e3.last_lit] = 255 & r3, e3.last_lit++, t3 === 0 ? e3.dyn_ltree[2 * r3]++ : (e3.matches++, t3--, e3.dyn_ltree[2 * (A2[r3] + u2 + 1)]++, e3.dyn_dtree[2 * N2(t3)]++), e3.last_lit === e3.lit_bufsize - 1;
       }, r2._tr_align = function(e3) {
-        P2(e3, 2, 3), L2(e3, m2, z), function(e4) {
+        P2(e3, 2, 3), L2(e3, m2, z2), function(e4) {
           e4.bi_valid === 16 ? (U2(e4, e4.bi_buf), e4.bi_buf = 0, e4.bi_valid = 0) : 8 <= e4.bi_valid && (e4.pending_buf[e4.pending++] = 255 & e4.bi_buf, e4.bi_buf >>= 8, e4.bi_valid -= 8);
         }(e3);
       };
@@ -44777,7 +45044,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       (function(e3) {
         !function(r3, n2) {
           if (!r3.setImmediate) {
-            var i2, s2, t3, a2, o = 1, h2 = {}, u2 = false, l2 = r3.document, e4 = Object.getPrototypeOf && Object.getPrototypeOf(r3);
+            var i2, s2, t3, a2, o2 = 1, h2 = {}, u2 = false, l2 = r3.document, e4 = Object.getPrototypeOf && Object.getPrototypeOf(r3);
             e4 = e4 && e4.setTimeout ? e4 : r3, i2 = {}.toString.call(r3.process) === "[object process]" ? function(e5) {
               process.nextTick(function() {
                 c2(e5);
@@ -44807,7 +45074,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               for (var t4 = new Array(arguments.length - 1), r4 = 0; r4 < t4.length; r4++)
                 t4[r4] = arguments[r4 + 1];
               var n3 = { callback: e5, args: t4 };
-              return h2[o] = n3, i2(o), o++;
+              return h2[o2] = n3, i2(o2), o2++;
             }, e4.clearImmediate = f2;
           }
           function f2(e5) {
@@ -45430,13 +45697,13 @@ function createNode(value, tagName, ctx) {
 function collectionFromPath(schema2, path2, value) {
   let v2 = value;
   for (let i2 = path2.length - 1; i2 >= 0; --i2) {
-    const k = path2[i2];
-    if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
+    const k2 = path2[i2];
+    if (typeof k2 === "number" && Number.isInteger(k2) && k2 >= 0) {
       const a2 = [];
-      a2[k] = v2;
+      a2[k2] = v2;
       v2 = a2;
     } else {
-      v2 = /* @__PURE__ */ new Map([[k, v2]]);
+      v2 = /* @__PURE__ */ new Map([[k2, v2]]);
     }
   }
   return createNode(v2, void 0, {
@@ -46009,7 +46276,7 @@ function stringify$2(item, ctx, onComment, onChompKeep) {
     }
   }
   let tagObj = void 0;
-  const node = isNode(item) ? item : ctx.doc.createNode(item, { onTagObj: (o) => tagObj = o });
+  const node = isNode(item) ? item : ctx.doc.createNode(item, { onTagObj: (o2) => tagObj = o2 });
   if (!tagObj)
     tagObj = getTagObject(ctx.doc.schema.tags, node);
   const props = stringifyProps(node, tagObj, ctx);
@@ -46211,9 +46478,9 @@ function stringifyKey(key, jsKey, ctx) {
   return JSON.stringify(jsKey);
 }
 function createPair(key, value, ctx) {
-  const k = createNode(key, void 0, ctx);
+  const k2 = createNode(key, void 0, ctx);
   const v2 = createNode(value, void 0, ctx);
-  return new Pair(k, v2);
+  return new Pair(k2, v2);
 }
 class Pair {
   constructor(key, value = null) {
@@ -46379,12 +46646,12 @@ function addCommentBefore({ indent: indent2, options: { commentString } }, lines
   }
 }
 function findPair(items, key) {
-  const k = isScalar$1(key) ? key.value : key;
+  const k2 = isScalar$1(key) ? key.value : key;
   for (const it2 of items) {
     if (isPair(it2)) {
-      if (it2.key === key || it2.key === k)
+      if (it2.key === key || it2.key === k2)
         return it2;
-      if (isScalar$1(it2.key) && it2.key.value === k)
+      if (isScalar$1(it2.key) && it2.key.value === k2)
         return it2;
     }
   }
@@ -46826,8 +47093,8 @@ const binary = {
       const lineWidth = Math.max(ctx.options.lineWidth - ctx.indent.length, ctx.options.minContentWidth);
       const n2 = Math.ceil(str.length / lineWidth);
       const lines = new Array(n2);
-      for (let i2 = 0, o = 0; i2 < n2; ++i2, o += lineWidth) {
-        lines[i2] = str.substr(o, lineWidth);
+      for (let i2 = 0, o2 = 0; i2 < n2; ++i2, o2 += lineWidth) {
+        lines[i2] = str.substr(o2, lineWidth);
       }
       str = lines.join(type === Scalar.BLOCK_LITERAL ? "\n" : " ");
     }
@@ -47412,13 +47679,13 @@ function applyReviver(reviver, obj, key, val) {
           val[i2] = v1;
       }
     } else if (val instanceof Map) {
-      for (const k of Array.from(val.keys())) {
-        const v0 = val.get(k);
-        const v1 = applyReviver(reviver, val, k, v0);
+      for (const k2 of Array.from(val.keys())) {
+        const v0 = val.get(k2);
+        const v1 = applyReviver(reviver, val, k2, v0);
         if (v1 === void 0)
-          val.delete(k);
+          val.delete(k2);
         else if (v1 !== v0)
-          val.set(k, v1);
+          val.set(k2, v1);
       }
     } else if (val instanceof Set) {
       for (const v0 of Array.from(val)) {
@@ -47431,12 +47698,12 @@ function applyReviver(reviver, obj, key, val) {
         }
       }
     } else {
-      for (const [k, v0] of Object.entries(val)) {
-        const v1 = applyReviver(reviver, val, k, v0);
+      for (const [k2, v0] of Object.entries(val)) {
+        const v1 = applyReviver(reviver, val, k2, v0);
         if (v1 === void 0)
-          delete val[k];
+          delete val[k2];
         else if (v1 !== v0)
-          val[k] = v1;
+          val[k2] = v1;
       }
     }
   }
@@ -47545,9 +47812,9 @@ class Document {
     return node;
   }
   createPair(key, value, options = {}) {
-    const k = this.createNode(key, null, options);
+    const k2 = this.createNode(key, null, options);
     const v2 = this.createNode(value, null, options);
-    return new Pair(k, v2);
+    return new Pair(k2, v2);
   }
   delete(key) {
     return assertCollection(this.contents) ? this.contents.delete(key) : false;
@@ -51641,7 +51908,7 @@ const isinE = "\u22F9";
 const isins = "\u22F4";
 const isinsv = "\u22F3";
 const isinv = "\u2208";
-const it = "\u2062";
+const it$1 = "\u2062";
 const Itilde = "\u0128";
 const itilde = "\u0129";
 const Iukcy = "\u0406";
@@ -53766,7 +54033,7 @@ var require$$0$1 = {
   isins,
   isinsv,
   isinv,
-  it,
+  it: it$1,
   Itilde,
   itilde,
   Iukcy,
@@ -55390,7 +55657,7 @@ Url.prototype.parse = function(url, slashesDenoteHost) {
         }
         if (!part2.match(hostnamePartPattern)) {
           var newpart = "";
-          for (var j2 = 0, k = part2.length; j2 < k; j2++) {
+          for (var j2 = 0, k2 = part2.length; j2 < k2; j2++) {
             if (part2.charCodeAt(j2) > 127) {
               newpart += "x";
             } else {
@@ -58009,7 +58276,7 @@ var newline = function newline2(state, silent) {
 };
 var isSpace$2 = utils$1.isSpace;
 var ESCAPED = [];
-for (var i = 0; i < 256; i++) {
+for (var i$1 = 0; i$1 < 256; i$1++) {
   ESCAPED.push(0);
 }
 "\\!\"#$%&'()*+,./:;<=>?@[]^_`{|}~-".split("").forEach(function(ch) {
@@ -58935,8 +59202,8 @@ var defaultOptions = {
   fuzzyIP: false
 };
 function isOptionsObj(obj) {
-  return Object.keys(obj || {}).reduce(function(acc, k) {
-    return acc || defaultOptions.hasOwnProperty(k);
+  return Object.keys(obj || {}).reduce(function(acc, k2) {
+    return acc || defaultOptions.hasOwnProperty(k2);
   }, false);
 }
 var defaultSchemas = {
@@ -59316,13 +59583,13 @@ const digitToBasic = function(digit, flag) {
   return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
 };
 const adapt = function(delta2, numPoints, firstTime) {
-  let k = 0;
+  let k2 = 0;
   delta2 = firstTime ? floor(delta2 / damp) : delta2 >> 1;
   delta2 += floor(delta2 / numPoints);
-  for (; delta2 > baseMinusTMin * tMax >> 1; k += base) {
+  for (; delta2 > baseMinusTMin * tMax >> 1; k2 += base) {
     delta2 = floor(delta2 / baseMinusTMin);
   }
-  return floor(k + (baseMinusTMin + 1) * delta2 / (delta2 + skew));
+  return floor(k2 + (baseMinusTMin + 1) * delta2 / (delta2 + skew));
 };
 const decode = function(input) {
   const output = [];
@@ -59342,7 +59609,7 @@ const decode = function(input) {
   }
   for (let index2 = basic > 0 ? basic + 1 : 0; index2 < inputLength; ) {
     let oldi = i2;
-    for (let w2 = 1, k = base; ; k += base) {
+    for (let w2 = 1, k2 = base; ; k2 += base) {
       if (index2 >= inputLength) {
         error("invalid-input");
       }
@@ -59351,7 +59618,7 @@ const decode = function(input) {
         error("overflow");
       }
       i2 += digit * w2;
-      const t2 = k <= bias ? tMin : k >= bias + tMax ? tMax : k - bias;
+      const t2 = k2 <= bias ? tMin : k2 >= bias + tMax ? tMax : k2 - bias;
       if (digit < t2) {
         break;
       }
@@ -59407,18 +59674,18 @@ const encode = function(input) {
         error("overflow");
       }
       if (currentValue == n2) {
-        let q = delta2;
-        for (let k = base; ; k += base) {
-          const t2 = k <= bias ? tMin : k >= bias + tMax ? tMax : k - bias;
-          if (q < t2) {
+        let q2 = delta2;
+        for (let k2 = base; ; k2 += base) {
+          const t2 = k2 <= bias ? tMin : k2 >= bias + tMax ? tMax : k2 - bias;
+          if (q2 < t2) {
             break;
           }
-          const qMinusT = q - t2;
+          const qMinusT = q2 - t2;
           const baseMinusT = base - t2;
           output.push(stringFromCharCode(digitToBasic(t2 + qMinusT % baseMinusT, 0)));
-          q = floor(qMinusT / baseMinusT);
+          q2 = floor(qMinusT / baseMinusT);
         }
-        output.push(stringFromCharCode(digitToBasic(q, 0)));
+        output.push(stringFromCharCode(digitToBasic(q2, 0)));
         bias = adapt(delta2, handledCPCountPlusOne, handledCPCount == basicLength);
         delta2 = 0;
         ++handledCPCount;
@@ -60113,9 +60380,9 @@ class FuseIndex {
             };
             subRecords.push(subRecord);
           } else if (isArray$1(value2)) {
-            value2.forEach((item, k) => {
+            value2.forEach((item, k2) => {
               stack2.push({
-                nestedArrIndex: k,
+                nestedArrIndex: k2,
                 value: item
               });
             });
@@ -61289,12 +61556,12 @@ function tinf_inflate_block_data(d2, lt2, dt) {
     if (sym < 256) {
       d2.dest[d2.destLen++] = sym;
     } else {
-      var length, dist, offs2;
+      var length, dist2, offs2;
       var i2;
       sym -= 257;
       length = tinf_read_bits(d2, length_bits[sym], length_base[sym]);
-      dist = tinf_decode_symbol(d2, dt);
-      offs2 = d2.destLen - tinf_read_bits(d2, dist_bits[dist], dist_base[dist]);
+      dist2 = tinf_decode_symbol(d2, dt);
+      offs2 = d2.destLen - tinf_read_bits(d2, dist_bits[dist2], dist_base[dist2]);
       for (i2 = offs2; i2 < offs2 + length; ++i2) {
         d2.dest[d2.destLen++] = d2.dest[i2];
       }
@@ -61442,7 +61709,7 @@ class UnicodeTrie {
   }
 }
 const trie = classesmjs.trie;
-const { Other, Prepend, CR, LF, Control, Extend, Regional_Indicator, SpacingMark, L: L$1, V: V$1, T: T$1, LV, LVT, ZWJ, ExtPict } = classesmjs.classes;
+const { Other, Prepend, CR, LF, Control, Extend, Regional_Indicator, SpacingMark, L: L$2, V: V$2, T: T$2, LV, LVT, ZWJ, ExtPict } = classesmjs.classes;
 let data = null;
 if (globalThis["window"]) {
   const bin = window.atob(trie);
@@ -61509,13 +61776,13 @@ const shouldBreak = function(reverse, start, mid2, end) {
   if (next === Control || next === CR || next === LF) {
     return BreakType.BreakStart;
   }
-  if (previous === L$1 && (next === L$1 || next === V$1 || next === LV || next === LVT)) {
+  if (previous === L$2 && (next === L$2 || next === V$2 || next === LV || next === LVT)) {
     return BreakType.NotBreak;
   }
-  if ((previous === LV || previous === V$1) && (next === V$1 || next === T$1)) {
+  if ((previous === LV || previous === V$2) && (next === V$2 || next === T$2)) {
     return BreakType.NotBreak;
   }
-  if ((previous === LVT || previous === T$1) && next === T$1) {
+  if ((previous === LVT || previous === T$2) && next === T$2) {
     return BreakType.NotBreak;
   }
   if (reverse) {
@@ -61641,6 +61908,7 @@ exports.countBreaks = function(str) {
   }
   return count2;
 };
+var GB = exports;
 var colorHash = {};
 (function(exports2) {
   var __extends = commonjsGlobal && commonjsGlobal.__extends || function() {
@@ -61941,7 +62209,7 @@ var colorHash = {};
       var d2 = __classPrivateFieldGet(this, _h3);
       var e2 = __classPrivateFieldGet(this, _h4);
       var f2 = __classPrivateFieldGet(this, _h5);
-      var g = __classPrivateFieldGet(this, _h6);
+      var g2 = __classPrivateFieldGet(this, _h6);
       var h2 = __classPrivateFieldGet(this, _h7);
       var blocks1 = __classPrivateFieldGet(this, _blocks);
       var s0;
@@ -61981,7 +62249,7 @@ var colorHash = {};
           s1 = (e2 >>> 6 | e2 << 26) ^ (e2 >>> 11 | e2 << 21) ^ (e2 >>> 25 | e2 << 7);
           ab = a2 & b2;
           maj = ab ^ a2 & c2 ^ bc;
-          ch = e2 & f2 ^ ~e2 & g;
+          ch = e2 & f2 ^ ~e2 & g2;
           t1 = h2 + s1 + ch + K2[j1] + blocks1[j1];
           t2 = s0 + maj;
           h2 = d2 + t1 << 0;
@@ -61992,15 +62260,15 @@ var colorHash = {};
         da2 = d2 & a2;
         maj = da2 ^ d2 & b2 ^ ab;
         ch = h2 & e2 ^ ~h2 & f2;
-        t1 = g + s1 + ch + K2[j1 + 1] + blocks1[j1 + 1];
+        t1 = g2 + s1 + ch + K2[j1 + 1] + blocks1[j1 + 1];
         t2 = s0 + maj;
-        g = c2 + t1 << 0;
+        g2 = c2 + t1 << 0;
         c2 = t1 + t2 << 0;
         s0 = (c2 >>> 2 | c2 << 30) ^ (c2 >>> 13 | c2 << 19) ^ (c2 >>> 22 | c2 << 10);
-        s1 = (g >>> 6 | g << 26) ^ (g >>> 11 | g << 21) ^ (g >>> 25 | g << 7);
+        s1 = (g2 >>> 6 | g2 << 26) ^ (g2 >>> 11 | g2 << 21) ^ (g2 >>> 25 | g2 << 7);
         cd = c2 & d2;
         maj = cd ^ c2 & a2 ^ da2;
-        ch = g & h2 ^ ~g & e2;
+        ch = g2 & h2 ^ ~g2 & e2;
         t1 = f2 + s1 + ch + K2[j1 + 2] + blocks1[j1 + 2];
         t2 = s0 + maj;
         f2 = b2 + t1 << 0;
@@ -62009,7 +62277,7 @@ var colorHash = {};
         s1 = (f2 >>> 6 | f2 << 26) ^ (f2 >>> 11 | f2 << 21) ^ (f2 >>> 25 | f2 << 7);
         bc = b2 & c2;
         maj = bc ^ b2 & d2 ^ cd;
-        ch = f2 & g ^ ~f2 & h2;
+        ch = f2 & g2 ^ ~f2 & h2;
         t1 = e2 + s1 + ch + K2[j1 + 3] + blocks1[j1 + 3];
         t2 = s0 + maj;
         e2 = a2 + t1 << 0;
@@ -62021,7 +62289,7 @@ var colorHash = {};
       __classPrivateFieldSet(this, _h3, __classPrivateFieldGet(this, _h3) + d2 << 0);
       __classPrivateFieldSet(this, _h4, __classPrivateFieldGet(this, _h4) + e2 << 0);
       __classPrivateFieldSet(this, _h5, __classPrivateFieldGet(this, _h5) + f2 << 0);
-      __classPrivateFieldSet(this, _h6, __classPrivateFieldGet(this, _h6) + g << 0);
+      __classPrivateFieldSet(this, _h6, __classPrivateFieldGet(this, _h6) + g2 << 0);
       __classPrivateFieldSet(this, _h7, __classPrivateFieldGet(this, _h7) + h2 << 0);
     };
     Sha2562.prototype.hex = function() {
@@ -62202,14 +62470,14 @@ var colorHash = {};
     });
     return hex;
   };
-  var HSL2RGB = function(H, S2, L2) {
-    H /= 360;
-    var q = L2 < 0.5 ? L2 * (1 + S2) : L2 + S2 - L2 * S2;
-    var p2 = 2 * L2 - q;
+  var HSL2RGB = function(H2, S2, L2) {
+    H2 /= 360;
+    var q2 = L2 < 0.5 ? L2 * (1 + S2) : L2 + S2 - L2 * S2;
+    var p2 = 2 * L2 - q2;
     return [
-      H + 1 / 3,
-      H,
-      H - 1 / 3
+      H2 + 1 / 3,
+      H2,
+      H2 - 1 / 3
     ].map(function(color) {
       if (color < 0) {
         color++;
@@ -62218,11 +62486,11 @@ var colorHash = {};
         color--;
       }
       if (color < 1 / 6) {
-        color = p2 + (q - p2) * 6 * color;
+        color = p2 + (q2 - p2) * 6 * color;
       } else if (color < 0.5) {
-        color = q;
+        color = q2;
       } else if (color < 2 / 3) {
-        color = p2 + (q - p2) * 6 * (2 / 3 - color);
+        color = p2 + (q2 - p2) * 6 * (2 / 3 - color);
       } else {
         color = p2;
       }
@@ -62278,21 +62546,21 @@ var colorHash = {};
       }
     }
     ColorHash3.prototype.hsl = function(str) {
-      var H, S1, L1;
+      var H2, S1, L1;
       var hash2 = this.hash(str);
       var hueResolution = 727;
       if (this.hueRanges.length) {
         var range2 = this.hueRanges[hash2 % this.hueRanges.length];
-        H = hash2 / this.hueRanges.length % hueResolution * (range2.max - range2.min) / hueResolution + range2.min;
+        H2 = hash2 / this.hueRanges.length % hueResolution * (range2.max - range2.min) / hueResolution + range2.min;
       } else {
-        H = hash2 % 359;
+        H2 = hash2 % 359;
       }
       hash2 = Math.ceil(hash2 / 360);
       S1 = this.S[hash2 % this.S.length];
       hash2 = Math.ceil(hash2 / this.S.length);
       L1 = this.L[hash2 % this.L.length];
       return [
-        H,
+        H2,
         S1,
         L1
       ];
@@ -62659,25 +62927,25 @@ function getBoxToBoxArrow(x0, y0, w0, h0, x1, y1, w1, h1, userOptions) {
 function getArrow(x0, y0, x1, y1, userOptions) {
   return getBoxToBoxArrow(x0, y0, 0, 0, x1, y1, 0, 0, userOptions);
 }
-function W(e2, t2, s2, h2 = (b2) => b2) {
+function W$1(e2, t2, s2, h2 = (b2) => b2) {
   return e2 * h2(0.5 - t2 * (0.5 - s2));
 }
 function re(e2) {
   return [-e2[0], -e2[1]];
 }
-function l(e2, t2) {
+function l$1(e2, t2) {
   return [e2[0] + t2[0], e2[1] + t2[1]];
 }
-function a(e2, t2) {
+function a$1(e2, t2) {
   return [e2[0] - t2[0], e2[1] - t2[1]];
 }
-function f(e2, t2) {
+function f$1(e2, t2) {
   return [e2[0] * t2, e2[1] * t2];
 }
 function le(e2, t2) {
   return [e2[0] / t2, e2[1] / t2];
 }
-function L(e2) {
+function L$1(e2) {
   return [e2[1], -e2[0]];
 }
 function ne(e2, t2) {
@@ -62692,101 +62960,101 @@ function fe(e2) {
 function be(e2) {
   return e2[0] * e2[0] + e2[1] * e2[1];
 }
-function Y(e2, t2) {
-  return be(a(e2, t2));
+function Y$1(e2, t2) {
+  return be(a$1(e2, t2));
 }
-function G(e2) {
+function G$1(e2) {
   return le(e2, fe(e2));
 }
 function ue(e2, t2) {
   return Math.hypot(e2[1] - t2[1], e2[0] - t2[0]);
 }
-function T(e2, t2, s2) {
-  let h2 = Math.sin(s2), b2 = Math.cos(s2), v2 = e2[0] - t2[0], n2 = e2[1] - t2[1], g = v2 * b2 - n2 * h2, E2 = v2 * h2 + n2 * b2;
-  return [g + t2[0], E2 + t2[1]];
+function T$1(e2, t2, s2) {
+  let h2 = Math.sin(s2), b2 = Math.cos(s2), v2 = e2[0] - t2[0], n2 = e2[1] - t2[1], g2 = v2 * b2 - n2 * h2, E2 = v2 * h2 + n2 * b2;
+  return [g2 + t2[0], E2 + t2[1]];
 }
-function V(e2, t2, s2) {
-  return l(e2, f(a(t2, e2), s2));
+function V$1(e2, t2, s2) {
+  return l$1(e2, f$1(a$1(t2, e2), s2));
 }
-function Z(e2, t2, s2) {
-  return l(e2, f(t2, s2));
+function Z$1(e2, t2, s2) {
+  return l$1(e2, f$1(t2, s2));
 }
-var { min: _$1, PI: ge } = Math, se = 0.275, j = ge + 1e-4;
+var { min: _$2, PI: ge } = Math, se = 0.275, j$1 = ge + 1e-4;
 function ie(e2, t2 = {}) {
-  let { size: s2 = 16, smoothing: h2 = 0.5, thinning: b2 = 0.5, simulatePressure: v2 = true, easing: n2 = (r2) => r2, start: g = {}, end: E2 = {}, last: z = false } = t2, { cap: d2 = true, taper: x2 = 0, easing: q = (r2) => r2 * (2 - r2) } = g, { cap: m2 = true, taper: c2 = 0, easing: M2 = (r2) => --r2 * r2 * r2 + 1 } = E2;
+  let { size: s2 = 16, smoothing: h2 = 0.5, thinning: b2 = 0.5, simulatePressure: v2 = true, easing: n2 = (r2) => r2, start: g2 = {}, end: E2 = {}, last: z2 = false } = t2, { cap: d2 = true, taper: x2 = 0, easing: q2 = (r2) => r2 * (2 - r2) } = g2, { cap: m2 = true, taper: c2 = 0, easing: M2 = (r2) => --r2 * r2 * r2 + 1 } = E2;
   if (e2.length === 0 || s2 <= 0)
     return [];
-  let H = e2[e2.length - 1].runningLength, $ = Math.pow(s2 * h2, 2), D2 = [], R = [], N2 = e2.slice(0, 10).reduce((r2, i2) => {
-    let o = i2.pressure;
+  let H2 = e2[e2.length - 1].runningLength, $2 = Math.pow(s2 * h2, 2), D2 = [], R2 = [], N2 = e2.slice(0, 10).reduce((r2, i2) => {
+    let o2 = i2.pressure;
     if (v2) {
-      let u2 = _$1(1, i2.distance / s2), J2 = _$1(1, 1 - u2);
-      o = _$1(1, r2 + (J2 - r2) * (u2 * se));
+      let u2 = _$2(1, i2.distance / s2), J2 = _$2(1, 1 - u2);
+      o2 = _$2(1, r2 + (J2 - r2) * (u2 * se));
     }
-    return (r2 + o) / 2;
-  }, e2[0].pressure), p2 = W(s2, b2, e2[e2.length - 1].pressure, n2), U2, B = e2[0].vector, I2 = e2[0].point, C2 = I2, y2 = I2, O2 = C2;
+    return (r2 + o2) / 2;
+  }, e2[0].pressure), p2 = W$1(s2, b2, e2[e2.length - 1].pressure, n2), U2, B2 = e2[0].vector, I2 = e2[0].point, C2 = I2, y2 = I2, O2 = C2;
   for (let r2 = 0; r2 < e2.length; r2++) {
-    let { pressure: i2 } = e2[r2], { point: o, vector: u2, distance: J2, runningLength: K2 } = e2[r2];
-    if (r2 < e2.length - 1 && H - K2 < 3)
+    let { pressure: i2 } = e2[r2], { point: o2, vector: u2, distance: J2, runningLength: K2 } = e2[r2];
+    if (r2 < e2.length - 1 && H2 - K2 < 3)
       continue;
     if (b2) {
       if (v2) {
-        let P2 = _$1(1, J2 / s2), Q2 = _$1(1, 1 - P2);
-        i2 = _$1(1, N2 + (Q2 - N2) * (P2 * se));
+        let P2 = _$2(1, J2 / s2), Q2 = _$2(1, 1 - P2);
+        i2 = _$2(1, N2 + (Q2 - N2) * (P2 * se));
       }
-      p2 = W(s2, b2, i2, n2);
+      p2 = W$1(s2, b2, i2, n2);
     } else
       p2 = s2 / 2;
     U2 === void 0 && (U2 = p2);
-    let pe = K2 < x2 ? q(K2 / x2) : 1, ae = H - K2 < c2 ? M2((H - K2) / c2) : 1;
+    let pe = K2 < x2 ? q2(K2 / x2) : 1, ae = H2 - K2 < c2 ? M2((H2 - K2) / c2) : 1;
     if (p2 = Math.max(0.01, p2 * Math.min(pe, ae)), r2 === e2.length - 1) {
-      let P2 = f(L(u2), p2);
-      D2.push(a(o, P2)), R.push(l(o, P2));
+      let P2 = f$1(L$1(u2), p2);
+      D2.push(a$1(o2, P2)), R2.push(l$1(o2, P2));
       continue;
     }
-    let A = e2[r2 + 1].vector, ee2 = ne(u2, A);
+    let A2 = e2[r2 + 1].vector, ee2 = ne(u2, A2);
     if (ee2 < 0) {
-      let P2 = f(L(B), p2);
+      let P2 = f$1(L$1(B2), p2);
       for (let Q2 = 1 / 13, w2 = 0; w2 <= 1; w2 += Q2)
-        y2 = T(a(o, P2), o, j * w2), D2.push(y2), O2 = T(l(o, P2), o, j * -w2), R.push(O2);
+        y2 = T$1(a$1(o2, P2), o2, j$1 * w2), D2.push(y2), O2 = T$1(l$1(o2, P2), o2, j$1 * -w2), R2.push(O2);
       I2 = y2, C2 = O2;
       continue;
     }
-    let te = f(L(V(A, u2, ee2)), p2);
-    y2 = a(o, te), (r2 <= 1 || Y(I2, y2) > $) && (D2.push(y2), I2 = y2), O2 = l(o, te), (r2 <= 1 || Y(C2, O2) > $) && (R.push(O2), C2 = O2), N2 = i2, B = u2;
+    let te = f$1(L$1(V$1(A2, u2, ee2)), p2);
+    y2 = a$1(o2, te), (r2 <= 1 || Y$1(I2, y2) > $2) && (D2.push(y2), I2 = y2), O2 = l$1(o2, te), (r2 <= 1 || Y$1(C2, O2) > $2) && (R2.push(O2), C2 = O2), N2 = i2, B2 = u2;
   }
-  let S2 = e2[0].point.slice(0, 2), k = e2.length > 1 ? e2[e2.length - 1].point.slice(0, 2) : l(e2[0].point, [1, 1]), X = [], F2 = [];
+  let S2 = e2[0].point.slice(0, 2), k2 = e2.length > 1 ? e2[e2.length - 1].point.slice(0, 2) : l$1(e2[0].point, [1, 1]), X2 = [], F2 = [];
   if (e2.length === 1) {
-    if (!(x2 || c2) || z) {
-      let r2 = Z(S2, G(L(a(S2, k))), -(U2 || p2)), i2 = [];
-      for (let o = 1 / 13, u2 = o; u2 <= 1; u2 += o)
-        i2.push(T(r2, S2, j * 2 * u2));
+    if (!(x2 || c2) || z2) {
+      let r2 = Z$1(S2, G$1(L$1(a$1(S2, k2))), -(U2 || p2)), i2 = [];
+      for (let o2 = 1 / 13, u2 = o2; u2 <= 1; u2 += o2)
+        i2.push(T$1(r2, S2, j$1 * 2 * u2));
       return i2;
     }
   } else {
     if (!(x2 || c2 && e2.length === 1))
       if (d2)
-        for (let i2 = 1 / 13, o = i2; o <= 1; o += i2) {
-          let u2 = T(R[0], S2, j * o);
-          X.push(u2);
+        for (let i2 = 1 / 13, o2 = i2; o2 <= 1; o2 += i2) {
+          let u2 = T$1(R2[0], S2, j$1 * o2);
+          X2.push(u2);
         }
       else {
-        let i2 = a(D2[0], R[0]), o = f(i2, 0.5), u2 = f(i2, 0.51);
-        X.push(a(S2, o), a(S2, u2), l(S2, u2), l(S2, o));
+        let i2 = a$1(D2[0], R2[0]), o2 = f$1(i2, 0.5), u2 = f$1(i2, 0.51);
+        X2.push(a$1(S2, o2), a$1(S2, u2), l$1(S2, u2), l$1(S2, o2));
       }
-    let r2 = L(re(e2[e2.length - 1].vector));
+    let r2 = L$1(re(e2[e2.length - 1].vector));
     if (c2 || x2 && e2.length === 1)
-      F2.push(k);
+      F2.push(k2);
     else if (m2) {
-      let i2 = Z(k, r2, p2);
-      for (let o = 1 / 29, u2 = o; u2 < 1; u2 += o)
-        F2.push(T(i2, k, j * 3 * u2));
+      let i2 = Z$1(k2, r2, p2);
+      for (let o2 = 1 / 29, u2 = o2; u2 < 1; u2 += o2)
+        F2.push(T$1(i2, k2, j$1 * 3 * u2));
     } else
-      F2.push(l(k, f(r2, p2)), l(k, f(r2, p2 * 0.99)), a(k, f(r2, p2 * 0.99)), a(k, f(r2, p2)));
+      F2.push(l$1(k2, f$1(r2, p2)), l$1(k2, f$1(r2, p2 * 0.99)), a$1(k2, f$1(r2, p2 * 0.99)), a$1(k2, f$1(r2, p2)));
   }
-  return D2.concat(F2, R.reverse(), X);
+  return D2.concat(F2, R2.reverse(), X2);
 }
 function ce(e2, t2 = {}) {
-  var q;
+  var q2;
   let { streamline: s2 = 0.5, size: h2 = 16, last: b2 = false } = t2;
   if (e2.length === 0)
     return [];
@@ -62795,23 +63063,23 @@ function ce(e2, t2 = {}) {
     let m2 = n2[1];
     n2 = n2.slice(0, -1);
     for (let c2 = 1; c2 < 5; c2++)
-      n2.push(V(n2[0], m2, c2 / 4));
+      n2.push(V$1(n2[0], m2, c2 / 4));
   }
-  n2.length === 1 && (n2 = [...n2, [...l(n2[0], [1, 1]), ...n2[0].slice(2)]]);
-  let g = [{ point: [n2[0][0], n2[0][1]], pressure: n2[0][2] >= 0 ? n2[0][2] : 0.25, vector: [1, 1], distance: 0, runningLength: 0 }], E2 = false, z = 0, d2 = g[0], x2 = n2.length - 1;
+  n2.length === 1 && (n2 = [...n2, [...l$1(n2[0], [1, 1]), ...n2[0].slice(2)]]);
+  let g2 = [{ point: [n2[0][0], n2[0][1]], pressure: n2[0][2] >= 0 ? n2[0][2] : 0.25, vector: [1, 1], distance: 0, runningLength: 0 }], E2 = false, z2 = 0, d2 = g2[0], x2 = n2.length - 1;
   for (let m2 = 1; m2 < n2.length; m2++) {
-    let c2 = b2 && m2 === x2 ? n2[m2].slice(0, 2) : V(d2.point, n2[m2], v2);
+    let c2 = b2 && m2 === x2 ? n2[m2].slice(0, 2) : V$1(d2.point, n2[m2], v2);
     if (oe(d2.point, c2))
       continue;
     let M2 = ue(c2, d2.point);
-    if (z += M2, m2 < x2 && !E2) {
-      if (z < h2)
+    if (z2 += M2, m2 < x2 && !E2) {
+      if (z2 < h2)
         continue;
       E2 = true;
     }
-    d2 = { point: c2, pressure: n2[m2][2] >= 0 ? n2[m2][2] : 0.5, vector: G(a(d2.point, c2)), distance: M2, runningLength: z }, g.push(d2);
+    d2 = { point: c2, pressure: n2[m2][2] >= 0 ? n2[m2][2] : 0.5, vector: G$1(a$1(d2.point, c2)), distance: M2, runningLength: z2 }, g2.push(d2);
   }
-  return g[0].vector = ((q = g[1]) == null ? void 0 : q.vector) || [0, 0], g;
+  return g2[0].vector = ((q2 = g2[1]) == null ? void 0 : q2.vector) || [0, 0], g2;
 }
 function me(e2, t2 = {}) {
   return ie(ce(e2, t2), t2);
@@ -62859,7 +63127,7 @@ function guid() {
   return `${S4() + S4()}-${S4()}-${S4()}-${S4()}-${S4()}${S4()}${S4()}`;
 }
 var DECIMAL = 2;
-var D = DECIMAL;
+var D$1 = DECIMAL;
 var BaseModel = class {
   constructor(drauu) {
     this.drauu = drauu;
@@ -62929,7 +63197,7 @@ var BaseModel = class {
     return el2;
   }
   attr(name, value) {
-    this.el.setAttribute(name, typeof value === "string" ? value : value.toFixed(D));
+    this.el.setAttribute(name, typeof value === "string" ? value : value.toFixed(D$1));
   }
   _setEvent(event) {
     this.event = event;
@@ -63067,11 +63335,11 @@ var LineModel = class extends BaseModel {
     this.attr("y2", point.y);
     if (this.brush.arrowEnd) {
       const id = guid();
-      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.append(createArrowHead(id, this.brush.color));
-      g.append(this.el);
+      const g2 = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g2.append(createArrowHead(id, this.brush.color));
+      g2.append(this.el);
       this.attr("marker-end", `url(#${id})`);
-      return g;
+      return g2;
     }
     return this.el;
   }
@@ -63288,9 +63556,9 @@ function controlPoint(current, previous, next, reverse) {
   const p2 = previous || current;
   const n2 = next || current;
   const smoothing = 0.2;
-  const o = line(p2, n2);
-  const angle2 = o.angle + (reverse ? Math.PI : 0);
-  const length = o.length * smoothing;
+  const o2 = line(p2, n2);
+  const angle2 = o2.angle + (reverse ? Math.PI : 0);
+  const length = o2.length * smoothing;
   const x2 = current.x + Math.cos(angle2) * length;
   const y2 = current.y + Math.sin(angle2) * length;
   return { x: x2, y: y2 };
@@ -63298,10 +63566,10 @@ function controlPoint(current, previous, next, reverse) {
 function bezierCommand(point, i2, points) {
   const cps = controlPoint(points[i2 - 1], points[i2 - 2], point);
   const cpe = controlPoint(point, points[i2 - 1], points[i2 + 1], true);
-  return `C ${cps.x.toFixed(D)},${cps.y.toFixed(D)} ${cpe.x.toFixed(D)},${cpe.y.toFixed(D)} ${point.x.toFixed(D)},${point.y.toFixed(D)}`;
+  return `C ${cps.x.toFixed(D$1)},${cps.y.toFixed(D$1)} ${cpe.x.toFixed(D$1)},${cpe.y.toFixed(D$1)} ${point.x.toFixed(D$1)},${point.y.toFixed(D$1)}`;
 }
 function toSvgData(points) {
-  return points.reduce((acc, point, i2, a2) => i2 === 0 ? `M ${point.x.toFixed(D)},${point.y.toFixed(D)}` : `${acc} ${bezierCommand(point, i2, a2)}`, "");
+  return points.reduce((acc, point, i2, a2) => i2 === 0 ? `M ${point.x.toFixed(D$1)},${point.y.toFixed(D$1)}` : `${acc} ${bezierCommand(point, i2, a2)}`, "");
 }
 var EraserModel = class extends BaseModel {
   constructor() {
@@ -63601,9 +63869,9 @@ var Drauu = class {
   dump() {
     return this.el.innerHTML;
   }
-  load(svg) {
+  load(svg2) {
     this.clear();
-    this.el.innerHTML = svg;
+    this.el.innerHTML = svg2;
   }
 };
 function createDrauu(options) {
@@ -67811,7 +68079,7 @@ var lodash = { exports: {} };
       var assignWith = createAssigner(function(object, source, srcIndex, customizer) {
         copyObject(source, keys2(source), object, customizer);
       });
-      var at = flatRest(baseAt);
+      var at2 = flatRest(baseAt);
       function create(prototype, properties) {
         var result2 = baseCreate(prototype);
         return properties == null ? result2 : baseAssign(result2, properties);
@@ -68321,7 +68589,7 @@ var lodash = { exports: {} };
         }
         return result2 + omission;
       }
-      function unescape(string2) {
+      function unescape2(string2) {
         string2 = toString2(string2);
         return string2 && reHasEscapedHtml.test(string2) ? string2.replace(reEscapedHtml, unescapeHtmlChar) : string2;
       }
@@ -68542,7 +68810,7 @@ var lodash = { exports: {} };
       lodash2.assignIn = assignIn;
       lodash2.assignInWith = assignInWith;
       lodash2.assignWith = assignWith;
-      lodash2.at = at;
+      lodash2.at = at2;
       lodash2.before = before;
       lodash2.bind = bind2;
       lodash2.bindAll = bindAll;
@@ -68835,7 +69103,7 @@ var lodash = { exports: {} };
       lodash2.trimEnd = trimEnd;
       lodash2.trimStart = trimStart;
       lodash2.truncate = truncate;
-      lodash2.unescape = unescape;
+      lodash2.unescape = unescape2;
       lodash2.uniqueId = uniqueId;
       lodash2.upperCase = upperCase;
       lodash2.upperFirst = upperFirst;
@@ -69020,7 +69288,7 @@ var lodash = { exports: {} };
     }
   }).call(commonjsGlobal);
 })(lodash, lodash.exports);
-var _ = lodash.exports;
+var _$1 = lodash.exports;
 //! moment.js
 //! version : 2.29.3
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
@@ -69046,9 +69314,9 @@ function isObjectEmpty(obj) {
   if (Object.getOwnPropertyNames) {
     return Object.getOwnPropertyNames(obj).length === 0;
   } else {
-    var k;
-    for (k in obj) {
-      if (hasOwnProp(obj, k)) {
+    var k2;
+    for (k2 in obj) {
+      if (hasOwnProp(obj, k2)) {
         return false;
       }
     }
@@ -69609,10 +69877,10 @@ var indexOf;
 if (Array.prototype.indexOf) {
   indexOf = Array.prototype.indexOf;
 } else {
-  indexOf = function(o) {
+  indexOf = function(o2) {
     var i2;
     for (i2 = 0; i2 < this.length; ++i2) {
-      if (this[i2] === o) {
+      if (this[i2] === o2) {
         return i2;
       }
     }
@@ -72741,16 +73009,16 @@ function __awaiter(thisArg, _arguments, P2, generator) {
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
 }
-function __values(o) {
-  var s2 = typeof Symbol === "function" && Symbol.iterator, m2 = s2 && o[s2], i2 = 0;
+function __values(o2) {
+  var s2 = typeof Symbol === "function" && Symbol.iterator, m2 = s2 && o2[s2], i2 = 0;
   if (m2)
-    return m2.call(o);
-  if (o && typeof o.length === "number")
+    return m2.call(o2);
+  if (o2 && typeof o2.length === "number")
     return {
       next: function() {
-        if (o && i2 >= o.length)
-          o = void 0;
-        return { value: o && o[i2++], done: !o };
+        if (o2 && i2 >= o2.length)
+          o2 = void 0;
+        return { value: o2 && o2[i2++], done: !o2 };
       }
     };
   throw new TypeError(s2 ? "Object is not iterable." : "Symbol.iterator is not defined.");
@@ -72761,27 +73029,27 @@ function __await(v2) {
 function __asyncGenerator(thisArg, _arguments, generator) {
   if (!Symbol.asyncIterator)
     throw new TypeError("Symbol.asyncIterator is not defined.");
-  var g = generator.apply(thisArg, _arguments || []), i2, q = [];
+  var g2 = generator.apply(thisArg, _arguments || []), i2, q2 = [];
   return i2 = {}, verb("next"), verb("throw"), verb("return"), i2[Symbol.asyncIterator] = function() {
     return this;
   }, i2;
   function verb(n2) {
-    if (g[n2])
+    if (g2[n2])
       i2[n2] = function(v2) {
         return new Promise(function(a2, b2) {
-          q.push([n2, v2, a2, b2]) > 1 || resume(n2, v2);
+          q2.push([n2, v2, a2, b2]) > 1 || resume(n2, v2);
         });
       };
   }
   function resume(n2, v2) {
     try {
-      step(g[n2](v2));
+      step(g2[n2](v2));
     } catch (e2) {
-      settle(q[0][3], e2);
+      settle(q2[0][3], e2);
     }
   }
   function step(r2) {
-    r2.value instanceof __await ? Promise.resolve(r2.value.v).then(fulfill, reject) : settle(q[0][2], r2);
+    r2.value instanceof __await ? Promise.resolve(r2.value.v).then(fulfill, reject) : settle(q2[0][2], r2);
   }
   function fulfill(value) {
     resume("next", value);
@@ -72790,21 +73058,21 @@ function __asyncGenerator(thisArg, _arguments, generator) {
     resume("throw", value);
   }
   function settle(f2, v2) {
-    if (f2(v2), q.shift(), q.length)
-      resume(q[0][0], q[0][1]);
+    if (f2(v2), q2.shift(), q2.length)
+      resume(q2[0][0], q2[0][1]);
   }
 }
-function __asyncValues(o) {
+function __asyncValues(o2) {
   if (!Symbol.asyncIterator)
     throw new TypeError("Symbol.asyncIterator is not defined.");
-  var m2 = o[Symbol.asyncIterator], i2;
-  return m2 ? m2.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i2 = {}, verb("next"), verb("throw"), verb("return"), i2[Symbol.asyncIterator] = function() {
+  var m2 = o2[Symbol.asyncIterator], i2;
+  return m2 ? m2.call(o2) : (o2 = typeof __values === "function" ? __values(o2) : o2[Symbol.iterator](), i2 = {}, verb("next"), verb("throw"), verb("return"), i2[Symbol.asyncIterator] = function() {
     return this;
   }, i2);
   function verb(n2) {
-    i2[n2] = o[n2] && function(v2) {
+    i2[n2] = o2[n2] && function(v2) {
       return new Promise(function(resolve2, reject) {
-        v2 = o[n2](v2), settle(resolve2, reject, v2.done, v2.value);
+        v2 = o2[n2](v2), settle(resolve2, reject, v2.done, v2.value);
       });
     };
   }
@@ -72858,7 +73126,7 @@ function filteredIndexRange(keys2, range2) {
   let { start, end, startClosed = true, endClosed = false } = range2;
   let iStart = 0;
   if (typeof start !== "undefined") {
-    iStart = _.sortedIndex(keys2, start);
+    iStart = _$1.sortedIndex(keys2, start);
     let key = keys2[iStart];
     if (key <= start && !startClosed) {
       iStart += 1;
@@ -72866,7 +73134,7 @@ function filteredIndexRange(keys2, range2) {
   }
   let iEnd = len2 - 1;
   if (typeof end !== "undefined") {
-    iEnd = _.sortedIndex(keys2, end);
+    iEnd = _$1.sortedIndex(keys2, end);
     let key = keys2[iEnd];
     if (key >= end && !endClosed) {
       iEnd -= 1;
@@ -72947,14 +73215,14 @@ function subscribe(ref2, callback, opt) {
       internalSub = void 0;
     }
   };
-  ref2.on((data2, key, at, sub2) => {
+  ref2.on((data2, key, at2, sub2) => {
     if (didUnsub) {
       sub2.off();
       return;
     }
     internalSub = sub2;
     try {
-      callback(data2, key, at, Object.assign(Object.assign({}, sub2), externalSub));
+      callback(data2, key, at2, Object.assign(Object.assign({}, sub2), externalSub));
     } catch (error2) {
       externalSub.off();
       throw error2;
@@ -72984,7 +73252,7 @@ function _iterateSortedRecord(ref2, opts) {
     if (typeof obj !== "object") {
       throw new Error(`Cannot iterate keys of non-object record "${obj}" at key "${(_a2 = ref2._) === null || _a2 === void 0 ? void 0 : _a2.get}"`);
     }
-    obj = _.omit(obj, "_");
+    obj = _$1.omit(obj, "_");
     let keys2 = Object.keys(obj).sort();
     let [iStart, iEnd] = filteredIndexRange(keys2, range2);
     if (iStart >= iEnd) {
@@ -73112,13 +73380,13 @@ class DateTree {
       }
       let map2 = innerRef.map();
       mapTable[compKey] = map2;
-      subTable[compKey] = subscribe(map2, (data2, key, at, innerSub) => {
+      subTable[compKey] = subscribe(map2, (data2, key, at2, innerSub) => {
         let value = DateTree.decodeDateComponent(key);
         let innerComps = Object.assign(Object.assign({}, comps), { [innerUnit]: value });
         if (innerUnit === this.resolution) {
           let date = DateTree.getDateWithComponents(innerComps);
           if (isInRange(date, range2)) {
-            cb(data2, date, at, commonSub);
+            cb(data2, date, at2, commonSub);
           }
         } else {
           beginSub(innerComps, innerUnit);
@@ -73134,9 +73402,9 @@ class DateTree {
     for (let i2 = 0; i2 < units.length - 1; i2++) {
       ref2 = ref2.map();
     }
-    return ref2.on((data2, key, at, event) => {
-      let date = this.getDate(at);
-      cb(data2, date, at, event);
+    return ref2.on((data2, key, at2, event) => {
+      let date = this.getDate(at2);
+      cb(data2, date, at2, event);
     });
   }
   changesAbout(date, callback) {
@@ -73144,7 +73412,7 @@ class DateTree {
     let comps = DateTree.getDateComponents(m2, this.resolution);
     let units = Object.keys(comps);
     let refs = this._getRefChain(comps);
-    let refTable = _.zipObject(units, refs);
+    let refTable = _$1.zipObject(units, refs);
     let subTable = {};
     let didUnsub = false;
     let commonSub = {
@@ -73159,9 +73427,9 @@ class DateTree {
         subTable = {};
       }
     };
-    _.forIn(refTable, (ref2, unit) => {
-      subTable[unit] = subscribe(ref2, (changes, outerKey, at, sub2) => {
-        _.forIn(changes, (val, key) => {
+    _$1.forIn(refTable, (ref2, unit) => {
+      subTable[unit] = subscribe(ref2, (changes, outerKey, at2, sub2) => {
+        _$1.forIn(changes, (val, key) => {
           if (key === "_") {
             return;
           }
@@ -73218,8 +73486,8 @@ class DateTree {
     if (!ok) {
       throw new Error("Invalid Gun node reference. Expected a leaf on the date tree.");
     }
-    let values = keys2.map((k) => DateTree.decodeDateComponent(k));
-    let comps = _.zipObject(units, values);
+    let values = keys2.map((k2) => DateTree.decodeDateComponent(k2));
+    let comps = _$1.zipObject(units, values);
     return DateTree.getDateWithComponents(comps);
   }
   get(date) {
@@ -73230,7 +73498,7 @@ class DateTree {
   _getRefChain(comps) {
     let ref2 = this.root;
     let refs = [ref2];
-    _.forIn(comps, (val, unit) => {
+    _$1.forIn(comps, (val, unit) => {
       let key = DateTree.encodeDateComponent(val, unit);
       ref2 = ref2.get(key);
       refs.push(ref2);
@@ -73518,13 +73786,13 @@ class DateTree {
     let upComps = this.downsampleDateComponents(comps, upUnit);
     if (typeof startVal !== "undefined") {
       let upStartComps = this.downsampleDateComponents(startComps, upUnit);
-      if (!_.isEqual(upStartComps, upComps)) {
+      if (!_$1.isEqual(upStartComps, upComps)) {
         startVal = void 0;
       }
     }
     if (typeof endVal !== "undefined") {
       let upEndComps = DateTree.downsampleDateComponents(endComps, upUnit);
-      if (!_.isEqual(upEndComps, upComps)) {
+      if (!_$1.isEqual(upEndComps, upComps)) {
         endVal = void 0;
       }
     }
@@ -73614,12 +73882,12 @@ const nativeDateValue = (value, res) => {
 (() => {
   let maxDate = hooks.utc().startOf("year");
   let units = ALL_DATE_UNITS.slice(1);
-  return _.zipObject(units, units.map((r2) => graphDateValue(maxDate.get(nativeDateUnit(r2)), r2)));
+  return _$1.zipObject(units, units.map((r2) => graphDateValue(maxDate.get(nativeDateUnit(r2)), r2)));
 })();
 const MAX_DATE_COMPONENTS = (() => {
   let maxDate = hooks.utc().endOf("year");
   let units = ALL_DATE_UNITS.slice(1);
-  return _.zipObject(units, units.map((r2) => graphDateValue(maxDate.get(nativeDateUnit(r2)), r2) + 1));
+  return _$1.zipObject(units, units.map((r2) => graphDateValue(maxDate.get(nativeDateUnit(r2)), r2) + 1));
 })();
 const DATE_COMP_PADS = (() => {
   let pads = {
@@ -73906,5 +74174,718 @@ function decodeUrlSafeBase64(st) {
 function chunkIt(list3, chunkSize = 3) {
   return [...Array(Math.ceil(list3.length / chunkSize))].map(() => list3.splice(0, chunkSize));
 }
-export { ColorHash, DateTree, Dropdown$1 as Dropdown, Fragment, Fuse, Gun$3 as Gun, HstCheckbox, HstCopyIcon, HstNumber, HstText, HstTextarea, Icon$1 as Icon, JSZip, SEA, Transition, YAML, _sfc_main, _sfc_main$1, applyStateToVariant, base32, buffer, clone$2 as clone, computed, createApp, createBaseVNode, createBlock, createCommentVNode, createDrauu, createElementBlock, createPinia, createRouter, createStaticVNode, createTextVNode, createVNode, createWebHashHistory, createWebHistory, defineAsyncComponent, defineComponent, defineStore, exports, flexsearch, generateSourceCode, getArrow, getHighlighter, guardReactiveProps, gunAvatar, h$1 as h, isRef, lib, markRaw, markdownIt, mergeProps, mountClass, mountElement, ms, nextTick, normalizeClass, normalizeProps, normalizeStyle, omit, onBeforeUnmount, onClickOutside, onMounted, onUnmounted, openBlock, parseQuery$1 as parseQuery, plugin, popScopeId, pushScopeId, reactive, ref, refDebounced, renderList, renderSlot, resolveComponent, resolveDirective, resolveDynamicComponent, scrollIntoView, setCDN, shallowRef, slugify, toDisplayString, toRaw, toReactive, toRefs, unindent, unref, urlRegex, useClamp, useCssVars, useCycleList, useDark, useElementBounding, useEventListener$1 as useEventListener, useFocus, useMediaQuery, useMouseInElement, useMousePressed, useNow, useResizeObserver, useRoute, useRouter, useStorage, useTimeoutFn$1 as useTimeoutFn, useTitle, useToggle, vModelText, vShow, watch, watchEffect, withCtx, withDirectives, withKeys, withModifiers };
+var dist = {};
+var t;
+Object.defineProperty(dist, "__esModule", { value: true });
+var r = [0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346, 404, 466, 532, 581, 655, 733, 815, 901, 991, 1085, 1156, 1258, 1364, 1474, 1588, 1706, 1828, 1921, 2051, 2185, 2323, 2465, 2611, 2761, 2876, 3034, 3196, 3362, 3532, 3706], e = function(t2) {
+  if (!t2)
+    throw new Error('"version" cannot be null or undefined');
+  if (t2 < 1 || t2 > 40)
+    throw new Error('"version" should be in range from 1 to 40');
+  return 4 * t2 + 17;
+}, n = function(t2) {
+  return r[t2];
+}, o = function(t2) {
+  for (var r2 = 0; t2 !== 0; )
+    r2++, t2 >>>= 1;
+  return r2;
+}, i = function(r2) {
+  if (typeof r2 != "function")
+    throw new Error('"toSJISFunc" is not a valid function.');
+  t = r2;
+}, a = function() {
+  return t !== void 0;
+}, u = function(r2) {
+  return t(r2);
+};
+function s(t2, r2) {
+  return t2(r2 = { exports: {} }, r2.exports), r2.exports;
+}
+var f = s(function(t2, r2) {
+  r2.L = { bit: 1 }, r2.M = { bit: 0 }, r2.Q = { bit: 3 }, r2.H = { bit: 2 }, r2.isValid = function(t3) {
+    return t3 && t3.bit !== void 0 && t3.bit >= 0 && t3.bit < 4;
+  }, r2.from = function(t3, e2) {
+    if (r2.isValid(t3))
+      return t3;
+    try {
+      return function(t4) {
+        if (typeof t4 != "string")
+          throw new Error("Param is not a string");
+        switch (t4.toLowerCase()) {
+          case "l":
+          case "low":
+            return r2.L;
+          case "m":
+          case "medium":
+            return r2.M;
+          case "q":
+          case "quartile":
+            return r2.Q;
+          case "h":
+          case "high":
+            return r2.H;
+          default:
+            throw new Error("Unknown EC Level: " + t4);
+        }
+      }(t3);
+    } catch (t4) {
+      return e2;
+    }
+  };
+});
+f.L, f.M, f.Q, f.H, f.isValid;
+function h() {
+  this.buffer = [], this.length = 0;
+}
+h.prototype = { get: function(t2) {
+  var r2 = Math.floor(t2 / 8);
+  return (this.buffer[r2] >>> 7 - t2 % 8 & 1) == 1;
+}, put: function(t2, r2) {
+  for (var e2 = 0; e2 < r2; e2++)
+    this.putBit((t2 >>> r2 - e2 - 1 & 1) == 1);
+}, getLengthInBits: function() {
+  return this.length;
+}, putBit: function(t2) {
+  var r2 = Math.floor(this.length / 8);
+  this.buffer.length <= r2 && this.buffer.push(0), t2 && (this.buffer[r2] |= 128 >>> this.length % 8), this.length++;
+} };
+var c = h;
+function g(t2) {
+  if (!t2 || t2 < 1)
+    throw new Error("BitMatrix size must be defined and greater than 0");
+  this.size = t2, this.data = new Uint8Array(t2 * t2), this.reservedBit = new Uint8Array(t2 * t2);
+}
+g.prototype.set = function(t2, r2, e2, n2) {
+  var o2 = t2 * this.size + r2;
+  this.data[o2] = e2, n2 && (this.reservedBit[o2] = true);
+}, g.prototype.get = function(t2, r2) {
+  return this.data[t2 * this.size + r2];
+}, g.prototype.xor = function(t2, r2, e2) {
+  this.data[t2 * this.size + r2] ^= e2;
+}, g.prototype.isReserved = function(t2, r2) {
+  return this.reservedBit[t2 * this.size + r2];
+};
+var d = g, l = s(function(t2, r2) {
+  var n2 = e;
+  r2.getRowColCoords = function(t3) {
+    if (t3 === 1)
+      return [];
+    for (var r3 = Math.floor(t3 / 7) + 2, e2 = n2(t3), o2 = e2 === 145 ? 26 : 2 * Math.ceil((e2 - 13) / (2 * r3 - 2)), i2 = [e2 - 7], a2 = 1; a2 < r3 - 1; a2++)
+      i2[a2] = i2[a2 - 1] - o2;
+    return i2.push(6), i2.reverse();
+  }, r2.getPositions = function(t3) {
+    for (var e2 = [], n3 = r2.getRowColCoords(t3), o2 = n3.length, i2 = 0; i2 < o2; i2++)
+      for (var a2 = 0; a2 < o2; a2++)
+        i2 === 0 && a2 === 0 || i2 === 0 && a2 === o2 - 1 || i2 === o2 - 1 && a2 === 0 || e2.push([n3[i2], n3[a2]]);
+    return e2;
+  };
+}), v = (l.getRowColCoords, l.getPositions, e), p = function(t2) {
+  var r2 = v(t2);
+  return [[0, 0], [r2 - 7, 0], [0, r2 - 7]];
+}, E = s(function(t2, r2) {
+  r2.Patterns = { PATTERN000: 0, PATTERN001: 1, PATTERN010: 2, PATTERN011: 3, PATTERN100: 4, PATTERN101: 5, PATTERN110: 6, PATTERN111: 7 };
+  var e2 = 3, n2 = 3, o2 = 40, i2 = 10;
+  function a2(t3, e3, n3) {
+    switch (t3) {
+      case r2.Patterns.PATTERN000:
+        return (e3 + n3) % 2 == 0;
+      case r2.Patterns.PATTERN001:
+        return e3 % 2 == 0;
+      case r2.Patterns.PATTERN010:
+        return n3 % 3 == 0;
+      case r2.Patterns.PATTERN011:
+        return (e3 + n3) % 3 == 0;
+      case r2.Patterns.PATTERN100:
+        return (Math.floor(e3 / 2) + Math.floor(n3 / 3)) % 2 == 0;
+      case r2.Patterns.PATTERN101:
+        return e3 * n3 % 2 + e3 * n3 % 3 == 0;
+      case r2.Patterns.PATTERN110:
+        return (e3 * n3 % 2 + e3 * n3 % 3) % 2 == 0;
+      case r2.Patterns.PATTERN111:
+        return (e3 * n3 % 3 + (e3 + n3) % 2) % 2 == 0;
+      default:
+        throw new Error("bad maskPattern:" + t3);
+    }
+  }
+  r2.isValid = function(t3) {
+    return t3 != null && t3 !== "" && !isNaN(t3) && t3 >= 0 && t3 <= 7;
+  }, r2.from = function(t3) {
+    return r2.isValid(t3) ? parseInt(t3, 10) : void 0;
+  }, r2.getPenaltyN1 = function(t3) {
+    for (var r3 = t3.size, n3 = 0, o3 = 0, i3 = 0, a3 = null, u2 = null, s2 = 0; s2 < r3; s2++) {
+      o3 = i3 = 0, a3 = u2 = null;
+      for (var f2 = 0; f2 < r3; f2++) {
+        var h2 = t3.get(s2, f2);
+        h2 === a3 ? o3++ : (o3 >= 5 && (n3 += e2 + (o3 - 5)), a3 = h2, o3 = 1), (h2 = t3.get(f2, s2)) === u2 ? i3++ : (i3 >= 5 && (n3 += e2 + (i3 - 5)), u2 = h2, i3 = 1);
+      }
+      o3 >= 5 && (n3 += e2 + (o3 - 5)), i3 >= 5 && (n3 += e2 + (i3 - 5));
+    }
+    return n3;
+  }, r2.getPenaltyN2 = function(t3) {
+    for (var r3 = t3.size, e3 = 0, o3 = 0; o3 < r3 - 1; o3++)
+      for (var i3 = 0; i3 < r3 - 1; i3++) {
+        var a3 = t3.get(o3, i3) + t3.get(o3, i3 + 1) + t3.get(o3 + 1, i3) + t3.get(o3 + 1, i3 + 1);
+        a3 !== 4 && a3 !== 0 || e3++;
+      }
+    return e3 * n2;
+  }, r2.getPenaltyN3 = function(t3) {
+    for (var r3 = t3.size, e3 = 0, n3 = 0, i3 = 0, a3 = 0; a3 < r3; a3++) {
+      n3 = i3 = 0;
+      for (var u2 = 0; u2 < r3; u2++)
+        n3 = n3 << 1 & 2047 | t3.get(a3, u2), u2 >= 10 && (n3 === 1488 || n3 === 93) && e3++, i3 = i3 << 1 & 2047 | t3.get(u2, a3), u2 >= 10 && (i3 === 1488 || i3 === 93) && e3++;
+    }
+    return e3 * o2;
+  }, r2.getPenaltyN4 = function(t3) {
+    for (var r3 = 0, e3 = t3.data.length, n3 = 0; n3 < e3; n3++)
+      r3 += t3.data[n3];
+    return Math.abs(Math.ceil(100 * r3 / e3 / 5) - 10) * i2;
+  }, r2.applyMask = function(t3, r3) {
+    for (var e3 = r3.size, n3 = 0; n3 < e3; n3++)
+      for (var o3 = 0; o3 < e3; o3++)
+        r3.isReserved(o3, n3) || r3.xor(o3, n3, a2(t3, o3, n3));
+  }, r2.getBestMask = function(t3, e3) {
+    for (var n3 = Object.keys(r2.Patterns).length, o3 = 0, i3 = 1 / 0, a3 = 0; a3 < n3; a3++) {
+      e3(a3), r2.applyMask(a3, t3);
+      var u2 = r2.getPenaltyN1(t3) + r2.getPenaltyN2(t3) + r2.getPenaltyN3(t3) + r2.getPenaltyN4(t3);
+      r2.applyMask(a3, t3), u2 < i3 && (i3 = u2, o3 = a3);
+    }
+    return o3;
+  };
+}), w = (E.Patterns, E.isValid, E.getPenaltyN1, E.getPenaltyN2, E.getPenaltyN3, E.getPenaltyN4, E.applyMask, E.getBestMask, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 2, 2, 4, 1, 2, 4, 4, 2, 4, 4, 4, 2, 4, 6, 5, 2, 4, 6, 6, 2, 5, 8, 8, 4, 5, 8, 8, 4, 5, 8, 11, 4, 8, 10, 11, 4, 9, 12, 16, 4, 9, 16, 16, 6, 10, 12, 18, 6, 10, 17, 16, 6, 11, 16, 19, 6, 13, 18, 21, 7, 14, 21, 25, 8, 16, 20, 25, 8, 17, 23, 25, 9, 17, 23, 34, 9, 18, 25, 30, 10, 20, 27, 32, 12, 21, 29, 35, 12, 23, 34, 37, 12, 25, 34, 40, 13, 26, 35, 42, 14, 28, 38, 45, 15, 29, 40, 48, 16, 31, 43, 51, 17, 33, 45, 54, 18, 35, 48, 57, 19, 37, 51, 60, 19, 38, 53, 63, 20, 40, 56, 66, 21, 43, 59, 70, 22, 45, 62, 74, 24, 47, 65, 77, 25, 49, 68, 81]), A = [7, 10, 13, 17, 10, 16, 22, 28, 15, 26, 36, 44, 20, 36, 52, 64, 26, 48, 72, 88, 36, 64, 96, 112, 40, 72, 108, 130, 48, 88, 132, 156, 60, 110, 160, 192, 72, 130, 192, 224, 80, 150, 224, 264, 96, 176, 260, 308, 104, 198, 288, 352, 120, 216, 320, 384, 132, 240, 360, 432, 144, 280, 408, 480, 168, 308, 448, 532, 180, 338, 504, 588, 196, 364, 546, 650, 224, 416, 600, 700, 224, 442, 644, 750, 252, 476, 690, 816, 270, 504, 750, 900, 300, 560, 810, 960, 312, 588, 870, 1050, 336, 644, 952, 1110, 360, 700, 1020, 1200, 390, 728, 1050, 1260, 420, 784, 1140, 1350, 450, 812, 1200, 1440, 480, 868, 1290, 1530, 510, 924, 1350, 1620, 540, 980, 1440, 1710, 570, 1036, 1530, 1800, 570, 1064, 1590, 1890, 600, 1120, 1680, 1980, 630, 1204, 1770, 2100, 660, 1260, 1860, 2220, 720, 1316, 1950, 2310, 750, 1372, 2040, 2430], m = function(t2, r2) {
+  switch (r2) {
+    case f.L:
+      return w[4 * (t2 - 1) + 0];
+    case f.M:
+      return w[4 * (t2 - 1) + 1];
+    case f.Q:
+      return w[4 * (t2 - 1) + 2];
+    case f.H:
+      return w[4 * (t2 - 1) + 3];
+    default:
+      return;
+  }
+}, y = function(t2, r2) {
+  switch (r2) {
+    case f.L:
+      return A[4 * (t2 - 1) + 0];
+    case f.M:
+      return A[4 * (t2 - 1) + 1];
+    case f.Q:
+      return A[4 * (t2 - 1) + 2];
+    case f.H:
+      return A[4 * (t2 - 1) + 3];
+    default:
+      return;
+  }
+}, N = new Uint8Array(512), B = new Uint8Array(256);
+!function() {
+  for (var t2 = 1, r2 = 0; r2 < 255; r2++)
+    N[r2] = t2, B[t2] = r2, 256 & (t2 <<= 1) && (t2 ^= 285);
+  for (r2 = 255; r2 < 512; r2++)
+    N[r2] = N[r2 - 255];
+}();
+var P = function(t2) {
+  return N[t2];
+}, M = function(t2, r2) {
+  return t2 === 0 || r2 === 0 ? 0 : N[B[t2] + B[r2]];
+}, I = s(function(t2, r2) {
+  r2.mul = function(t3, r3) {
+    for (var e2 = new Uint8Array(t3.length + r3.length - 1), n2 = 0; n2 < t3.length; n2++)
+      for (var o2 = 0; o2 < r3.length; o2++)
+        e2[n2 + o2] ^= M(t3[n2], r3[o2]);
+    return e2;
+  }, r2.mod = function(t3, r3) {
+    for (var e2 = new Uint8Array(t3); e2.length - r3.length >= 0; ) {
+      for (var n2 = e2[0], o2 = 0; o2 < r3.length; o2++)
+        e2[o2] ^= M(r3[o2], n2);
+      for (var i2 = 0; i2 < e2.length && e2[i2] === 0; )
+        i2++;
+      e2 = e2.slice(i2);
+    }
+    return e2;
+  }, r2.generateECPolynomial = function(t3) {
+    for (var e2 = new Uint8Array([1]), n2 = 0; n2 < t3; n2++)
+      e2 = r2.mul(e2, new Uint8Array([1, P(n2)]));
+    return e2;
+  };
+});
+I.mul, I.mod, I.generateECPolynomial;
+function C(t2) {
+  this.genPoly = void 0, this.degree = t2, this.degree && this.initialize(this.degree);
+}
+C.prototype.initialize = function(t2) {
+  this.degree = t2, this.genPoly = I.generateECPolynomial(this.degree);
+}, C.prototype.encode = function(t2) {
+  if (!this.genPoly)
+    throw new Error("Encoder not initialized");
+  var r2 = new Uint8Array(t2.length + this.degree);
+  r2.set(t2);
+  var e2 = I.mod(r2, this.genPoly), n2 = this.degree - e2.length;
+  if (n2 > 0) {
+    var o2 = new Uint8Array(this.degree);
+    return o2.set(e2, n2), o2;
+  }
+  return e2;
+};
+var R = C, T = function(t2) {
+  return !isNaN(t2) && t2 >= 1 && t2 <= 40;
+}, L = "(?:[u3000-u303F]|[u3040-u309F]|[u30A0-u30FF]|[uFF00-uFFEF]|[u4E00-u9FAF]|[u2605-u2606]|[u2190-u2195]|u203B|[u2010u2015u2018u2019u2025u2026u201Cu201Du2225u2260]|[u0391-u0451]|[u00A7u00A8u00B1u00B4u00D7u00F7])+", b = "(?:(?![A-Z0-9 $%*+\\-./:]|" + (L = L.replace(/u/g, "\\u")) + ")(?:.|[\r\n]))+", U = new RegExp(L, "g"), x = new RegExp("[^A-Z0-9 $%*+\\-./:]+", "g"), F = new RegExp(b, "g"), _ = new RegExp("[0-9]+", "g"), Y = new RegExp("[A-Z $%*+\\-./:]+", "g"), k = new RegExp("^" + L + "$"), S = new RegExp("^[0-9]+$"), J = new RegExp("^[A-Z0-9 $%*+\\-./:]+$"), H = { KANJI: U, BYTE_KANJI: x, BYTE: F, NUMERIC: _, ALPHANUMERIC: Y, testKanji: function(t2) {
+  return k.test(t2);
+}, testNumeric: function(t2) {
+  return S.test(t2);
+}, testAlphanumeric: function(t2) {
+  return J.test(t2);
+} }, K = s(function(t2, r2) {
+  r2.NUMERIC = { id: "Numeric", bit: 1, ccBits: [10, 12, 14] }, r2.ALPHANUMERIC = { id: "Alphanumeric", bit: 2, ccBits: [9, 11, 13] }, r2.BYTE = { id: "Byte", bit: 4, ccBits: [8, 16, 16] }, r2.KANJI = { id: "Kanji", bit: 8, ccBits: [8, 10, 12] }, r2.MIXED = { bit: -1 }, r2.getCharCountIndicator = function(t3, r3) {
+    if (!t3.ccBits)
+      throw new Error("Invalid mode: " + t3);
+    if (!T(r3))
+      throw new Error("Invalid version: " + r3);
+    return r3 >= 1 && r3 < 10 ? t3.ccBits[0] : r3 < 27 ? t3.ccBits[1] : t3.ccBits[2];
+  }, r2.getBestModeForData = function(t3) {
+    return H.testNumeric(t3) ? r2.NUMERIC : H.testAlphanumeric(t3) ? r2.ALPHANUMERIC : H.testKanji(t3) ? r2.KANJI : r2.BYTE;
+  }, r2.toString = function(t3) {
+    if (t3 && t3.id)
+      return t3.id;
+    throw new Error("Invalid mode");
+  }, r2.isValid = function(t3) {
+    return t3 && t3.bit && t3.ccBits;
+  }, r2.from = function(t3, e2) {
+    if (r2.isValid(t3))
+      return t3;
+    try {
+      return function(t4) {
+        if (typeof t4 != "string")
+          throw new Error("Param is not a string");
+        switch (t4.toLowerCase()) {
+          case "numeric":
+            return r2.NUMERIC;
+          case "alphanumeric":
+            return r2.ALPHANUMERIC;
+          case "kanji":
+            return r2.KANJI;
+          case "byte":
+            return r2.BYTE;
+          default:
+            throw new Error("Unknown mode: " + t4);
+        }
+      }(t3);
+    } catch (t4) {
+      return e2;
+    }
+  };
+}), z = (K.NUMERIC, K.ALPHANUMERIC, K.BYTE, K.KANJI, K.MIXED, K.getCharCountIndicator, K.getBestModeForData, K.isValid, {}.toString), D = Array.isArray || function(t2) {
+  return z.call(t2) == "[object Array]";
+}, V = s(function(t2, r2) {
+  var e2 = o(7973);
+  function i2(t3, r3) {
+    return K.getCharCountIndicator(t3, r3) + 4;
+  }
+  function a2(t3, r3) {
+    var e3 = 0;
+    return t3.forEach(function(t4) {
+      var n2 = i2(t4.mode, r3);
+      e3 += n2 + t4.getBitsLength();
+    }), e3;
+  }
+  r2.from = function(t3, r3) {
+    return T(t3) ? parseInt(t3, 10) : r3;
+  }, r2.getCapacity = function(t3, r3, e3) {
+    if (!T(t3))
+      throw new Error("Invalid QR Code version");
+    e3 === void 0 && (e3 = K.BYTE);
+    var o2 = 8 * (n(t3) - y(t3, r3));
+    if (e3 === K.MIXED)
+      return o2;
+    var a3 = o2 - i2(e3, t3);
+    switch (e3) {
+      case K.NUMERIC:
+        return Math.floor(a3 / 10 * 3);
+      case K.ALPHANUMERIC:
+        return Math.floor(a3 / 11 * 2);
+      case K.KANJI:
+        return Math.floor(a3 / 13);
+      case K.BYTE:
+      default:
+        return Math.floor(a3 / 8);
+    }
+  }, r2.getBestVersionForData = function(t3, e3) {
+    var n2, o2 = f.from(e3, f.M);
+    if (D(t3)) {
+      if (t3.length > 1)
+        return function(t4, e4) {
+          for (var n3 = 1; n3 <= 40; n3++) {
+            if (a2(t4, n3) <= r2.getCapacity(n3, e4, K.MIXED))
+              return n3;
+          }
+        }(t3, o2);
+      if (t3.length === 0)
+        return 1;
+      n2 = t3[0];
+    } else
+      n2 = t3;
+    return function(t4, e4, n3) {
+      for (var o3 = 1; o3 <= 40; o3++)
+        if (e4 <= r2.getCapacity(o3, n3, t4))
+          return o3;
+    }(n2.mode, n2.getLength(), o2);
+  }, r2.getEncodedBits = function(t3) {
+    if (!T(t3) || t3 < 7)
+      throw new Error("Invalid QR Code version");
+    for (var r3 = t3 << 12; o(r3) - e2 >= 0; )
+      r3 ^= 7973 << o(r3) - e2;
+    return t3 << 12 | r3;
+  };
+}), Q = (V.getCapacity, V.getBestVersionForData, V.getEncodedBits, o(1335)), j = function(t2, r2) {
+  for (var e2 = t2.bit << 3 | r2, n2 = e2 << 10; o(n2) - Q >= 0; )
+    n2 ^= 1335 << o(n2) - Q;
+  return 21522 ^ (e2 << 10 | n2);
+};
+function q(t2) {
+  this.mode = K.NUMERIC, this.data = t2.toString();
+}
+q.getBitsLength = function(t2) {
+  return 10 * Math.floor(t2 / 3) + (t2 % 3 ? t2 % 3 * 3 + 1 : 0);
+}, q.prototype.getLength = function() {
+  return this.data.length;
+}, q.prototype.getBitsLength = function() {
+  return q.getBitsLength(this.data.length);
+}, q.prototype.write = function(t2) {
+  var r2, e2, n2;
+  for (r2 = 0; r2 + 3 <= this.data.length; r2 += 3)
+    e2 = this.data.substr(r2, 3), n2 = parseInt(e2, 10), t2.put(n2, 10);
+  var o2 = this.data.length - r2;
+  o2 > 0 && (e2 = this.data.substr(r2), n2 = parseInt(e2, 10), t2.put(n2, 3 * o2 + 1));
+};
+var O = q, $ = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", " ", "$", "%", "*", "+", "-", ".", "/", ":"];
+function X(t2) {
+  this.mode = K.ALPHANUMERIC, this.data = t2;
+}
+X.getBitsLength = function(t2) {
+  return 11 * Math.floor(t2 / 2) + t2 % 2 * 6;
+}, X.prototype.getLength = function() {
+  return this.data.length;
+}, X.prototype.getBitsLength = function() {
+  return X.getBitsLength(this.data.length);
+}, X.prototype.write = function(t2) {
+  var r2;
+  for (r2 = 0; r2 + 2 <= this.data.length; r2 += 2) {
+    var e2 = 45 * $.indexOf(this.data[r2]);
+    e2 += $.indexOf(this.data[r2 + 1]), t2.put(e2, 11);
+  }
+  this.data.length % 2 && t2.put($.indexOf(this.data[r2]), 6);
+};
+var Z = X;
+function G(t2) {
+  this.mode = K.BYTE, this.data = new Uint8Array(function(t3) {
+    for (var r2 = [], e2 = t3.length, n2 = 0; n2 < e2; n2++) {
+      var o2 = t3.charCodeAt(n2);
+      if (o2 >= 55296 && o2 <= 56319 && e2 > n2 + 1) {
+        var i2 = t3.charCodeAt(n2 + 1);
+        i2 >= 56320 && i2 <= 57343 && (o2 = 1024 * (o2 - 55296) + i2 - 56320 + 65536, n2 += 1);
+      }
+      o2 < 128 ? r2.push(o2) : o2 < 2048 ? (r2.push(o2 >> 6 | 192), r2.push(63 & o2 | 128)) : o2 < 55296 || o2 >= 57344 && o2 < 65536 ? (r2.push(o2 >> 12 | 224), r2.push(o2 >> 6 & 63 | 128), r2.push(63 & o2 | 128)) : o2 >= 65536 && o2 <= 1114111 ? (r2.push(o2 >> 18 | 240), r2.push(o2 >> 12 & 63 | 128), r2.push(o2 >> 6 & 63 | 128), r2.push(63 & o2 | 128)) : r2.push(239, 191, 189);
+    }
+    return new Uint8Array(r2).buffer;
+  }(t2));
+}
+G.getBitsLength = function(t2) {
+  return 8 * t2;
+}, G.prototype.getLength = function() {
+  return this.data.length;
+}, G.prototype.getBitsLength = function() {
+  return G.getBitsLength(this.data.length);
+}, G.prototype.write = function(t2) {
+  for (var r2 = 0, e2 = this.data.length; r2 < e2; r2++)
+    t2.put(this.data[r2], 8);
+};
+var W = G;
+function tt(t2) {
+  this.mode = K.KANJI, this.data = t2;
+}
+tt.getBitsLength = function(t2) {
+  return 13 * t2;
+}, tt.prototype.getLength = function() {
+  return this.data.length;
+}, tt.prototype.getBitsLength = function() {
+  return tt.getBitsLength(this.data.length);
+}, tt.prototype.write = function(t2) {
+  var r2;
+  for (r2 = 0; r2 < this.data.length; r2++) {
+    var e2 = u(this.data[r2]);
+    if (e2 >= 33088 && e2 <= 40956)
+      e2 -= 33088;
+    else {
+      if (!(e2 >= 57408 && e2 <= 60351))
+        throw new Error("Invalid SJIS character: " + this.data[r2] + "\nMake sure your charset is UTF-8");
+      e2 -= 49472;
+    }
+    e2 = 192 * (e2 >>> 8 & 255) + (255 & e2), t2.put(e2, 13);
+  }
+};
+var rt = tt, et = s(function(t2) {
+  var r2 = { single_source_shortest_paths: function(t3, e2, n2) {
+    var o2 = {}, i2 = {};
+    i2[e2] = 0;
+    var a2, u2, s2, f2, h2, c2, g2, d2 = r2.PriorityQueue.make();
+    for (d2.push(e2, 0); !d2.empty(); )
+      for (s2 in u2 = (a2 = d2.pop()).value, f2 = a2.cost, h2 = t3[u2] || {})
+        h2.hasOwnProperty(s2) && (c2 = f2 + h2[s2], g2 = i2[s2], (i2[s2] === void 0 || g2 > c2) && (i2[s2] = c2, d2.push(s2, c2), o2[s2] = u2));
+    if (n2 !== void 0 && i2[n2] === void 0) {
+      var l2 = ["Could not find a path from ", e2, " to ", n2, "."].join("");
+      throw new Error(l2);
+    }
+    return o2;
+  }, extract_shortest_path_from_predecessor_list: function(t3, r3) {
+    for (var e2 = [], n2 = r3; n2; )
+      e2.push(n2), t3[n2], n2 = t3[n2];
+    return e2.reverse(), e2;
+  }, find_path: function(t3, e2, n2) {
+    var o2 = r2.single_source_shortest_paths(t3, e2, n2);
+    return r2.extract_shortest_path_from_predecessor_list(o2, n2);
+  }, PriorityQueue: { make: function(t3) {
+    var e2, n2 = r2.PriorityQueue, o2 = {};
+    for (e2 in t3 = t3 || {}, n2)
+      n2.hasOwnProperty(e2) && (o2[e2] = n2[e2]);
+    return o2.queue = [], o2.sorter = t3.sorter || n2.default_sorter, o2;
+  }, default_sorter: function(t3, r3) {
+    return t3.cost - r3.cost;
+  }, push: function(t3, r3) {
+    var e2 = { value: t3, cost: r3 };
+    this.queue.push(e2), this.queue.sort(this.sorter);
+  }, pop: function() {
+    return this.queue.shift();
+  }, empty: function() {
+    return this.queue.length === 0;
+  } } };
+  t2.exports = r2;
+}), nt = s(function(t2, r2) {
+  function e2(t3) {
+    return unescape(encodeURIComponent(t3)).length;
+  }
+  function n2(t3, r3, e3) {
+    for (var n3, o3 = []; (n3 = t3.exec(e3)) !== null; )
+      o3.push({ data: n3[0], index: n3.index, mode: r3, length: n3[0].length });
+    return o3;
+  }
+  function o2(t3) {
+    var r3, e3, o3 = n2(H.NUMERIC, K.NUMERIC, t3), i3 = n2(H.ALPHANUMERIC, K.ALPHANUMERIC, t3);
+    return a() ? (r3 = n2(H.BYTE, K.BYTE, t3), e3 = n2(H.KANJI, K.KANJI, t3)) : (r3 = n2(H.BYTE_KANJI, K.BYTE, t3), e3 = []), o3.concat(i3, r3, e3).sort(function(t4, r4) {
+      return t4.index - r4.index;
+    }).map(function(t4) {
+      return { data: t4.data, mode: t4.mode, length: t4.length };
+    });
+  }
+  function i2(t3, r3) {
+    switch (r3) {
+      case K.NUMERIC:
+        return O.getBitsLength(t3);
+      case K.ALPHANUMERIC:
+        return Z.getBitsLength(t3);
+      case K.KANJI:
+        return rt.getBitsLength(t3);
+      case K.BYTE:
+        return W.getBitsLength(t3);
+    }
+  }
+  function u2(t3, r3) {
+    var e3, n3 = K.getBestModeForData(t3);
+    if ((e3 = K.from(r3, n3)) !== K.BYTE && e3.bit < n3.bit)
+      throw new Error('"' + t3 + '" cannot be encoded with mode ' + K.toString(e3) + ".\n Suggested mode is: " + K.toString(n3));
+    switch (e3 !== K.KANJI || a() || (e3 = K.BYTE), e3) {
+      case K.NUMERIC:
+        return new O(t3);
+      case K.ALPHANUMERIC:
+        return new Z(t3);
+      case K.KANJI:
+        return new rt(t3);
+      case K.BYTE:
+        return new W(t3);
+    }
+  }
+  r2.fromArray = function(t3) {
+    return t3.reduce(function(t4, r3) {
+      return typeof r3 == "string" ? t4.push(u2(r3, null)) : r3.data && t4.push(u2(r3.data, r3.mode)), t4;
+    }, []);
+  }, r2.fromString = function(t3, n3) {
+    for (var u3 = function(t4, r3) {
+      for (var e3 = {}, n4 = { start: {} }, o3 = ["start"], a2 = 0; a2 < t4.length; a2++) {
+        for (var u4 = t4[a2], s3 = [], f3 = 0; f3 < u4.length; f3++) {
+          var h3 = u4[f3], c2 = "" + a2 + f3;
+          s3.push(c2), e3[c2] = { node: h3, lastCount: 0 }, n4[c2] = {};
+          for (var g2 = 0; g2 < o3.length; g2++) {
+            var d2 = o3[g2];
+            e3[d2] && e3[d2].node.mode === h3.mode ? (n4[d2][c2] = i2(e3[d2].lastCount + h3.length, h3.mode) - i2(e3[d2].lastCount, h3.mode), e3[d2].lastCount += h3.length) : (e3[d2] && (e3[d2].lastCount = h3.length), n4[d2][c2] = i2(h3.length, h3.mode) + 4 + K.getCharCountIndicator(h3.mode, r3));
+          }
+        }
+        o3 = s3;
+      }
+      for (g2 = 0; g2 < o3.length; g2++)
+        n4[o3[g2]].end = 0;
+      return { map: n4, table: e3 };
+    }(function(t4) {
+      for (var r3 = [], n4 = 0; n4 < t4.length; n4++) {
+        var o3 = t4[n4];
+        switch (o3.mode) {
+          case K.NUMERIC:
+            r3.push([o3, { data: o3.data, mode: K.ALPHANUMERIC, length: o3.length }, { data: o3.data, mode: K.BYTE, length: o3.length }]);
+            break;
+          case K.ALPHANUMERIC:
+            r3.push([o3, { data: o3.data, mode: K.BYTE, length: o3.length }]);
+            break;
+          case K.KANJI:
+            r3.push([o3, { data: o3.data, mode: K.BYTE, length: e2(o3.data) }]);
+            break;
+          case K.BYTE:
+            r3.push([{ data: o3.data, mode: K.BYTE, length: e2(o3.data) }]);
+        }
+      }
+      return r3;
+    }(o2(t3)), n3), s2 = et.find_path(u3.map, "start", "end"), f2 = [], h2 = 1; h2 < s2.length - 1; h2++)
+      f2.push(u3.table[s2[h2]].node);
+    return r2.fromArray(function(t4) {
+      return t4.reduce(function(t5, r3) {
+        var e3 = t5.length - 1 >= 0 ? t5[t5.length - 1] : null;
+        return e3 && e3.mode === r3.mode ? (t5[t5.length - 1].data += r3.data, t5) : (t5.push(r3), t5);
+      }, []);
+    }(f2));
+  }, r2.rawSplit = function(t3) {
+    return r2.fromArray(o2(t3));
+  };
+});
+nt.fromArray, nt.fromString, nt.rawSplit;
+function ot(t2, r2, e2) {
+  var n2, o2, i2 = t2.size, a2 = j(r2, e2);
+  for (n2 = 0; n2 < 15; n2++)
+    o2 = (a2 >> n2 & 1) == 1, n2 < 6 ? t2.set(n2, 8, o2, true) : n2 < 8 ? t2.set(n2 + 1, 8, o2, true) : t2.set(i2 - 15 + n2, 8, o2, true), n2 < 8 ? t2.set(8, i2 - n2 - 1, o2, true) : n2 < 9 ? t2.set(8, 15 - n2 - 1 + 1, o2, true) : t2.set(8, 15 - n2 - 1, o2, true);
+  t2.set(i2 - 8, 8, 1, true);
+}
+function it(t2, r2, e2) {
+  var o2 = new c();
+  e2.forEach(function(r3) {
+    o2.put(r3.mode.bit, 4), o2.put(r3.getLength(), K.getCharCountIndicator(r3.mode, t2)), r3.write(o2);
+  });
+  var i2 = 8 * (n(t2) - y(t2, r2));
+  for (o2.getLengthInBits() + 4 <= i2 && o2.put(0, 4); o2.getLengthInBits() % 8 != 0; )
+    o2.putBit(0);
+  for (var a2 = (i2 - o2.getLengthInBits()) / 8, u2 = 0; u2 < a2; u2++)
+    o2.put(u2 % 2 ? 17 : 236, 8);
+  return function(t3, r3, e3) {
+    for (var o3 = n(r3), i3 = y(r3, e3), a3 = o3 - i3, u3 = m(r3, e3), s2 = u3 - o3 % u3, f2 = Math.floor(o3 / u3), h2 = Math.floor(a3 / u3), c2 = h2 + 1, g2 = f2 - h2, d2 = new R(g2), l2 = 0, v2 = new Array(u3), p2 = new Array(u3), E2 = 0, w2 = new Uint8Array(t3.buffer), A2 = 0; A2 < u3; A2++) {
+      var N2 = A2 < s2 ? h2 : c2;
+      v2[A2] = w2.slice(l2, l2 + N2), p2[A2] = d2.encode(v2[A2]), l2 += N2, E2 = Math.max(E2, N2);
+    }
+    var B2, P2, M2 = new Uint8Array(o3), I2 = 0;
+    for (B2 = 0; B2 < E2; B2++)
+      for (P2 = 0; P2 < u3; P2++)
+        B2 < v2[P2].length && (M2[I2++] = v2[P2][B2]);
+    for (B2 = 0; B2 < g2; B2++)
+      for (P2 = 0; P2 < u3; P2++)
+        M2[I2++] = p2[P2][B2];
+    return M2;
+  }(o2, t2, r2);
+}
+function at(t2, r2, n2, o2) {
+  var i2;
+  if (D(t2))
+    i2 = nt.fromArray(t2);
+  else {
+    if (typeof t2 != "string")
+      throw new Error("Invalid data");
+    var a2 = r2;
+    if (!a2) {
+      var u2 = nt.rawSplit(t2);
+      a2 = V.getBestVersionForData(u2, n2);
+    }
+    i2 = nt.fromString(t2, a2 || 40);
+  }
+  var s2 = V.getBestVersionForData(i2, n2);
+  if (!s2)
+    throw new Error("The amount of data is too big to be stored in a QR Code");
+  if (r2) {
+    if (r2 < s2)
+      throw new Error("\nThe chosen QR Code version cannot contain this amount of data.\nMinimum version required to store current data is: " + s2 + ".\n");
+  } else
+    r2 = s2;
+  var f2 = it(r2, n2, i2), h2 = e(r2), c2 = new d(h2);
+  return function(t3, r3) {
+    for (var e2 = t3.size, n3 = p(r3), o3 = 0; o3 < n3.length; o3++)
+      for (var i3 = n3[o3][0], a3 = n3[o3][1], u3 = -1; u3 <= 7; u3++)
+        if (!(i3 + u3 <= -1 || e2 <= i3 + u3))
+          for (var s3 = -1; s3 <= 7; s3++)
+            a3 + s3 <= -1 || e2 <= a3 + s3 || (u3 >= 0 && u3 <= 6 && (s3 === 0 || s3 === 6) || s3 >= 0 && s3 <= 6 && (u3 === 0 || u3 === 6) || u3 >= 2 && u3 <= 4 && s3 >= 2 && s3 <= 4 ? t3.set(i3 + u3, a3 + s3, true, true) : t3.set(i3 + u3, a3 + s3, false, true));
+  }(c2, r2), function(t3) {
+    for (var r3 = t3.size, e2 = 8; e2 < r3 - 8; e2++) {
+      var n3 = e2 % 2 == 0;
+      t3.set(e2, 6, n3, true), t3.set(6, e2, n3, true);
+    }
+  }(c2), function(t3, r3) {
+    for (var e2 = l.getPositions(r3), n3 = 0; n3 < e2.length; n3++)
+      for (var o3 = e2[n3][0], i3 = e2[n3][1], a3 = -2; a3 <= 2; a3++)
+        for (var u3 = -2; u3 <= 2; u3++)
+          a3 === -2 || a3 === 2 || u3 === -2 || u3 === 2 || a3 === 0 && u3 === 0 ? t3.set(o3 + a3, i3 + u3, true, true) : t3.set(o3 + a3, i3 + u3, false, true);
+  }(c2, r2), ot(c2, n2, 0), r2 >= 7 && function(t3, r3) {
+    for (var e2, n3, o3, i3 = t3.size, a3 = V.getEncodedBits(r3), u3 = 0; u3 < 18; u3++)
+      e2 = Math.floor(u3 / 3), n3 = u3 % 3 + i3 - 8 - 3, o3 = (a3 >> u3 & 1) == 1, t3.set(e2, n3, o3, true), t3.set(n3, e2, o3, true);
+  }(c2, r2), function(t3, r3) {
+    for (var e2 = t3.size, n3 = -1, o3 = e2 - 1, i3 = 7, a3 = 0, u3 = e2 - 1; u3 > 0; u3 -= 2)
+      for (u3 === 6 && u3--; ; ) {
+        for (var s3 = 0; s3 < 2; s3++)
+          if (!t3.isReserved(o3, u3 - s3)) {
+            var f3 = false;
+            a3 < r3.length && (f3 = (r3[a3] >>> i3 & 1) == 1), t3.set(o3, u3 - s3, f3), --i3 === -1 && (a3++, i3 = 7);
+          }
+        if ((o3 += n3) < 0 || e2 <= o3) {
+          o3 -= n3, n3 = -n3;
+          break;
+        }
+      }
+  }(c2, f2), isNaN(o2) && (o2 = E.getBestMask(c2, ot.bind(null, c2, n2))), E.applyMask(o2, c2), ot(c2, n2, o2), { modules: c2, version: r2, errorCorrectionLevel: n2, maskPattern: o2, segments: i2 };
+}
+dist.create = function(t2, r2) {
+  if (t2 === void 0 || t2 === "")
+    throw new Error("No input text");
+  var e2, n2, o2 = f.M;
+  return r2 !== void 0 && (o2 = f.from(r2.errorCorrectionLevel, f.M), e2 = V.from(r2.version), n2 = E.from(r2.maskPattern), r2.toSJISFunc && i(r2.toSJISFunc)), at(t2, e2, o2, n2);
+};
+const core = dist;
+function createPath(data2, size2, margin) {
+  let path2 = "";
+  let moveBy = 0;
+  let newRow = false;
+  let lineLength = 0;
+  for (let i2 = 0; i2 < data2.length; i2++) {
+    const col = Math.floor(i2 % size2);
+    const row = Math.floor(i2 / size2);
+    if (col === 0) {
+      newRow = true;
+    }
+    if (!data2[i2]) {
+      moveBy++;
+      continue;
+    }
+    lineLength++;
+    if (!(i2 > 0 && col > 0 && data2[i2 - 1])) {
+      path2 += newRow ? `M${margin + col},${margin + 0.5 + row}` : `m${moveBy},0`;
+      moveBy = 0;
+      newRow = false;
+    }
+    if (!(col + 1 < size2 && data2[i2 + 1])) {
+      path2 += `h${lineLength}`;
+      lineLength = 0;
+    }
+  }
+  return path2;
+}
+var svg = function qrcodeSvg(input, options = {}) {
+  const { size: size2, data: data2 } = core.create(input).modules;
+  const margin = options.margin || 0;
+  const fullSize = size2 + margin * 2;
+  const viewBox = `viewBox="0 0 ${fullSize} ${fullSize}"`;
+  const dimensions = options.size ? ` width="${options.size}" height="${options.size}"` : "";
+  const bg = options.backgroundColor === "transparent" ? "" : `<path fill="${options.backgroundColor || "white"}" d="M0,0h${fullSize}v${fullSize}H0z"/>`;
+  const path2 = `<path stroke="${options.color || "black"}" d="${createPath(data2, size2, margin)}"/>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" ${viewBox}${dimensions} shape-rendering="crispEdges">${bg}${path2}</svg>`;
+};
+export { ColorHash, DateTree, Dropdown$1 as Dropdown, Fragment, Fuse, GB, Gun$3 as Gun, HstCheckbox, HstCopyIcon, HstNumber, HstText, HstTextarea, Icon$1 as Icon, JSZip, SEA, Transition, TransitionGroup, YAML, _sfc_main, _sfc_main$1, applyStateToVariant, base32, buffer, clone$2 as clone, computed, computedAsync, createApp, createBaseVNode, createBlock, createCommentVNode, createDrauu, createElementBlock, createPinia, createRouter, createStaticVNode, createTextVNode, createVNode, createWebHashHistory, createWebHistory, defineAsyncComponent, defineComponent, defineStore, flexsearch, generateSourceCode, getArrow, getHighlighter, guardReactiveProps, gunAvatar, h$2 as h, isRef, lib, markRaw, markdownIt, mergeProps, mountClass, mountElement, ms$1 as ms, nextTick, normalizeClass, normalizeProps, normalizeStyle, omit, onBeforeUnmount, onClickOutside, onMounted, onUnmounted, openBlock, parseQuery$1 as parseQuery, plugin, popScopeId, pushScopeId, reactive, ref, refDebounced, renderList, renderSlot, resolveComponent, resolveDirective, resolveDynamicComponent, scrollIntoView, setCDN, shallowRef, slugify, svg, toDisplayString, toRaw, toReactive, toRefs, unindent, unref, urlRegex, useClamp, useCssVars, useCycleList, useDark, useElementBounding, useEventListener$1 as useEventListener, useFocus, useMediaQuery, useMouseInElement, useMousePressed, useNow, useResizeObserver, useRoute, useRouter, useStorage, useTimeAgo, useTimeoutFn$1 as useTimeoutFn, useTitle, useToggle, vModelText, vShow, watch, watchEffect, withCtx, withDirectives, withKeys, withModifiers };
 //# sourceMappingURL=vendor.es.js.map

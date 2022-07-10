@@ -49,7 +49,7 @@ const _sfc_main = {
       size: 200
     });
     async function generate() {
-      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDict.es.js","vendor.es.js"] : void 0);
+      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDict.es.js","vendor.es.js","useGifts.es.js"] : void 0);
       const pair = await SEA.pair();
       state.pub = pair.pub;
     }

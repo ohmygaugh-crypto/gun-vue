@@ -29,7 +29,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     renderSlot(_ctx.$slots, "default", {}, void 0, true)
   ], 12, _hoisted_1);
 }
-var AccountBadge_vue_vue_type_style_index_0_scoped_true_lang = /* @__PURE__ */ (() => ".frame:hover .tip[data-v-3f9eb4de] {\n  opacity: 1;\n}")();
+var AccountBadge_vue_vue_type_style_index_0_scoped_true_lang = "";
 const _sfc_main = {
   __name: "AccountBadge",
   props: {

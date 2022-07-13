@@ -1,22 +1,3 @@
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var _a, _b, _c, _d;
 import { useStorage, reactive, computed, watch, ms, buffer, Gun, urlRegex, SEA, ColorHash, base32, watchEffect, ref, useCycleList, toReactive, markRaw, createDrauu, onMounted, nextTick, Fuse } from "./vendor.es.js";
 const defaultPeer = "https://etogun.glitch.me/gun";
@@ -61,13 +42,13 @@ let gun;
 let gun2;
 function useGun(opts = { localStorage: false }) {
   if (!gun) {
-    gun = Gun(__spreadValues({ peers: [peer.value] }, opts));
+    gun = Gun({ peers: [peer.value], ...opts });
   }
   return gun;
 }
 function useGun2(opts = { localStorage: false }) {
   if (!gun2) {
-    gun2 = Gun(__spreadValues({ peers: [peer.value] }, opts));
+    gun2 = Gun({ peers: [peer.value], ...opts });
   }
   return gun2;
 }
@@ -203,7 +184,7 @@ window.issueCert = issueCert;
 async function generateCerts({ pair, list = [] } = {}) {
   const all = {};
   for (let opt of list) {
-    all[opt.tag] = await issueCert(__spreadProps(__spreadValues({}, opt), { pair }));
+    all[opt.tag] = await issueCert({ ...opt, pair });
   }
   return all;
 }
@@ -696,16 +677,17 @@ async function createRoom({ pair, name } = {}) {
   const dec = await SEA.decrypt(enc, user2.pair());
   console.log("COPY THIS ROOM INFO TO USE IT AS A ROOT", {
     pub: dec.pub,
-    hosts: { [user2.pub]: __spreadValues({ enc }, certs) },
+    hosts: { [user2.pub]: { enc, ...certs } },
     features
   }, "STORE THIS KEY PAIR IN A SAFE PLACE", dec);
   const gun3 = useGun();
   gun3.user().get("safe").get("rooms").get(dec.pub).put(enc);
   gun3.user(currentRoom.pub).get("rooms").get(`${dec.pub}@${user2.pub}`).put(true, null, { opt: { cert: (_a2 = currentRoom == null ? void 0 : currentRoom.features) == null ? void 0 : _a2.rooms } });
   const roomDb = gun3.user(dec.pub);
-  roomDb.get("hosts").get(user2.pub).put(__spreadValues({
-    enc
-  }, certs), null, { opt: { cert: certs.hosts } });
+  roomDb.get("hosts").get(user2.pub).put({
+    enc,
+    ...certs
+  }, null, { opt: { cert: certs.hosts } });
   roomDb.get("features").put(features, null, { opt: { cert: certs.features } });
   if (name) {
     roomDb.get("profile").put({ name }, null, { opt: { cert: certs.profile } });
@@ -915,7 +897,7 @@ function useDefs() {
   const fuse = computed(() => {
     let defList = [];
     for (let hash in defs) {
-      defList.push(__spreadValues({ hash }, defs[hash]));
+      defList.push({ hash, ...defs[hash] });
     }
     return new Fuse(defList, {
       keys: ["text"],

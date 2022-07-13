@@ -1,34 +1,3 @@
-var __defProp3 = Object.defineProperty;
-var __defProps3 = Object.defineProperties;
-var __getOwnPropDescs3 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols3 = Object.getOwnPropertySymbols;
-var __hasOwnProp3 = Object.prototype.hasOwnProperty;
-var __propIsEnum3 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp3 = (obj, key, value) => key in obj ? __defProp3(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues3 = (a2, b2) => {
-  for (var prop2 in b2 || (b2 = {}))
-    if (__hasOwnProp3.call(b2, prop2))
-      __defNormalProp3(a2, prop2, b2[prop2]);
-  if (__getOwnPropSymbols3)
-    for (var prop2 of __getOwnPropSymbols3(b2)) {
-      if (__propIsEnum3.call(b2, prop2))
-        __defNormalProp3(a2, prop2, b2[prop2]);
-    }
-  return a2;
-};
-var __spreadProps3 = (a2, b2) => __defProps3(a2, __getOwnPropDescs3(b2));
-var __objRest2 = (source, exclude) => {
-  var target2 = {};
-  for (var prop2 in source)
-    if (__hasOwnProp3.call(source, prop2) && exclude.indexOf(prop2) < 0)
-      target2[prop2] = source[prop2];
-  if (source != null && __getOwnPropSymbols3)
-    for (var prop2 of __getOwnPropSymbols3(source)) {
-      if (exclude.indexOf(prop2) < 0 && __propIsEnum3.call(source, prop2))
-        target2[prop2] = source[prop2];
-    }
-  return target2;
-};
 var style = "";
 function makeMap(str, expectsLowerCase) {
   const map2 = /* @__PURE__ */ Object.create(null);
@@ -7896,9 +7865,10 @@ function addStoreToDevtools(app, store) {
       const eventData = {
         time: now2(),
         title: formatMutationType(type),
-        data: __spreadValues3({
-          store: formatDisplay$1(store.$id)
-        }, formatEventData(events)),
+        data: {
+          store: formatDisplay$1(store.$id),
+          ...formatEventData(events)
+        },
         groupId: activeAction
       };
       activeAction = void 0;
@@ -8389,9 +8359,10 @@ function createSetupStore($id, setup2, options = {}, pinia, hot, isOptionsStore)
     };
     if (IS_CLIENT) {
       ["_p", "_hmrPayload", "_getters", "_customProperties"].forEach((p2) => {
-        Object.defineProperty(store, p2, __spreadValues3({
-          value: store[p2]
-        }, nonEnumerable));
+        Object.defineProperty(store, p2, {
+          value: store[p2],
+          ...nonEnumerable
+        });
       });
     }
   }
@@ -8569,9 +8540,10 @@ const computePosition$3 = async (reference3, floating, config2) => {
   let {
     x: x2,
     y: y2
-  } = computeCoordsFromPlacement$1(__spreadProps3(__spreadValues3({}, rects), {
+  } = computeCoordsFromPlacement$1({
+    ...rects,
     placement
-  }));
+  });
   let statefulPlacement = placement;
   let middlewareData = {};
   let _debug_loop_count_ = 0;
@@ -8607,9 +8579,10 @@ const computePosition$3 = async (reference3, floating, config2) => {
     });
     x2 = nextX != null ? nextX : x2;
     y2 = nextY != null ? nextY : y2;
-    middlewareData = __spreadProps3(__spreadValues3({}, middlewareData), {
+    middlewareData = {
+      ...middlewareData,
       [name]: data2 != null ? data2 : {}
-    });
+    };
     if (reset2) {
       if (typeof reset2 === "object") {
         if (reset2.placement) {
@@ -8625,9 +8598,10 @@ const computePosition$3 = async (reference3, floating, config2) => {
         ({
           x: x2,
           y: y2
-        } = computeCoordsFromPlacement$1(__spreadProps3(__spreadValues3({}, rects), {
+        } = computeCoordsFromPlacement$1({
+          ...rects,
           placement: statefulPlacement
-        })));
+        }));
       }
       i2 = -1;
       continue;
@@ -8642,12 +8616,13 @@ const computePosition$3 = async (reference3, floating, config2) => {
   };
 };
 function expandPaddingObject$1(padding) {
-  return __spreadValues3({
+  return {
     top: 0,
     right: 0,
     bottom: 0,
-    left: 0
-  }, padding);
+    left: 0,
+    ...padding
+  };
 }
 function getSideObjectFromPadding$1(padding) {
   return typeof padding !== "number" ? expandPaddingObject$1(padding) : {
@@ -8658,12 +8633,13 @@ function getSideObjectFromPadding$1(padding) {
   };
 }
 function rectToClientRect$1(rect2) {
-  return __spreadProps3(__spreadValues3({}, rect2), {
+  return {
+    ...rect2,
     top: rect2.y,
     left: rect2.x,
     right: rect2.x + rect2.width,
     bottom: rect2.y + rect2.height
-  });
+  };
 }
 async function detectOverflow$1(middlewareArguments, options) {
   if (options === void 0) {
@@ -8695,10 +8671,11 @@ async function detectOverflow$1(middlewareArguments, options) {
     rootBoundary
   });
   const elementClientRect = rectToClientRect$1(await platform2.convertOffsetParentRelativeRectToViewportRelativeRect({
-    rect: elementContext === "floating" ? __spreadProps3(__spreadValues3({}, rects.floating), {
+    rect: elementContext === "floating" ? {
+      ...rects.floating,
       x: x2,
       y: y2
-    }) : rects.reference,
+    } : rects.reference,
     offsetParent: await platform2.getOffsetParent({
       element: elements.floating
     }),
@@ -8825,15 +8802,12 @@ const autoPlacement$1 = function(options) {
         middlewareData,
         placement
       } = middlewareArguments;
-      const _a2 = options, {
+      const {
         alignment = null,
         allowedPlacements = allPlacements$1,
-        autoAlignment = true
-      } = _a2, detectOverflowOptions = __objRest2(_a2, [
-        "alignment",
-        "allowedPlacements",
-        "autoAlignment"
-      ]);
+        autoAlignment = true,
+        ...detectOverflowOptions
+      } = options;
       if ((_middlewareData$autoP = middlewareData.autoPlacement) != null && _middlewareData$autoP.skip) {
         return {};
       }
@@ -8911,19 +8885,14 @@ const flip$1 = function(options) {
       if ((_middlewareData$flip = middlewareData.flip) != null && _middlewareData$flip.skip) {
         return {};
       }
-      const _a2 = options, {
+      const {
         mainAxis: checkMainAxis = true,
         crossAxis: checkCrossAxis = true,
         fallbackPlacements: specifiedFallbackPlacements,
         fallbackStrategy = "bestFit",
-        flipAlignment = true
-      } = _a2, detectOverflowOptions = __objRest2(_a2, [
-        "mainAxis",
-        "crossAxis",
-        "fallbackPlacements",
-        "fallbackStrategy",
-        "flipAlignment"
-      ]);
+        flipAlignment = true,
+        ...detectOverflowOptions
+      } = options;
       const basePlacement = getBasePlacement$1(placement);
       const isBasePlacement = basePlacement === initialPlacement;
       const fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipAlignment ? [getOppositePlacement$1(initialPlacement)] : getExpandedPlacements$1(initialPlacement));
@@ -8995,19 +8964,21 @@ function convertValueToCoords$1(_ref) {
   } = _ref;
   const basePlacement = getBasePlacement$1(placement);
   const multiplier = ["left", "top"].includes(basePlacement) ? -1 : 1;
-  const rawValue = typeof value === "function" ? value(__spreadProps3(__spreadValues3({}, rects), {
+  const rawValue = typeof value === "function" ? value({
+    ...rects,
     placement
-  })) : value;
+  }) : value;
   const {
     mainAxis,
     crossAxis
   } = typeof rawValue === "number" ? {
     mainAxis: rawValue,
     crossAxis: 0
-  } : __spreadValues3({
+  } : {
     mainAxis: 0,
-    crossAxis: 0
-  }, rawValue);
+    crossAxis: 0,
+    ...rawValue
+  };
   return getMainAxisFromPlacement$1(basePlacement) === "x" ? {
     x: crossAxis,
     y: mainAxis * multiplier
@@ -9059,7 +9030,7 @@ const shift$1 = function(options) {
         y: y2,
         placement
       } = middlewareArguments;
-      const _a2 = options, {
+      const {
         mainAxis: checkMainAxis = true,
         crossAxis: checkCrossAxis = false,
         limiter = {
@@ -9073,12 +9044,9 @@ const shift$1 = function(options) {
               y: y3
             };
           }
-        }
-      } = _a2, detectOverflowOptions = __objRest2(_a2, [
-        "mainAxis",
-        "crossAxis",
-        "limiter"
-      ]);
+        },
+        ...detectOverflowOptions
+      } = options;
       const coords = {
         x: x2,
         y: y2
@@ -9102,16 +9070,18 @@ const shift$1 = function(options) {
         const max2 = crossAxisCoord - overflow[maxSide];
         crossAxisCoord = within$1(min2, crossAxisCoord, max2);
       }
-      const limitedCoords = limiter.fn(__spreadProps3(__spreadValues3({}, middlewareArguments), {
+      const limitedCoords = limiter.fn({
+        ...middlewareArguments,
         [mainAxis]: mainAxisCoord,
         [crossAxis]: crossAxisCoord
-      }));
-      return __spreadProps3(__spreadValues3({}, limitedCoords), {
+      });
+      return {
+        ...limitedCoords,
         data: {
           x: limitedCoords.x - x2,
           y: limitedCoords.y - y2
         }
-      });
+      };
     }
   };
 };
@@ -9129,11 +9099,10 @@ const size$1 = function(options) {
         rects,
         middlewareData
       } = middlewareArguments;
-      const _a2 = options, {
-        apply
-      } = _a2, detectOverflowOptions = __objRest2(_a2, [
-        "apply"
-      ]);
+      const {
+        apply,
+        ...detectOverflowOptions
+      } = options;
       if ((_middlewareData$size = middlewareData.size) != null && _middlewareData$size.skip) {
         return {};
       }
@@ -9157,7 +9126,10 @@ const size$1 = function(options) {
         height: rects.floating.height - (["left", "right"].includes(placement) ? 2 * (yMin !== 0 || yMax !== 0 ? yMin + yMax : max$4(overflow.top, overflow.bottom)) : overflow[heightSide]),
         width: rects.floating.width - (["top", "bottom"].includes(placement) ? 2 * (xMin !== 0 || xMax !== 0 ? xMin + xMax : max$4(overflow.left, overflow.right)) : overflow[widthSide])
       };
-      apply == null ? void 0 : apply(__spreadValues3(__spreadValues3({}, dimensions), rects));
+      apply == null ? void 0 : apply({
+        ...dimensions,
+        ...rects
+      });
       return {
         data: {
           skip: true
@@ -9364,10 +9336,11 @@ function convertOffsetParentRelativeRectToViewportRelativeRect$1(_ref) {
       offsets.y = offsetRect.y + offsetParent.clientTop;
     }
   }
-  return __spreadProps3(__spreadValues3({}, rect2), {
+  return {
+    ...rect2,
     x: rect2.x - scroll.scrollLeft + offsets.x,
     y: rect2.y - scroll.scrollTop + offsets.y
-  });
+  };
 }
 function getViewportRect$1(element) {
   const win = getWindow$1(element);
@@ -9512,10 +9485,11 @@ const platform$1 = {
     } = _ref;
     return {
       reference: getRectRelativeToOffsetParent$1(reference3, getOffsetParent$1(floating), strategy),
-      floating: __spreadProps3(__spreadValues3({}, getDimensions$1(floating)), {
+      floating: {
+        ...getDimensions$1(floating),
         x: 0,
         y: 0
-      })
+      }
     };
   },
   convertOffsetParentRelativeRectToViewportRelativeRect: (args) => convertOffsetParentRelativeRectToViewportRelativeRect$1(args),
@@ -9546,9 +9520,10 @@ const platform$1 = {
     return element.getClientRects();
   }
 };
-const computePosition$2 = (reference3, floating, options) => computePosition$3(reference3, floating, __spreadValues3({
-  platform: platform$1
-}, options));
+const computePosition$2 = (reference3, floating, options) => computePosition$3(reference3, floating, {
+  platform: platform$1,
+  ...options
+});
 var __defProp$3 = Object.defineProperty;
 var __defProps$1 = Object.defineProperties;
 var __getOwnPropDescs$1 = Object.getOwnPropertyDescriptors;
@@ -11126,10 +11101,10 @@ const plugin = {
   options: config$4
 };
 function t$1(t2) {
-  return typeof t2 == "object" && t2 != null && t2.nodeType === 1;
+  return "object" == typeof t2 && null != t2 && 1 === t2.nodeType;
 }
 function e$1(t2, e2) {
-  return (!e2 || t2 !== "hidden") && t2 !== "visible" && t2 !== "clip";
+  return (!e2 || "hidden" !== t2) && "visible" !== t2 && "clip" !== t2;
 }
 function n$1(t2, n2) {
   if (t2.clientHeight < t2.scrollHeight || t2.clientWidth < t2.scrollWidth) {
@@ -11153,7 +11128,7 @@ function r$1(t2, e2, n2, r2, i2, o2, l2, d2) {
   return o2 < t2 && l2 > e2 || o2 > t2 && l2 < e2 ? 0 : o2 <= t2 && d2 <= n2 || l2 >= e2 && d2 >= n2 ? o2 - t2 - r2 : l2 > e2 && d2 < n2 || o2 < t2 && d2 > n2 ? l2 - e2 + i2 : 0;
 }
 function compute(e2, i2) {
-  var o2 = window, l2 = i2.scrollMode, d2 = i2.block, u2 = i2.inline, h2 = i2.boundary, a2 = i2.skipOverflowHiddenElements, c2 = typeof h2 == "function" ? h2 : function(t2) {
+  var o2 = window, l2 = i2.scrollMode, d2 = i2.block, u2 = i2.inline, h2 = i2.boundary, a2 = i2.skipOverflowHiddenElements, c2 = "function" == typeof h2 ? h2 : function(t2) {
     return t2 !== h2;
   };
   if (!t$1(e2))
@@ -11163,17 +11138,17 @@ function compute(e2, i2) {
       s2.push(p2);
       break;
     }
-    p2 != null && p2 === document.body && n$1(p2) && !n$1(document.documentElement) || p2 != null && n$1(p2, a2) && s2.push(p2);
+    null != p2 && p2 === document.body && n$1(p2) && !n$1(document.documentElement) || null != p2 && n$1(p2, a2) && s2.push(p2);
   }
-  for (var m2 = o2.visualViewport ? o2.visualViewport.width : innerWidth, g2 = o2.visualViewport ? o2.visualViewport.height : innerHeight, w2 = window.scrollX || pageXOffset, v2 = window.scrollY || pageYOffset, W2 = e2.getBoundingClientRect(), b2 = W2.height, H2 = W2.width, y2 = W2.top, E2 = W2.right, M2 = W2.bottom, V2 = W2.left, x2 = d2 === "start" || d2 === "nearest" ? y2 : d2 === "end" ? M2 : y2 + b2 / 2, I2 = u2 === "center" ? V2 + H2 / 2 : u2 === "end" ? E2 : V2, C2 = [], T2 = 0; T2 < s2.length; T2++) {
+  for (var m2 = o2.visualViewport ? o2.visualViewport.width : innerWidth, g2 = o2.visualViewport ? o2.visualViewport.height : innerHeight, w2 = window.scrollX || pageXOffset, v2 = window.scrollY || pageYOffset, W2 = e2.getBoundingClientRect(), b2 = W2.height, H2 = W2.width, y2 = W2.top, E2 = W2.right, M2 = W2.bottom, V2 = W2.left, x2 = "start" === d2 || "nearest" === d2 ? y2 : "end" === d2 ? M2 : y2 + b2 / 2, I2 = "center" === u2 ? V2 + H2 / 2 : "end" === u2 ? E2 : V2, C2 = [], T2 = 0; T2 < s2.length; T2++) {
     var k2 = s2[T2], B2 = k2.getBoundingClientRect(), D2 = B2.height, O2 = B2.width, R2 = B2.top, X2 = B2.right, Y2 = B2.bottom, L2 = B2.left;
-    if (l2 === "if-needed" && y2 >= 0 && V2 >= 0 && M2 <= g2 && E2 <= m2 && y2 >= R2 && M2 <= Y2 && V2 >= L2 && E2 <= X2)
+    if ("if-needed" === l2 && y2 >= 0 && V2 >= 0 && M2 <= g2 && E2 <= m2 && y2 >= R2 && M2 <= Y2 && V2 >= L2 && E2 <= X2)
       return C2;
     var S2 = getComputedStyle(k2), j2 = parseInt(S2.borderLeftWidth, 10), q2 = parseInt(S2.borderTopWidth, 10), z2 = parseInt(S2.borderRightWidth, 10), A2 = parseInt(S2.borderBottomWidth, 10), F2 = 0, G2 = 0, J2 = "offsetWidth" in k2 ? k2.offsetWidth - k2.clientWidth - j2 - z2 : 0, K2 = "offsetHeight" in k2 ? k2.offsetHeight - k2.clientHeight - q2 - A2 : 0;
     if (f2 === k2)
-      F2 = d2 === "start" ? x2 : d2 === "end" ? x2 - g2 : d2 === "nearest" ? r$1(v2, v2 + g2, g2, q2, A2, v2 + x2, v2 + x2 + b2, b2) : x2 - g2 / 2, G2 = u2 === "start" ? I2 : u2 === "center" ? I2 - m2 / 2 : u2 === "end" ? I2 - m2 : r$1(w2, w2 + m2, m2, j2, z2, w2 + I2, w2 + I2 + H2, H2), F2 = Math.max(0, F2 + v2), G2 = Math.max(0, G2 + w2);
+      F2 = "start" === d2 ? x2 : "end" === d2 ? x2 - g2 : "nearest" === d2 ? r$1(v2, v2 + g2, g2, q2, A2, v2 + x2, v2 + x2 + b2, b2) : x2 - g2 / 2, G2 = "start" === u2 ? I2 : "center" === u2 ? I2 - m2 / 2 : "end" === u2 ? I2 - m2 : r$1(w2, w2 + m2, m2, j2, z2, w2 + I2, w2 + I2 + H2, H2), F2 = Math.max(0, F2 + v2), G2 = Math.max(0, G2 + w2);
     else {
-      F2 = d2 === "start" ? x2 - R2 - q2 : d2 === "end" ? x2 - Y2 + A2 + K2 : d2 === "nearest" ? r$1(R2, Y2, D2, q2, A2 + K2, x2, x2 + b2, b2) : x2 - (R2 + D2 / 2) + K2 / 2, G2 = u2 === "start" ? I2 - L2 - j2 : u2 === "center" ? I2 - (L2 + O2 / 2) + J2 / 2 : u2 === "end" ? I2 - X2 + z2 + J2 : r$1(L2, X2, O2, j2, z2 + J2, I2, I2 + H2, H2);
+      F2 = "start" === d2 ? x2 - R2 - q2 : "end" === d2 ? x2 - Y2 + A2 + K2 : "nearest" === d2 ? r$1(R2, Y2, D2, q2, A2 + K2, x2, x2 + b2, b2) : x2 - (R2 + D2 / 2) + K2 / 2, G2 = "start" === u2 ? I2 - L2 - j2 : "center" === u2 ? I2 - (L2 + O2 / 2) + J2 / 2 : "end" === u2 ? I2 - X2 + z2 + J2 : r$1(L2, X2, O2, j2, z2 + J2, I2, I2 + H2, H2);
       var N2 = k2.scrollLeft, P2 = k2.scrollTop;
       x2 += P2 - (F2 = Math.max(0, Math.min(P2 + F2, k2.scrollHeight - D2 + K2))), I2 += N2 - (G2 = Math.max(0, Math.min(N2 + G2, k2.scrollWidth - O2 + J2)));
     }
@@ -11621,7 +11596,7 @@ function useEventListener$1(...args) {
   return stop;
 }
 function onClickOutside(target2, handler, options = {}) {
-  const { window: window2 = defaultWindow$1, ignore, capture = true } = options;
+  const { window: window2 = defaultWindow$1, ignore, capture = true, detectIframe = false } = options;
   if (!window2)
     return;
   const shouldListen = ref(true);
@@ -11653,8 +11628,14 @@ function onClickOutside(target2, handler, options = {}) {
         e2.composedPath = () => path2;
         fallback = window2.setTimeout(() => listener(e2), 50);
       }
-    }, { passive: true })
-  ];
+    }, { passive: true }),
+    detectIframe && useEventListener$1(window2, "blur", (event) => {
+      var _a2;
+      const el2 = unrefElement$1(target2);
+      if (((_a2 = document.activeElement) == null ? void 0 : _a2.tagName) === "IFRAME" && !(el2 == null ? void 0 : el2.contains(document.activeElement)))
+        handler(event);
+    })
+  ].filter(Boolean);
   const stop = () => cleanup.forEach((fn) => fn());
   return stop;
 }
@@ -12522,7 +12503,7 @@ const iconDefaults$1 = Object.freeze({
   hFlip: false
 });
 function fullIcon$1(data2) {
-  return __spreadValues3(__spreadValues3({}, iconDefaults$1), data2);
+  return { ...iconDefaults$1, ...data2 };
 }
 const stringToIcon$1 = (value, validate, allowSimpleName, provider = "") => {
   const colonSeparated = value.split(":");
@@ -12572,7 +12553,7 @@ const validateIcon$1 = (icon, allowSimpleName) => {
   return !!((icon.provider === "" || icon.provider.match(matchName$1)) && (allowSimpleName && icon.prefix === "" || icon.prefix.match(matchName$1)) && icon.name.match(matchName$1));
 };
 function mergeIconData$1(icon, alias) {
-  const result = __spreadValues3({}, icon);
+  const result = { ...icon };
   for (const key in iconDefaults$1) {
     const prop2 = key;
     if (alias[prop2] !== void 0) {
@@ -14129,8 +14110,8 @@ let customisationAliases$1 = {};
 });
 const render$2 = (icon, props) => {
   const customisations = mergeCustomisations$1(defaults$2, props);
-  const componentProps = __spreadValues3({}, svgDefaults$1);
-  let style2 = typeof props.style === "object" && !(props.style instanceof Array) ? __spreadValues3({}, props.style) : {};
+  const componentProps = { ...svgDefaults$1 };
+  let style2 = typeof props.style === "object" && !(props.style instanceof Array) ? { ...props.style } : {};
   for (let key in props) {
     const value = props[key];
     if (value === void 0) {
@@ -14322,9 +14303,10 @@ const Icon$1 = defineComponent({
     }
     let newProps = props;
     if (icon.classes) {
-      newProps = __spreadProps3(__spreadValues3({}, props), {
+      newProps = {
+        ...props,
         class: (typeof props["class"] === "string" ? props["class"] + " " : "") + icon.classes.join(" ")
-      });
+      };
     }
     return render$2(icon.data, newProps);
   }
@@ -16777,7 +16759,7 @@ function createAutoBuildingObject(format3, specialKeysHandler, key = "", depth =
       if (!cache2[p2]) {
         const childKey = key ? `${key}.${p2.toString()}` : p2.toString();
         const child = createAutoBuildingObject(format3, specialKeysHandler, childKey, depth + 1);
-        cache2[p2] = __spreadValues3({ key: childKey }, child);
+        cache2[p2] = { key: childKey, ...child };
       }
       return cache2[p2].proxy;
     },
@@ -23393,7 +23375,7 @@ var main$1 = { exports: {} };
           const a3 = o2._createOnigScanner(r3, i3, t4.length);
           for (let e4 = 0, r4 = t4.length; e4 < r4; e4++)
             o2._ofree(n4[e4]);
-          o2._ofree(i3), o2._ofree(r3), a3 === 0 && function(t5) {
+          o2._ofree(i3), o2._ofree(r3), 0 === a3 && function(t5) {
             throw new Error(t5.UTF8ToString(t5._getLastOnigError()));
           }(o2), this._onigBinding = o2, this._ptr = a3;
         }
@@ -23402,7 +23384,7 @@ var main$1 = { exports: {} };
         }
         findNextMatchSync(t4, n4, e3) {
           let r3 = a2, i3 = 0;
-          if (typeof e3 == "number" ? (8 & e3 && (r3 = true), i3 = e3) : typeof e3 == "boolean" && (r3 = e3), typeof t4 == "string") {
+          if ("number" == typeof e3 ? (8 & e3 && (r3 = true), i3 = e3) : "boolean" == typeof e3 && (r3 = e3), "string" == typeof t4) {
             t4 = new s2(t4);
             const e4 = this._findNextMatchSync(t4, n4, r3, i3);
             return t4.dispose(), e4;
@@ -23412,7 +23394,7 @@ var main$1 = { exports: {} };
         _findNextMatchSync(t4, n4, e3, r3) {
           const i3 = this._onigBinding;
           let o3;
-          if (o3 = e3 ? i3._findNextOnigScannerMatchDbg(this._ptr, t4.id, t4.ptr, t4.utf8Length, t4.convertUtf16OffsetToUtf8(n4), r3) : i3._findNextOnigScannerMatch(this._ptr, t4.id, t4.ptr, t4.utf8Length, t4.convertUtf16OffsetToUtf8(n4), r3), o3 === 0)
+          if (o3 = e3 ? i3._findNextOnigScannerMatchDbg(this._ptr, t4.id, t4.ptr, t4.utf8Length, t4.convertUtf16OffsetToUtf8(n4), r3) : i3._findNextOnigScannerMatch(this._ptr, t4.id, t4.ptr, t4.utf8Length, t4.convertUtf16OffsetToUtf8(n4), r3), 0 === o3)
             return null;
           const a3 = i3.HEAPU32;
           let f3 = o3 / 4;
@@ -23432,16 +23414,16 @@ var main$1 = { exports: {} };
           return l2;
         let n4, e3, r3, a3;
         if (c2 = true, function(t5) {
-          return typeof t5.instantiator == "function";
+          return "function" == typeof t5.instantiator;
         }(t4))
           n4 = t4.instantiator, e3 = t4.print;
         else {
           let r4;
           !function(t5) {
-            return t5.data !== void 0;
+            return void 0 !== t5.data;
           }(t4) ? r4 = t4 : (r4 = t4.data, e3 = t4.print), n4 = function(t5) {
-            return typeof Response != "undefined" && t5 instanceof Response;
-          }(r4) ? typeof WebAssembly.instantiateStreaming == "function" ? function(t5) {
+            return "undefined" != typeof Response && t5 instanceof Response;
+          }(r4) ? "function" == typeof WebAssembly.instantiateStreaming ? function(t5) {
             return (n5) => WebAssembly.instantiateStreaming(t5, n5);
           }(r4) : function(t5) {
             return async (n5) => {
@@ -23456,7 +23438,7 @@ var main$1 = { exports: {} };
           r3 = t5, a3 = n5;
         }), function(t5, n5, e4, r4) {
           i2.default({ print: n5, instantiateWasm: (n6, e5) => {
-            if (typeof performance == "undefined") {
+            if ("undefined" == typeof performance) {
               const t6 = () => Date.now();
               n6.env.emscripten_get_now = t6, n6.wasi_snapshot_preview1.emscripten_get_now = t6;
             }
@@ -23473,8 +23455,8 @@ var main$1 = { exports: {} };
         a2 = t4;
       };
     }, 418: (t3) => {
-      var n3 = (typeof document != "undefined" && document.currentScript && document.currentScript.src, function(t4) {
-        var n4, e2, r2 = (t4 = t4 || {}) !== void 0 ? t4 : {};
+      var n3 = ("undefined" != typeof document && document.currentScript && document.currentScript.src, function(t4) {
+        var n4, e2, r2 = void 0 !== (t4 = t4 || {}) ? t4 : {};
         r2.ready = new Promise(function(t5, r3) {
           n4 = t5, e2 = r3;
         });
@@ -23487,19 +23469,19 @@ var main$1 = { exports: {} };
         }
         a2 = function(t5) {
           var n5;
-          return typeof readbuffer == "function" ? new Uint8Array(readbuffer(t5)) : (v2(typeof (n5 = read(t5, "binary")) == "object"), n5);
-        }, typeof scriptArgs != "undefined" ? scriptArgs : arguments !== void 0 && arguments, typeof onig_print != "undefined" && (typeof console == "undefined" && (console = {}), console.log = onig_print, console.warn = console.error = typeof printErr != "undefined" ? printErr : onig_print);
+          return "function" == typeof readbuffer ? new Uint8Array(readbuffer(t5)) : (v2("object" == typeof (n5 = read(t5, "binary"))), n5);
+        }, "undefined" != typeof scriptArgs ? scriptArgs : void 0 !== arguments && arguments, "undefined" != typeof onig_print && ("undefined" == typeof console && (console = {}), console.log = onig_print, console.warn = console.error = "undefined" != typeof printErr ? printErr : onig_print);
         var h2 = r2.print || console.log.bind(console), d2 = r2.printErr || console.warn.bind(console);
         for (i2 in o2)
           o2.hasOwnProperty(i2) && (r2[i2] = o2[i2]);
         o2 = null, r2.arguments && r2.arguments, r2.thisProgram && r2.thisProgram, r2.quit && r2.quit;
         var g2, _2;
-        r2.wasmBinary && (g2 = r2.wasmBinary), r2.noExitRuntime, typeof WebAssembly != "object" && z2("no native wasm support detected");
+        r2.wasmBinary && (g2 = r2.wasmBinary), r2.noExitRuntime, "object" != typeof WebAssembly && z2("no native wasm support detected");
         var y2 = false;
         function v2(t5, n5) {
           t5 || z2("Assertion failed: " + n5);
         }
-        var w2, S2, A2, b2 = typeof TextDecoder != "undefined" ? new TextDecoder("utf8") : void 0;
+        var w2, S2, A2, b2 = "undefined" != typeof TextDecoder ? new TextDecoder("utf8") : void 0;
         function O2(t5, n5, e3) {
           for (var r3 = n5 + e3, i3 = n5; t5[i3] && !(i3 >= r3); )
             ++i3;
@@ -23509,9 +23491,9 @@ var main$1 = { exports: {} };
             var a3 = t5[n5++];
             if (128 & a3) {
               var f2 = 63 & t5[n5++];
-              if ((224 & a3) != 192) {
+              if (192 != (224 & a3)) {
                 var s2 = 63 & t5[n5++];
-                if ((a3 = (240 & a3) == 224 ? (15 & a3) << 12 | f2 << 6 | s2 : (7 & a3) << 18 | f2 << 12 | s2 << 6 | 63 & t5[n5++]) < 65536)
+                if ((a3 = 224 == (240 & a3) ? (15 & a3) << 12 | f2 << 6 | s2 : (7 & a3) << 18 | f2 << 12 | s2 << 6 | 63 & t5[n5++]) < 65536)
                   o3 += String.fromCharCode(a3);
                 else {
                   var u3 = a3 - 65536;
@@ -23533,11 +23515,11 @@ var main$1 = { exports: {} };
         function P2(t5) {
           w2 = t5, r2.HEAP8 = new Int8Array(t5), r2.HEAP16 = new Int16Array(t5), r2.HEAP32 = A2 = new Int32Array(t5), r2.HEAPU8 = S2 = new Uint8Array(t5), r2.HEAPU16 = new Uint16Array(t5), r2.HEAPU32 = new Uint32Array(t5), r2.HEAPF32 = new Float32Array(t5), r2.HEAPF64 = new Float64Array(t5);
         }
-        typeof TextDecoder != "undefined" && new TextDecoder("utf-16le"), r2.INITIAL_MEMORY;
+        "undefined" != typeof TextDecoder && new TextDecoder("utf-16le"), r2.INITIAL_MEMORY;
         var T2, R2 = [], E2 = [], M2 = [], L2 = [];
         function I2() {
           if (r2.preRun)
-            for (typeof r2.preRun == "function" && (r2.preRun = [r2.preRun]); r2.preRun.length; )
+            for ("function" == typeof r2.preRun && (r2.preRun = [r2.preRun]); r2.preRun.length; )
               N2(r2.preRun.shift());
           $2(R2);
         }
@@ -23549,7 +23531,7 @@ var main$1 = { exports: {} };
         }
         function C2() {
           if (r2.postRun)
-            for (typeof r2.postRun == "function" && (r2.postRun = [r2.postRun]); r2.postRun.length; )
+            for ("function" == typeof r2.postRun && (r2.postRun = [r2.postRun]); r2.postRun.length; )
               k2(r2.postRun.shift());
           $2(L2);
         }
@@ -23567,7 +23549,7 @@ var main$1 = { exports: {} };
           B2++, r2.monitorRunDependencies && r2.monitorRunDependencies(B2);
         }
         function V2(t5) {
-          if (B2--, r2.monitorRunDependencies && r2.monitorRunDependencies(B2), B2 == 0 && j2) {
+          if (B2--, r2.monitorRunDependencies && r2.monitorRunDependencies(B2), 0 == B2 && j2) {
             var n5 = j2;
             j2 = null, n5();
           }
@@ -23578,7 +23560,7 @@ var main$1 = { exports: {} };
           throw e2(n5), n5;
         }
         function q2(t5, n5) {
-          return String.prototype.startsWith ? t5.startsWith(n5) : t5.indexOf(n5) === 0;
+          return String.prototype.startsWith ? t5.startsWith(n5) : 0 === t5.indexOf(n5);
         }
         r2.preloadedImages = {}, r2.preloadedAudios = {};
         var Y2 = "data:application/octet-stream;base64,";
@@ -23598,7 +23580,7 @@ var main$1 = { exports: {} };
           }
         }
         function X2() {
-          return g2 || !u2 || typeof fetch != "function" ? Promise.resolve().then(function() {
+          return g2 || !u2 || "function" != typeof fetch ? Promise.resolve().then(function() {
             return Q2(K2);
           }) : fetch(K2, { credentials: "same-origin" }).then(function(t5) {
             if (!t5.ok)
@@ -23630,7 +23612,7 @@ var main$1 = { exports: {} };
             } catch (t6) {
               return d2("Module.instantiateWasm callback failed with error: " + t6), false;
             }
-          return (g2 || typeof WebAssembly.instantiateStreaming != "function" || G2(K2) || typeof fetch != "function" ? o3(i3) : fetch(K2, { credentials: "same-origin" }).then(function(n6) {
+          return (g2 || "function" != typeof WebAssembly.instantiateStreaming || G2(K2) || "function" != typeof fetch ? o3(i3) : fetch(K2, { credentials: "same-origin" }).then(function(n6) {
             return WebAssembly.instantiateStreaming(n6, t5).then(i3, function(t6) {
               return d2("wasm streaming compile failed: " + t6), d2("falling back to ArrayBuffer instantiation"), o3(i3);
             });
@@ -23639,9 +23621,9 @@ var main$1 = { exports: {} };
         function $2(t5) {
           for (; t5.length > 0; ) {
             var n5 = t5.shift();
-            if (typeof n5 != "function") {
+            if ("function" != typeof n5) {
               var e3 = n5.func;
-              typeof e3 == "number" ? n5.arg === void 0 ? T2.get(e3)() : T2.get(e3)(n5.arg) : e3(n5.arg === void 0 ? null : n5.arg);
+              "number" == typeof e3 ? void 0 === n5.arg ? T2.get(e3)() : T2.get(e3)(n5.arg) : e3(void 0 === n5.arg ? null : n5.arg);
             } else
               n5(r2);
           }
@@ -23669,12 +23651,12 @@ var main$1 = { exports: {} };
           }
           return false;
         }
-        G2(K2) || (K2 = p2(K2)), J2 = typeof dateNow != "undefined" ? dateNow : function() {
+        G2(K2) || (K2 = p2(K2)), J2 = "undefined" != typeof dateNow ? dateNow : function() {
           return performance.now();
         };
         var it2 = { mappings: {}, buffers: [null, [], []], printChar: function(t5, n5) {
           var e3 = it2.buffers[t5];
-          n5 === 0 || n5 === 10 ? ((t5 === 1 ? h2 : d2)(O2(e3, 0)), e3.length = 0) : e3.push(n5);
+          0 === n5 || 10 === n5 ? ((1 === t5 ? h2 : d2)(O2(e3, 0)), e3.length = 0) : e3.push(n5);
         }, varargs: void 0, get: function() {
           return it2.varargs += 4, A2[it2.varargs - 4 >> 2];
         }, getStr: function(t5) {
@@ -23732,14 +23714,14 @@ var main$1 = { exports: {} };
         }, r2.UTF8ToString = U2, j2 = function t5() {
           ft || ct(), ft || (j2 = t5);
         }, r2.run = ct, r2.preInit)
-          for (typeof r2.preInit == "function" && (r2.preInit = [r2.preInit]); r2.preInit.length > 0; )
+          for ("function" == typeof r2.preInit && (r2.preInit = [r2.preInit]); r2.preInit.length > 0; )
             r2.preInit.pop()();
         return ct(), t4.ready;
       });
       t3.exports = n3;
     } }, n2 = {}, function e2(r2) {
       var i2 = n2[r2];
-      if (i2 !== void 0)
+      if (void 0 !== i2)
         return i2.exports;
       var o2 = n2[r2] = { exports: {} };
       return t2[r2].call(o2.exports, o2, o2.exports, e2), o2.exports;
@@ -23763,14 +23745,14 @@ var main = { exports: {} };
       return n2.m = e2, n2.c = t2, n2.d = function(e3, t3, r2) {
         n2.o(e3, t3) || Object.defineProperty(e3, t3, { enumerable: true, get: r2 });
       }, n2.r = function(e3) {
-        typeof Symbol != "undefined" && Symbol.toStringTag && Object.defineProperty(e3, Symbol.toStringTag, { value: "Module" }), Object.defineProperty(e3, "__esModule", { value: true });
+        "undefined" != typeof Symbol && Symbol.toStringTag && Object.defineProperty(e3, Symbol.toStringTag, { value: "Module" }), Object.defineProperty(e3, "__esModule", { value: true });
       }, n2.t = function(e3, t3) {
         if (1 & t3 && (e3 = n2(e3)), 8 & t3)
           return e3;
-        if (4 & t3 && typeof e3 == "object" && e3 && e3.__esModule)
+        if (4 & t3 && "object" == typeof e3 && e3 && e3.__esModule)
           return e3;
         var r2 = /* @__PURE__ */ Object.create(null);
-        if (n2.r(r2), Object.defineProperty(r2, "default", { enumerable: true, value: e3 }), 2 & t3 && typeof e3 != "string")
+        if (n2.r(r2), Object.defineProperty(r2, "default", { enumerable: true, value: e3 }), 2 & t3 && "string" != typeof e3)
           for (var i2 in e3)
             n2.d(r2, i2, function(t4) {
               return e3[t4];
@@ -23788,7 +23770,7 @@ var main = { exports: {} };
       }, n2.p = "", n2(n2.s = 3);
     }([function(e2, t2, n2) {
       Object.defineProperty(t2, "__esModule", { value: true });
-      var r2 = n2(1), i2 = n2(5), o2 = n2(6), s2 = n2(2), a2 = typeof performance == "undefined" ? function() {
+      var r2 = n2(1), i2 = n2(5), o2 = n2(6), s2 = n2(2), a2 = "undefined" == typeof performance ? function() {
         return Date.now();
       } : function() {
         return performance.now();
@@ -23826,11 +23808,11 @@ var main = { exports: {} };
             Array.isArray(l3.patterns) && h2(e3, t3, n3, l3.patterns, d3);
             var g3 = l3.include;
             if (g3)
-              if (g3 === "$base" || g3 === t3.scopeName)
+              if ("$base" === g3 || g3 === t3.scopeName)
                 f2(e3, t3, t3);
-              else if (g3 === "$self" || g3 === n3.scopeName)
+              else if ("$self" === g3 || g3 === n3.scopeName)
                 f2(e3, t3, n3);
-              else if (g3.charAt(0) === "#")
+              else if ("#" === g3.charAt(0))
                 p2(e3, t3, n3, g3.substring(1), d3);
               else {
                 var m3 = g3.indexOf("#");
@@ -23844,7 +23826,7 @@ var main = { exports: {} };
         }
       }
       function p2(e3, t3, n3, r3, i3) {
-        (i3 === void 0 && (i3 = n3.repository), i3 && i3[r3]) && h2(e3, t3, n3, [i3[r3]], i3);
+        (void 0 === i3 && (i3 = n3.repository), i3 && i3[r3]) && h2(e3, t3, n3, [i3[r3]], i3);
       }
       function f2(e3, t3, n3) {
         if (n3.patterns && Array.isArray(n3.patterns) && h2(e3, t3, n3, n3.patterns, n3.repository), n3.injections) {
@@ -23860,7 +23842,7 @@ var main = { exports: {} };
         if (e3 === t3)
           return true;
         var n3 = t3.length;
-        return e3.length > n3 && e3.substr(0, n3) === t3 && e3[n3] === ".";
+        return e3.length > n3 && e3.substr(0, n3) === t3 && "." === e3[n3];
       }
       function g2(e3, t3) {
         if (t3.length < e3.length)
@@ -23889,12 +23871,12 @@ var main = { exports: {} };
           if (this._initialLanguage = t3, this._themeProvider = n3, this._cache = /* @__PURE__ */ new Map(), this._defaultMetaData = new _2("", this._initialLanguage, 0, [this._themeProvider.getDefaults()]), this._embeddedLanguages = /* @__PURE__ */ Object.create(null), r3)
             for (var i3 = Object.keys(r3), o3 = 0, s3 = i3.length; o3 < s3; o3++) {
               var a3 = i3[o3], c3 = r3[a3];
-              typeof c3 == "number" && c3 !== 0 ? this._embeddedLanguages[a3] = c3 : console.warn("Invalid embedded language found at scope " + a3 + ": <<" + c3 + ">>");
+              "number" == typeof c3 && 0 !== c3 ? this._embeddedLanguages[a3] = c3 : console.warn("Invalid embedded language found at scope " + a3 + ": <<" + c3 + ">>");
             }
           var u3 = Object.keys(this._embeddedLanguages).map(function(t4) {
             return e3._escapeRegExpCharacters(t4);
           });
-          u3.length === 0 ? this._embeddedLanguagesRegex = null : (u3.sort(), u3.reverse(), this._embeddedLanguagesRegex = new RegExp("^((" + u3.join(")|(") + "))($|\\.)", ""));
+          0 === u3.length ? this._embeddedLanguagesRegex = null : (u3.sort(), u3.reverse(), this._embeddedLanguagesRegex = new RegExp("^((" + u3.join(")|(") + "))($|\\.)", ""));
         }
         return e3.prototype.onDidChangeTheme = function() {
           this._cache = /* @__PURE__ */ new Map(), this._defaultMetaData = new _2("", this._initialLanguage, 0, [this._themeProvider.getDefaults()]);
@@ -23903,7 +23885,7 @@ var main = { exports: {} };
         }, e3._escapeRegExpCharacters = function(e4) {
           return e4.replace(/[\-\\\{\}\*\+\?\|\^\$\.\,\[\]\(\)\#\s]/g, "\\$&");
         }, e3.prototype.getMetadataForScope = function(t3) {
-          if (t3 === null)
+          if (null === t3)
             return e3._NULL_SCOPE_METADATA;
           var n3 = this._cache.get(t3);
           return n3 || (n3 = this._doGetMetadataForScope(t3), this._cache.set(t3, n3), n3);
@@ -23960,7 +23942,7 @@ var main = { exports: {} };
           return this._scopeMetadataProvider.getMetadataForScope(e4);
         }, e3.prototype.getInjections = function() {
           var e4 = this;
-          if (this._injections === null) {
+          if (null === this._injections) {
             this._injections = [];
             var t3 = this._grammar.injections;
             if (t3)
@@ -24003,11 +23985,11 @@ var main = { exports: {} };
           return { tokens: n3.lineTokens.getBinaryResult(n3.ruleStack, n3.lineLength), ruleStack: n3.ruleStack };
         }, e3.prototype._tokenize = function(e4, t3, n3) {
           var r3;
-          if (this._rootId === -1 && (this._rootId = i2.RuleFactory.getCompiledRuleId(this._grammar.repository.$self, this, this._grammar.repository)), t3 && t3 !== I2.NULL)
+          if (-1 === this._rootId && (this._rootId = i2.RuleFactory.getCompiledRuleId(this._grammar.repository.$self, this, this._grammar.repository)), t3 && t3 !== I2.NULL)
             r3 = false, t3.reset();
           else {
             r3 = true;
-            var o3 = this._scopeMetadataProvider.getDefaultMetadata(), s3 = o3.themeData[0], a3 = P2.set(0, o3.languageId, o3.tokenType, s3.fontStyle, s3.foreground, s3.background), c3 = this.getRule(this._rootId).getName(null, null), u3 = this._scopeMetadataProvider.getMetadataForScope(c3), l3 = x2.mergeMetadata(a3, null, u3), h3 = new x2(null, c3 === null ? "unknown" : c3, l3);
+            var o3 = this._scopeMetadataProvider.getDefaultMetadata(), s3 = o3.themeData[0], a3 = P2.set(0, o3.languageId, o3.tokenType, s3.fontStyle, s3.foreground, s3.background), c3 = this.getRule(this._rootId).getName(null, null), u3 = this._scopeMetadataProvider.getMetadataForScope(c3), l3 = x2.mergeMetadata(a3, null, u3), h3 = new x2(null, null === c3 ? "unknown" : c3, l3);
             t3 = new I2(null, this._rootId, -1, -1, false, null, h3, h3);
           }
           e4 += "\n";
@@ -24016,28 +23998,28 @@ var main = { exports: {} };
         }, e3;
       }();
       function b2(e3) {
-        typeof e3.dispose == "function" && e3.dispose();
+        "function" == typeof e3.dispose && e3.dispose();
       }
       function C2(e3, t3) {
         return (e3 = r2.clone(e3)).repository = e3.repository || {}, e3.repository.$self = { $vscodeTextmateLocation: e3.$vscodeTextmateLocation, patterns: e3.patterns, name: e3.scopeName }, e3.repository.$base = t3 || e3.repository.$self, e3;
       }
       function w2(e3, t3, n3, r3, i3, o3, s3) {
-        if (o3.length !== 0) {
+        if (0 !== o3.length) {
           for (var a3 = t3.content, c3 = Math.min(o3.length, s3.length), u3 = [], l3 = s3[0].end, h3 = 0; h3 < c3; h3++) {
             var p3 = o3[h3];
-            if (p3 !== null) {
+            if (null !== p3) {
               var f3 = s3[h3];
-              if (f3.length !== 0) {
+              if (0 !== f3.length) {
                 if (f3.start > l3)
                   break;
                 for (; u3.length > 0 && u3[u3.length - 1].endPos <= f3.start; )
                   i3.produceFromScopes(u3[u3.length - 1].scopes, u3[u3.length - 1].endPos), u3.pop();
                 if (u3.length > 0 ? i3.produceFromScopes(u3[u3.length - 1].scopes, f3.start) : i3.produce(r3, f3.start), p3.retokenizeCapturedWithRuleId) {
                   var d3 = p3.getName(a3, s3), g3 = r3.contentNameScopesList.push(e3, d3), m3 = p3.getContentName(a3, s3), _3 = g3.push(e3, m3), y3 = r3.push(p3.retokenizeCapturedWithRuleId, f3.start, -1, false, null, g3, _3), v3 = e3.createOnigString(a3.substring(0, f3.end));
-                  S2(e3, v3, n3 && f3.start === 0, f3.start, y3, i3, false), b2(v3);
+                  S2(e3, v3, n3 && 0 === f3.start, f3.start, y3, i3, false), b2(v3);
                 } else {
                   var C3 = p3.getName(a3, s3);
-                  if (C3 !== null) {
+                  if (null !== C3) {
                     var w3 = (u3.length > 0 ? u3[u3.length - 1].scopes : r3.contentNameScopesList).push(e3, C3);
                     u3.push(new A2(w3, f3.end));
                   }
@@ -24065,7 +24047,7 @@ var main = { exports: {} };
           }
           return h4 ? { captureIndices: h4.captureIndices, matchedRuleId: u4.rules[h4.index] } : null;
         }(e3, t3, n3, r3, i3, o3), u3 = e3.getInjections();
-        if (u3.length === 0)
+        if (0 === u3.length)
           return c3;
         var l3 = function(e4, t4, n4, r4, i4, o4, a3) {
           for (var c4, u4 = Number.MAX_VALUE, l4 = null, h4 = 0, p4 = o4.contentNameScopesList.generateScopes(), f3 = 0, d3 = e4.length; f3 < d3; f3++) {
@@ -24079,7 +24061,7 @@ var main = { exports: {} };
               }
             }
           }
-          return l4 ? { priorityMatch: h4 === -1, captureIndices: l4, matchedRuleId: c4 } : null;
+          return l4 ? { priorityMatch: -1 === h4, captureIndices: l4, matchedRuleId: c4 } : null;
         }(u3, e3, t3, n3, r3, i3, o3);
         if (!l3)
           return c3;
@@ -24102,7 +24084,7 @@ var main = { exports: {} };
                 s2.DebugFlags.InDebugMode && console.log("  popping " + p4.rule.debugName + " - " + p4.rule.debugWhileRegExp), o4 = p4.stack.pop();
                 break;
               }
-              if (f4.rules[d3.index] !== -2) {
+              if (-2 !== f4.rules[d3.index]) {
                 o4 = p4.stack.pop();
                 break;
               }
@@ -24120,7 +24102,7 @@ var main = { exports: {} };
           if (!c4)
             return s2.DebugFlags.InDebugMode && console.log("  no more matches."), a3.produce(o3, u3), void (l3 = true);
           var p4 = c4.captureIndices, f4 = c4.matchedRuleId, d3 = !!(p4 && p4.length > 0) && p4[0].end > r3;
-          if (f4 === -1) {
+          if (-1 === f4) {
             var g3 = o3.getRule(e3);
             s2.DebugFlags.InDebugMode && console.log("  popping " + g3.debugName + " - " + g3.debugEndRegExp), a3.produce(o3, p4[0].start), o3 = o3.setContentNameScopesList(o3.nameScopesList), w2(e3, t3, n3, o3, a3, g3.endCaptures, p4), a3.produce(o3, p4[0].end);
             var m3 = o3;
@@ -24175,7 +24157,7 @@ var main = { exports: {} };
           return (4286578688 & e4) >>> 23;
         }, e3.set = function(t3, n3, r3, i3, o3, s3) {
           var a3 = e3.getLanguageId(t3), c3 = e3.getTokenType(t3), u3 = e3.getFontStyle(t3), l3 = e3.getForeground(t3), h3 = e3.getBackground(t3);
-          return n3 !== 0 && (a3 = n3), r3 !== 0 && (c3 = r3 === 8 ? 0 : r3), i3 !== -1 && (u3 = i3), o3 !== 0 && (l3 = o3), s3 !== 0 && (h3 = s3), (a3 << 0 | c3 << 8 | u3 << 11 | l3 << 14 | h3 << 23) >>> 0;
+          return 0 !== n3 && (a3 = n3), 0 !== r3 && (c3 = 8 === r3 ? 0 : r3), -1 !== i3 && (u3 = i3), 0 !== o3 && (l3 = o3), 0 !== s3 && (h3 = s3), (a3 << 0 | c3 << 8 | u3 << 11 | l3 << 14 | h3 << 23) >>> 0;
         }, e3;
       }();
       t2.StackElementMetadata = P2;
@@ -24200,7 +24182,7 @@ var main = { exports: {} };
         }, e3._matchesScope = function(e4, t3, n3) {
           return t3 === e4 || e4.substring(0, n3.length) === n3;
         }, e3._matches = function(e4, t3) {
-          if (t3 === null)
+          if (null === t3)
             return true;
           for (var n3 = t3.length, r3 = 0, i3 = t3[r3], o3 = i3 + "."; e4; ) {
             if (this._matchesScope(e4.scope, i3, o3)) {
@@ -24212,10 +24194,10 @@ var main = { exports: {} };
           }
           return false;
         }, e3.mergeMetadata = function(e4, t3, n3) {
-          if (n3 === null)
+          if (null === n3)
             return e4;
           var r3 = -1, i3 = 0, o3 = 0;
-          if (n3.themeData !== null)
+          if (null !== n3.themeData)
             for (var s3 = 0, a3 = n3.themeData.length; s3 < a3; s3++) {
               var c3 = n3.themeData[s3];
               if (this._matches(t3, c3.parentScopes)) {
@@ -24231,7 +24213,7 @@ var main = { exports: {} };
           }
           return t3;
         }, e3.prototype.push = function(t3, n3) {
-          return n3 === null ? this : n3.indexOf(" ") >= 0 ? e3._push(this, t3, n3.split(/ /g)) : e3._push(this, t3, [n3]);
+          return null === n3 ? this : n3.indexOf(" ") >= 0 ? e3._push(this, t3, n3.split(/ /g)) : e3._push(this, t3, [n3]);
         }, e3._generateScopes = function(e4) {
           for (var t3 = [], n3 = 0; e4; )
             t3[n3++] = e4.scope, e4 = e4.parent;
@@ -24262,7 +24244,7 @@ var main = { exports: {} };
         }, e3.prototype.clone = function() {
           return this;
         }, e3.prototype.equals = function(t3) {
-          return t3 !== null && e3._equals(this, t3);
+          return null !== t3 && e3._equals(this, t3);
         }, e3._reset = function(e4) {
           for (; e4; )
             e4._enterPos = -1, e4._anchorPos = -1, e4 = e4.parent;
@@ -24322,9 +24304,9 @@ var main = { exports: {} };
             this._tokens.push({ startIndex: this._lastTokenEndIndex, endIndex: t3, scopes: a3 }), this._lastTokenEndIndex = t3;
           }
         }, e3.prototype.getResult = function(e4, t3) {
-          return this._tokens.length > 0 && this._tokens[this._tokens.length - 1].startIndex === t3 - 1 && this._tokens.pop(), this._tokens.length === 0 && (this._lastTokenEndIndex = -1, this.produce(e4, t3), this._tokens[this._tokens.length - 1].startIndex = 0), this._tokens;
+          return this._tokens.length > 0 && this._tokens[this._tokens.length - 1].startIndex === t3 - 1 && this._tokens.pop(), 0 === this._tokens.length && (this._lastTokenEndIndex = -1, this.produce(e4, t3), this._tokens[this._tokens.length - 1].startIndex = 0), this._tokens;
         }, e3.prototype.getBinaryResult = function(e4, t3) {
-          this._binaryTokens.length > 0 && this._binaryTokens[this._binaryTokens.length - 2] === t3 - 1 && (this._binaryTokens.pop(), this._binaryTokens.pop()), this._binaryTokens.length === 0 && (this._lastTokenEndIndex = -1, this.produce(e4, t3), this._binaryTokens[this._binaryTokens.length - 2] = 0);
+          this._binaryTokens.length > 0 && this._binaryTokens[this._binaryTokens.length - 2] === t3 - 1 && (this._binaryTokens.pop(), this._binaryTokens.pop()), 0 === this._binaryTokens.length && (this._lastTokenEndIndex = -1, this.produce(e4, t3), this._binaryTokens[this._binaryTokens.length - 2] = 0);
           for (var n3 = new Uint32Array(this._binaryTokens.length), r3 = 0, i3 = this._binaryTokens.length; r3 < i3; r3++)
             n3[r3] = this._binaryTokens[r3];
           return n3;
@@ -24349,7 +24331,7 @@ var main = { exports: {} };
           for (var t3 = [], n3 = 0, i3 = e4.length; n3 < i3; n3++)
             t3[n3] = r2(e4[n3]);
           return t3;
-        }(e3) : typeof e3 == "object" ? function(e4) {
+        }(e3) : "object" == typeof e3 ? function(e4) {
           var t3 = {};
           for (var n3 in e4)
             t3[n3] = r2(e4[n3]);
@@ -24367,19 +24349,19 @@ var main = { exports: {} };
         }), e3;
       }, t2.basename = function e3(t3) {
         var n3 = ~t3.lastIndexOf("/") || ~t3.lastIndexOf("\\");
-        return n3 === 0 ? t3 : ~n3 == t3.length - 1 ? e3(t3.substring(0, t3.length - 1)) : t3.substr(1 + ~n3);
+        return 0 === n3 ? t3 : ~n3 == t3.length - 1 ? e3(t3.substring(0, t3.length - 1)) : t3.substr(1 + ~n3);
       };
       var i2 = /\$(\d+)|\${(\d+):\/(downcase|upcase)}/, o2 = function() {
         function e3() {
         }
         return e3.hasCaptures = function(e4) {
-          return e4 !== null && i2.test(e4);
+          return null !== e4 && i2.test(e4);
         }, e3.replaceCaptures = function(e4, t3, n3) {
           return e4.replace(i2, function(e5, r3, i3, o3) {
             var s2 = n3[parseInt(r3 || i3, 10)];
             if (!s2)
               return e5;
-            for (var a2 = t3.substring(s2.start, s2.end); a2[0] === "."; )
+            for (var a2 = t3.substring(s2.start, s2.end); "." === a2[0]; )
               a2 = a2.substring(1);
             switch (o3) {
               case "downcase":
@@ -24395,7 +24377,7 @@ var main = { exports: {} };
       t2.RegexSource = o2;
     }, function(e2, t2, n2) {
       (function(e3) {
-        Object.defineProperty(t2, "__esModule", { value: true }), t2.DebugFlags = { InDebugMode: e3 !== void 0 && !!e3.env.VSCODE_TEXTMATE_DEBUG };
+        Object.defineProperty(t2, "__esModule", { value: true }), t2.DebugFlags = { InDebugMode: void 0 !== e3 && !!e3.env.VSCODE_TEXTMATE_DEBUG };
       }).call(this, n2(7));
     }, function(e2, t2, n2) {
       var r2 = this && this.__awaiter || function(e3, t3, n3, r3) {
@@ -24428,7 +24410,7 @@ var main = { exports: {} };
             throw i3[1];
           return i3[1];
         }, trys: [], ops: [] };
-        return o3 = { next: a3(0), throw: a3(1), return: a3(2) }, typeof Symbol == "function" && (o3[Symbol.iterator] = function() {
+        return o3 = { next: a3(0), throw: a3(1), return: a3(2) }, "function" == typeof Symbol && (o3[Symbol.iterator] = function() {
           return this;
         }), o3;
         function a3(o4) {
@@ -24454,15 +24436,15 @@ var main = { exports: {} };
                       o5 = s3.ops.pop(), s3.trys.pop();
                       continue;
                     default:
-                      if (!(i3 = s3.trys, (i3 = i3.length > 0 && i3[i3.length - 1]) || o5[0] !== 6 && o5[0] !== 2)) {
+                      if (!(i3 = s3.trys, (i3 = i3.length > 0 && i3[i3.length - 1]) || 6 !== o5[0] && 2 !== o5[0])) {
                         s3 = 0;
                         continue;
                       }
-                      if (o5[0] === 3 && (!i3 || o5[1] > i3[0] && o5[1] < i3[3])) {
+                      if (3 === o5[0] && (!i3 || o5[1] > i3[0] && o5[1] < i3[3])) {
                         s3.label = o5[1];
                         break;
                       }
-                      if (o5[0] === 6 && s3.label < i3[1]) {
+                      if (6 === o5[0] && s3.label < i3[1]) {
                         s3.label = i3[1], i3 = o5;
                         break;
                       }
@@ -24511,7 +24493,7 @@ var main = { exports: {} };
                 case 0:
                   return [4, this._options.loadGrammar(e4)];
                 case 1:
-                  return (t3 = r3.sent()) && (n3 = typeof this._options.getInjections == "function" ? this._options.getInjections(e4) : void 0, this._syncRegistry.addGrammar(t3, n3)), [2];
+                  return (t3 = r3.sent()) && (n3 = "function" == typeof this._options.getInjections ? this._options.getInjections(e4) : void 0, this._syncRegistry.addGrammar(t3, n3)), [2];
               }
             });
           });
@@ -24558,7 +24540,7 @@ var main = { exports: {} };
             });
           });
         }, e3.prototype.addGrammar = function(e4, t3, n3, o3) {
-          return t3 === void 0 && (t3 = []), n3 === void 0 && (n3 = 0), o3 === void 0 && (o3 = null), r2(this, void 0, void 0, function() {
+          return void 0 === t3 && (t3 = []), void 0 === n3 && (n3 = 0), void 0 === o3 && (o3 = null), r2(this, void 0, void 0, function() {
             return i2(this, function(r3) {
               switch (r3.label) {
                 case 0:
@@ -24569,7 +24551,7 @@ var main = { exports: {} };
             });
           });
         }, e3.prototype.grammarForScopeName = function(e4, t3, n3, r3) {
-          return t3 === void 0 && (t3 = 0), n3 === void 0 && (n3 = null), r3 === void 0 && (r3 = null), this._syncRegistry.grammarForScopeName(e4, t3, n3, r3);
+          return void 0 === t3 && (t3 = 0), void 0 === n3 && (n3 = null), void 0 === r3 && (r3 = null), this._syncRegistry.grammarForScopeName(e4, t3, n3, r3);
         }, e3;
       }();
       t2.Registry = u2, t2.INITIAL = c2.StackElement.NULL, t2.parseRawGrammar = s2.parseRawGrammar;
@@ -24604,7 +24586,7 @@ var main = { exports: {} };
             throw i3[1];
           return i3[1];
         }, trys: [], ops: [] };
-        return o3 = { next: a2(0), throw: a2(1), return: a2(2) }, typeof Symbol == "function" && (o3[Symbol.iterator] = function() {
+        return o3 = { next: a2(0), throw: a2(1), return: a2(2) }, "function" == typeof Symbol && (o3[Symbol.iterator] = function() {
           return this;
         }), o3;
         function a2(o4) {
@@ -24630,15 +24612,15 @@ var main = { exports: {} };
                       o5 = s3.ops.pop(), s3.trys.pop();
                       continue;
                     default:
-                      if (!(i3 = s3.trys, (i3 = i3.length > 0 && i3[i3.length - 1]) || o5[0] !== 6 && o5[0] !== 2)) {
+                      if (!(i3 = s3.trys, (i3 = i3.length > 0 && i3[i3.length - 1]) || 6 !== o5[0] && 2 !== o5[0])) {
                         s3 = 0;
                         continue;
                       }
-                      if (o5[0] === 3 && (!i3 || o5[1] > i3[0] && o5[1] < i3[3])) {
+                      if (3 === o5[0] && (!i3 || o5[1] > i3[0] && o5[1] < i3[3])) {
                         s3.label = o5[1];
                         break;
                       }
-                      if (o5[0] === 6 && s3.label < i3[1]) {
+                      if (6 === o5[0] && s3.label < i3[1]) {
                         s3.label = i3[1], i3 = o5;
                         break;
                       }
@@ -24716,7 +24698,7 @@ var main = { exports: {} };
         function n3() {
           this.constructor = e3;
         }
-        r2(e3, t3), e3.prototype = t3 === null ? Object.create(t3) : (n3.prototype = t3.prototype, new n3());
+        r2(e3, t3), e3.prototype = null === t3 ? Object.create(t3) : (n3.prototype = t3.prototype, new n3());
       });
       Object.defineProperty(t2, "__esModule", { value: true });
       var o2 = n2(1), s2 = /\\(\d+)/, a2 = /\\(\d+)/g, c2 = function() {
@@ -24724,7 +24706,7 @@ var main = { exports: {} };
           this.debugRegExps = t3, this.rules = n3, this.scanner = e4.createOnigScanner(t3);
         }
         return e3.prototype.dispose = function() {
-          typeof this.scanner.dispose == "function" && this.scanner.dispose();
+          "function" == typeof this.scanner.dispose && this.scanner.dispose();
         }, e3;
       }();
       t2.CompiledRule = c2;
@@ -24736,9 +24718,9 @@ var main = { exports: {} };
           var e4 = this.$location ? o2.basename(this.$location.filename) + ":" + this.$location.line : "unknown";
           return this.constructor.name + "#" + this.id + " @ " + e4;
         }, enumerable: true, configurable: true }), e3.prototype.getName = function(e4, t3) {
-          return this._nameIsCapturing && this._name !== null && e4 !== null && t3 !== null ? o2.RegexSource.replaceCaptures(this._name, e4, t3) : this._name;
+          return this._nameIsCapturing && null !== this._name && null !== e4 && null !== t3 ? o2.RegexSource.replaceCaptures(this._name, e4, t3) : this._name;
         }, e3.prototype.getContentName = function(e4, t3) {
-          return this._contentNameIsCapturing && this._contentName !== null ? o2.RegexSource.replaceCaptures(this._contentName, e4, t3) : this._contentName;
+          return this._contentNameIsCapturing && null !== this._contentName ? o2.RegexSource.replaceCaptures(this._contentName, e4, t3) : this._contentName;
         }, e3;
       }();
       t2.Rule = u2;
@@ -24757,15 +24739,15 @@ var main = { exports: {} };
       t2.CaptureRule = l2;
       var h2 = function() {
         function e3(e4, t3, n3) {
-          if (n3 === void 0 && (n3 = true), n3)
+          if (void 0 === n3 && (n3 = true), n3)
             if (e4) {
               for (var r3 = e4.length, i3 = 0, o3 = [], a3 = false, c3 = 0; c3 < r3; c3++) {
-                if (e4.charAt(c3) === "\\" && c3 + 1 < r3) {
+                if ("\\" === e4.charAt(c3) && c3 + 1 < r3) {
                   var u3 = e4.charAt(c3 + 1);
-                  u3 === "z" ? (o3.push(e4.substring(i3, c3)), o3.push("$(?!\\n)(?<!\\n)"), i3 = c3 + 2) : u3 !== "A" && u3 !== "G" || (a3 = true), c3++;
+                  "z" === u3 ? (o3.push(e4.substring(i3, c3)), o3.push("$(?!\\n)(?<!\\n)"), i3 = c3 + 2) : "A" !== u3 && "G" !== u3 || (a3 = true), c3++;
                 }
               }
-              this.hasAnchor = a3, i3 === 0 ? this.source = e4 : (o3.push(e4.substring(i3, r3)), this.source = o3.join(""));
+              this.hasAnchor = a3, 0 === i3 ? this.source = e4 : (o3.push(e4.substring(i3, r3)), this.source = o3.join(""));
             } else
               this.hasAnchor = false, this.source = e4;
           else
@@ -24786,7 +24768,7 @@ var main = { exports: {} };
         }, e3.prototype._buildAnchorCache = function() {
           var e4, t3, n3, r3, i3 = [], o3 = [], s3 = [], a3 = [];
           for (e4 = 0, t3 = this.source.length; e4 < t3; e4++)
-            n3 = this.source.charAt(e4), i3[e4] = n3, o3[e4] = n3, s3[e4] = n3, a3[e4] = n3, n3 === "\\" && e4 + 1 < t3 && ((r3 = this.source.charAt(e4 + 1)) === "A" ? (i3[e4 + 1] = "\uFFFF", o3[e4 + 1] = "\uFFFF", s3[e4 + 1] = "A", a3[e4 + 1] = "A") : r3 === "G" ? (i3[e4 + 1] = "\uFFFF", o3[e4 + 1] = "G", s3[e4 + 1] = "\uFFFF", a3[e4 + 1] = "G") : (i3[e4 + 1] = r3, o3[e4 + 1] = r3, s3[e4 + 1] = r3, a3[e4 + 1] = r3), e4++);
+            n3 = this.source.charAt(e4), i3[e4] = n3, o3[e4] = n3, s3[e4] = n3, a3[e4] = n3, "\\" === n3 && e4 + 1 < t3 && ("A" === (r3 = this.source.charAt(e4 + 1)) ? (i3[e4 + 1] = "\uFFFF", o3[e4 + 1] = "\uFFFF", s3[e4 + 1] = "A", a3[e4 + 1] = "A") : "G" === r3 ? (i3[e4 + 1] = "\uFFFF", o3[e4 + 1] = "G", s3[e4 + 1] = "\uFFFF", a3[e4 + 1] = "G") : (i3[e4 + 1] = r3, o3[e4 + 1] = r3, s3[e4 + 1] = r3, a3[e4 + 1] = r3), e4++);
           return { A0_G0: i3.join(""), A0_G1: o3.join(""), A1_G0: s3.join(""), A1_G1: a3.join("") };
         }, e3.prototype.resolveAnchors = function(e4, t3) {
           return this.hasAnchor && this._anchorCache ? e4 ? t3 ? this._anchorCache.A1_G1 : this._anchorCache.A1_G0 : t3 ? this._anchorCache.A0_G1 : this._anchorCache.A0_G0 : this.source;
@@ -24926,10 +24908,10 @@ var main = { exports: {} };
           return t3.id || n3.registerRule(function(i3) {
             if (t3.id = i3, t3.match)
               return new f2(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.match, e3._compileCaptures(t3.captures, n3, r3));
-            if (t3.begin === void 0) {
+            if (void 0 === t3.begin) {
               t3.repository && (r3 = o2.mergeObjects({}, r3, t3.repository));
               var s3 = t3.patterns;
-              return s3 === void 0 && t3.include && (s3 = [{ include: t3.include }]), new d2(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.contentName, e3._compilePatterns(s3, n3, r3));
+              return void 0 === s3 && t3.include && (s3 = [{ include: t3.include }]), new d2(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.contentName, e3._compilePatterns(s3, n3, r3));
             }
             return t3.while ? new m2(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.contentName, t3.begin, e3._compileCaptures(t3.beginCaptures || t3.captures, n3, r3), t3.while, e3._compileCaptures(t3.whileCaptures || t3.captures, n3, r3), e3._compilePatterns(t3.patterns, n3, r3)) : new g2(t3.$vscodeTextmateLocation, t3.id, t3.name, t3.contentName, t3.begin, e3._compileCaptures(t3.beginCaptures || t3.captures, n3, r3), t3.end, e3._compileCaptures(t3.endCaptures || t3.captures, n3, r3), t3.applyEndPatternLast, e3._compilePatterns(t3.patterns, n3, r3));
           }), t3.id;
@@ -24938,13 +24920,13 @@ var main = { exports: {} };
           if (t3) {
             var o3 = 0;
             for (var s3 in t3) {
-              if (s3 !== "$vscodeTextmateLocation")
+              if ("$vscodeTextmateLocation" !== s3)
                 (c3 = parseInt(s3, 10)) > o3 && (o3 = c3);
             }
             for (var a3 = 0; a3 <= o3; a3++)
               i3[a3] = null;
             for (var s3 in t3)
-              if (s3 !== "$vscodeTextmateLocation") {
+              if ("$vscodeTextmateLocation" !== s3) {
                 var c3 = parseInt(s3, 10), u3 = 0;
                 t3[s3].patterns && (u3 = e3.getCompiledRuleId(t3[s3], n3, r3)), i3[c3] = e3.createCaptureRule(n3, t3[s3].$vscodeTextmateLocation, t3[s3].name, t3[s3].contentName, u3);
               }
@@ -24956,10 +24938,10 @@ var main = { exports: {} };
             for (var o3 = 0, s3 = t3.length; o3 < s3; o3++) {
               var a3 = t3[o3], c3 = -1;
               if (a3.include)
-                if (a3.include.charAt(0) === "#") {
+                if ("#" === a3.include.charAt(0)) {
                   var u3 = r3[a3.include.substr(1)];
                   u3 && (c3 = e3.getCompiledRuleId(u3, n3, r3));
-                } else if (a3.include === "$base" || a3.include === "$self")
+                } else if ("$base" === a3.include || "$self" === a3.include)
                   c3 = e3.getCompiledRuleId(r3[a3.include], n3, r3);
                 else {
                   var l3 = null, h3 = null, p3 = a3.include.indexOf("#");
@@ -24974,9 +24956,9 @@ var main = { exports: {} };
                 }
               else
                 c3 = e3.getCompiledRuleId(a3, n3, r3);
-              if (c3 !== -1) {
+              if (-1 !== c3) {
                 var y2 = n3.getRule(c3), v2 = false;
-                if ((y2 instanceof d2 || y2 instanceof g2 || y2 instanceof m2) && y2.hasMissingPatterns && y2.patterns.length === 0 && (v2 = true), v2)
+                if ((y2 instanceof d2 || y2 instanceof g2 || y2 instanceof m2) && y2.hasMissingPatterns && 0 === y2.patterns.length && (v2 = true), v2)
                   continue;
                 i3.push(c3);
               }
@@ -24995,9 +24977,9 @@ var main = { exports: {} };
             return null;
           var e4 = o2[0];
           return o2 = i2.exec(n3), e4;
-        } }), c2 = a2.next(); c2 !== null; ) {
+        } }), c2 = a2.next(); null !== c2; ) {
           var u2 = 0;
-          if (c2.length === 2 && c2.charAt(1) === ":") {
+          if (2 === c2.length && ":" === c2.charAt(1)) {
             switch (c2.charAt(0)) {
               case "R":
                 u2 = 1;
@@ -25011,27 +24993,27 @@ var main = { exports: {} };
             c2 = a2.next();
           }
           var l2 = p2();
-          if (s2.push({ matcher: l2, priority: u2 }), c2 !== ",")
+          if (s2.push({ matcher: l2, priority: u2 }), "," !== c2)
             break;
           c2 = a2.next();
         }
         return s2;
         function h2() {
-          if (c2 === "-") {
+          if ("-" === c2) {
             c2 = a2.next();
             var e4 = h2();
             return function(t4) {
               return !!e4 && !e4(t4);
             };
           }
-          if (c2 === "(") {
+          if ("(" === c2) {
             c2 = a2.next();
             var n4 = function() {
               var e5 = [], t4 = p2();
-              for (; t4 && (e5.push(t4), c2 === "|" || c2 === ","); ) {
+              for (; t4 && (e5.push(t4), "|" === c2 || "," === c2); ) {
                 do {
                   c2 = a2.next();
-                } while (c2 === "|" || c2 === ",");
+                } while ("|" === c2 || "," === c2);
                 t4 = p2();
               }
               return function(t5) {
@@ -25040,7 +25022,7 @@ var main = { exports: {} };
                 });
               };
             }();
-            return c2 === ")" && (c2 = a2.next()), n4;
+            return ")" === c2 && (c2 = a2.next()), n4;
           }
           if (r2(c2)) {
             var i3 = [];
@@ -25088,12 +25070,12 @@ var main = { exports: {} };
       }
       !function() {
         try {
-          n2 = typeof setTimeout == "function" ? setTimeout : o2;
+          n2 = "function" == typeof setTimeout ? setTimeout : o2;
         } catch (e3) {
           n2 = o2;
         }
         try {
-          r2 = typeof clearTimeout == "function" ? clearTimeout : s2;
+          r2 = "function" == typeof clearTimeout ? clearTimeout : s2;
         } catch (e3) {
           r2 = s2;
         }
@@ -25138,7 +25120,7 @@ var main = { exports: {} };
         if (arguments.length > 1)
           for (var n3 = 1; n3 < arguments.length; n3++)
             t3[n3 - 1] = arguments[n3];
-        u2.push(new d2(e3, t3)), u2.length !== 1 || l2 || a2(f2);
+        u2.push(new d2(e3, t3)), 1 !== u2.length || l2 || a2(f2);
       }, d2.prototype.run = function() {
         this.fun.apply(null, this.array);
       }, i2.title = "browser", i2.browser = true, i2.env = {}, i2.argv = [], i2.version = "", i2.versions = {}, i2.on = g2, i2.addListener = g2, i2.once = g2, i2.off = g2, i2.removeListener = g2, i2.removeAllListeners = g2, i2.emit = g2, i2.prependListener = g2, i2.prependOnceListener = g2, i2.listeners = function(e3) {
@@ -25156,7 +25138,7 @@ var main = { exports: {} };
       Object.defineProperty(t2, "__esModule", { value: true });
       var r2 = n2(9), i2 = n2(2), o2 = n2(10);
       t2.parseRawGrammar = function(e3, t3) {
-        return t3 === void 0 && (t3 = null), t3 !== null && /\.json$/.test(t3) ? function(e4, t4) {
+        return void 0 === t3 && (t3 = null), null !== t3 && /\.json$/.test(t3) ? function(e4, t4) {
           if (i2.DebugFlags.InDebugMode)
             return o2.parse(e4, t4, true);
           return JSON.parse(e4);
@@ -25170,20 +25152,20 @@ var main = { exports: {} };
       function r2(e3, t3, n3) {
         var r3 = e3.length, i2 = 0, o2 = 1, s2 = 0;
         function a2(t4) {
-          if (n3 === null)
+          if (null === n3)
             i2 += t4;
           else
             for (; t4 > 0; ) {
-              e3.charCodeAt(i2) === 10 ? (i2++, o2++, s2 = 0) : (i2++, s2++), t4--;
+              10 === e3.charCodeAt(i2) ? (i2++, o2++, s2 = 0) : (i2++, s2++), t4--;
             }
         }
         function c2(e4) {
-          n3 === null ? i2 = e4 : a2(e4 - i2);
+          null === n3 ? i2 = e4 : a2(e4 - i2);
         }
         function u2() {
           for (; i2 < r3; ) {
             var t4 = e3.charCodeAt(i2);
-            if (t4 !== 32 && t4 !== 9 && t4 !== 13 && t4 !== 10)
+            if (32 !== t4 && 9 !== t4 && 13 !== t4 && 10 !== t4)
               break;
             a2(1);
           }
@@ -25193,24 +25175,24 @@ var main = { exports: {} };
         }
         function h2(t4) {
           var n4 = e3.indexOf(t4, i2);
-          c2(n4 !== -1 ? n4 + t4.length : r3);
+          c2(-1 !== n4 ? n4 + t4.length : r3);
         }
         function p2(t4) {
           var n4 = e3.indexOf(t4, i2);
-          if (n4 !== -1) {
+          if (-1 !== n4) {
             var o3 = e3.substring(i2, n4);
             return c2(n4 + t4.length), o3;
           }
           o3 = e3.substr(i2);
           return c2(r3), o3;
         }
-        r3 > 0 && e3.charCodeAt(0) === 65279 && (i2 = 1);
+        r3 > 0 && 65279 === e3.charCodeAt(0) && (i2 = 1);
         var f2 = 0, d2 = null, g2 = [], m2 = [], _2 = null;
         function y2(e4, t4) {
           g2.push(f2), m2.push(d2), f2 = e4, d2 = t4;
         }
         function v2() {
-          if (g2.length === 0)
+          if (0 === g2.length)
             return b2("illegal state stack");
           f2 = g2.pop(), d2 = m2.pop();
         }
@@ -25218,81 +25200,81 @@ var main = { exports: {} };
           throw new Error("Near offset " + i2 + ": " + t4 + " ~~~" + e3.substr(i2, 50) + "~~~");
         }
         var C2, w2, k2, R2 = function() {
-          if (_2 === null)
+          if (null === _2)
             return b2("missing <key>");
           var e4 = {};
-          n3 !== null && (e4[n3] = { filename: t3, line: o2, char: s2 }), d2[_2] = e4, _2 = null, y2(1, e4);
+          null !== n3 && (e4[n3] = { filename: t3, line: o2, char: s2 }), d2[_2] = e4, _2 = null, y2(1, e4);
         }, S2 = function() {
-          if (_2 === null)
+          if (null === _2)
             return b2("missing <key>");
           var e4 = [];
           d2[_2] = e4, _2 = null, y2(2, e4);
         }, P2 = function() {
           var e4 = {};
-          n3 !== null && (e4[n3] = { filename: t3, line: o2, char: s2 }), d2.push(e4), y2(1, e4);
+          null !== n3 && (e4[n3] = { filename: t3, line: o2, char: s2 }), d2.push(e4), y2(1, e4);
         }, x2 = function() {
           var e4 = [];
           d2.push(e4), y2(2, e4);
         };
         function I2() {
-          if (f2 !== 1)
+          if (1 !== f2)
             return b2("unexpected </dict>");
           v2();
         }
         function A2() {
-          return f2 === 1 || f2 !== 2 ? b2("unexpected </array>") : void v2();
+          return 1 === f2 || 2 !== f2 ? b2("unexpected </array>") : void v2();
         }
         function T2(e4) {
-          if (f2 === 1) {
-            if (_2 === null)
+          if (1 === f2) {
+            if (null === _2)
               return b2("missing <key>");
             d2[_2] = e4, _2 = null;
           } else
-            f2 === 2 ? d2.push(e4) : d2 = e4;
+            2 === f2 ? d2.push(e4) : d2 = e4;
         }
         function L2(e4) {
           if (isNaN(e4))
             return b2("cannot parse float");
-          if (f2 === 1) {
-            if (_2 === null)
+          if (1 === f2) {
+            if (null === _2)
               return b2("missing <key>");
             d2[_2] = e4, _2 = null;
           } else
-            f2 === 2 ? d2.push(e4) : d2 = e4;
+            2 === f2 ? d2.push(e4) : d2 = e4;
         }
         function M2(e4) {
           if (isNaN(e4))
             return b2("cannot parse integer");
-          if (f2 === 1) {
-            if (_2 === null)
+          if (1 === f2) {
+            if (null === _2)
               return b2("missing <key>");
             d2[_2] = e4, _2 = null;
           } else
-            f2 === 2 ? d2.push(e4) : d2 = e4;
+            2 === f2 ? d2.push(e4) : d2 = e4;
         }
         function G2(e4) {
-          if (f2 === 1) {
-            if (_2 === null)
+          if (1 === f2) {
+            if (null === _2)
               return b2("missing <key>");
             d2[_2] = e4, _2 = null;
           } else
-            f2 === 2 ? d2.push(e4) : d2 = e4;
+            2 === f2 ? d2.push(e4) : d2 = e4;
         }
         function D2(e4) {
-          if (f2 === 1) {
-            if (_2 === null)
+          if (1 === f2) {
+            if (null === _2)
               return b2("missing <key>");
             d2[_2] = e4, _2 = null;
           } else
-            f2 === 2 ? d2.push(e4) : d2 = e4;
+            2 === f2 ? d2.push(e4) : d2 = e4;
         }
         function N2(e4) {
-          if (f2 === 1) {
-            if (_2 === null)
+          if (1 === f2) {
+            if (null === _2)
               return b2("missing <key>");
             d2[_2] = e4, _2 = null;
           } else
-            f2 === 2 ? d2.push(e4) : d2 = e4;
+            2 === f2 ? d2.push(e4) : d2 = e4;
         }
         function E2(e4) {
           if (e4.isClosed)
@@ -25320,14 +25302,14 @@ var main = { exports: {} };
         }
         for (; i2 < r3 && (u2(), !(i2 >= r3)); ) {
           var O2 = e3.charCodeAt(i2);
-          if (a2(1), O2 !== 60)
+          if (a2(1), 60 !== O2)
             return b2("expected <");
           if (i2 >= r3)
             return b2("unexpected end of input");
           var j2 = e3.charCodeAt(i2);
-          if (j2 !== 63)
-            if (j2 !== 33) {
-              if (j2 === 47) {
+          if (63 !== j2)
+            if (33 !== j2) {
+              if (47 === j2) {
                 if (a2(1), u2(), l2("plist")) {
                   h2(">");
                   continue;
@@ -25342,16 +25324,16 @@ var main = { exports: {} };
                 }
                 return b2("unexpected closed tag");
               }
-              var F2 = (w2 = void 0, k2 = void 0, w2 = p2(">"), k2 = false, w2.charCodeAt(w2.length - 1) === 47 && (k2 = true, w2 = w2.substring(0, w2.length - 1)), { name: w2.trim(), isClosed: k2 });
+              var F2 = (w2 = void 0, k2 = void 0, w2 = p2(">"), k2 = false, 47 === w2.charCodeAt(w2.length - 1) && (k2 = true, w2 = w2.substring(0, w2.length - 1)), { name: w2.trim(), isClosed: k2 });
               switch (F2.name) {
                 case "dict":
-                  f2 === 1 ? R2() : f2 === 2 ? P2() : (d2 = {}, n3 !== null && (d2[n3] = { filename: t3, line: o2, char: s2 }), y2(1, d2)), F2.isClosed && I2();
+                  1 === f2 ? R2() : 2 === f2 ? P2() : (d2 = {}, null !== n3 && (d2[n3] = { filename: t3, line: o2, char: s2 }), y2(1, d2)), F2.isClosed && I2();
                   continue;
                 case "array":
-                  f2 === 1 ? S2() : f2 === 2 ? x2() : y2(2, d2 = []), F2.isClosed && A2();
+                  1 === f2 ? S2() : 2 === f2 ? x2() : y2(2, d2 = []), F2.isClosed && A2();
                   continue;
                 case "key":
-                  C2 = E2(F2), f2 !== 1 ? b2("unexpected <key>") : _2 !== null ? b2("too many <key>") : _2 = C2;
+                  C2 = E2(F2), 1 !== f2 ? b2("unexpected <key>") : null !== _2 ? b2("too many <key>") : _2 = C2;
                   continue;
                 case "string":
                   T2(E2(F2));
@@ -25410,61 +25392,61 @@ var main = { exports: {} };
           r2(a2, e4);
         }
         for (; s2(a2, c2); ) {
-          if (u2 === 0) {
-            if (l2 !== null && g2("too many constructs in root"), c2.type === 3) {
+          if (0 === u2) {
+            if (null !== l2 && g2("too many constructs in root"), 3 === c2.type) {
               l2 = {}, n3 && (l2.$vscodeTextmateLocation = c2.toLocation(t3)), f2(), u2 = 1;
               continue;
             }
-            if (c2.type === 2) {
+            if (2 === c2.type) {
               l2 = [], f2(), u2 = 4;
               continue;
             }
             g2("unexpected token in root");
           }
-          if (u2 === 2) {
-            if (c2.type === 5) {
+          if (2 === u2) {
+            if (5 === c2.type) {
               d2();
               continue;
             }
-            if (c2.type === 7) {
+            if (7 === c2.type) {
               u2 = 3;
               continue;
             }
             g2("expected , or }");
           }
-          if (u2 === 1 || u2 === 3) {
-            if (u2 === 1 && c2.type === 5) {
+          if (1 === u2 || 3 === u2) {
+            if (1 === u2 && 5 === c2.type) {
               d2();
               continue;
             }
-            if (c2.type === 1) {
+            if (1 === c2.type) {
               var m2 = c2.value;
-              if (s2(a2, c2) && c2.type === 6 || g2("expected colon"), s2(a2, c2) || g2("expected value"), u2 = 2, c2.type === 1) {
+              if (s2(a2, c2) && 6 === c2.type || g2("expected colon"), s2(a2, c2) || g2("expected value"), u2 = 2, 1 === c2.type) {
                 l2[m2] = c2.value;
                 continue;
               }
-              if (c2.type === 8) {
+              if (8 === c2.type) {
                 l2[m2] = null;
                 continue;
               }
-              if (c2.type === 9) {
+              if (9 === c2.type) {
                 l2[m2] = true;
                 continue;
               }
-              if (c2.type === 10) {
+              if (10 === c2.type) {
                 l2[m2] = false;
                 continue;
               }
-              if (c2.type === 11) {
+              if (11 === c2.type) {
                 l2[m2] = parseFloat(c2.value);
                 continue;
               }
-              if (c2.type === 2) {
+              if (2 === c2.type) {
                 var _2 = [];
                 l2[m2] = _2, f2(), u2 = 4, l2 = _2;
                 continue;
               }
-              if (c2.type === 3) {
+              if (3 === c2.type) {
                 var y2 = {};
                 n3 && (y2.$vscodeTextmateLocation = c2.toLocation(t3)), l2[m2] = y2, f2(), u2 = 1, l2 = y2;
                 continue;
@@ -25472,48 +25454,48 @@ var main = { exports: {} };
             }
             g2("unexpected token in dict");
           }
-          if (u2 === 5) {
-            if (c2.type === 4) {
+          if (5 === u2) {
+            if (4 === c2.type) {
               d2();
               continue;
             }
-            if (c2.type === 7) {
+            if (7 === c2.type) {
               u2 = 6;
               continue;
             }
             g2("expected , or ]");
           }
-          if (u2 === 4 || u2 === 6) {
-            if (u2 === 4 && c2.type === 4) {
+          if (4 === u2 || 6 === u2) {
+            if (4 === u2 && 4 === c2.type) {
               d2();
               continue;
             }
-            if (u2 = 5, c2.type === 1) {
+            if (u2 = 5, 1 === c2.type) {
               l2.push(c2.value);
               continue;
             }
-            if (c2.type === 8) {
+            if (8 === c2.type) {
               l2.push(null);
               continue;
             }
-            if (c2.type === 9) {
+            if (9 === c2.type) {
               l2.push(true);
               continue;
             }
-            if (c2.type === 10) {
+            if (10 === c2.type) {
               l2.push(false);
               continue;
             }
-            if (c2.type === 11) {
+            if (11 === c2.type) {
               l2.push(parseFloat(c2.value));
               continue;
             }
-            if (c2.type === 2) {
+            if (2 === c2.type) {
               _2 = [];
               l2.push(_2), f2(), u2 = 4, l2 = _2;
               continue;
             }
-            if (c2.type === 3) {
+            if (3 === c2.type) {
               y2 = {};
               n3 && (y2.$vscodeTextmateLocation = c2.toLocation(t3)), l2.push(y2), f2(), u2 = 1, l2 = y2;
               continue;
@@ -25522,7 +25504,7 @@ var main = { exports: {} };
           }
           g2("unknown state");
         }
-        return p2.length !== 0 && g2("unclosed constructs"), l2;
+        return 0 !== p2.length && g2("unclosed constructs"), l2;
       };
       var i2 = function(e3) {
         this.source = e3, this.pos = 0, this.len = e3.length, this.line = 1, this.char = 0;
@@ -25539,19 +25521,19 @@ var main = { exports: {} };
         for (var n3, i3 = e3.source, o3 = e3.pos, s3 = e3.len, a2 = e3.line, c2 = e3.char; ; ) {
           if (o3 >= s3)
             return false;
-          if ((n3 = i3.charCodeAt(o3)) !== 32 && n3 !== 9 && n3 !== 13) {
-            if (n3 !== 10)
+          if (32 !== (n3 = i3.charCodeAt(o3)) && 9 !== n3 && 13 !== n3) {
+            if (10 !== n3)
               break;
             o3++, a2++, c2 = 0;
           } else
             o3++, c2++;
         }
-        if (t3.offset = o3, t3.line = a2, t3.char = c2, n3 === 34) {
+        if (t3.offset = o3, t3.line = a2, t3.char = c2, 34 === n3) {
           for (t3.type = 1, o3++, c2++; ; ) {
             if (o3 >= s3)
               return false;
-            if (n3 = i3.charCodeAt(o3), o3++, c2++, n3 !== 92) {
-              if (n3 === 34)
+            if (n3 = i3.charCodeAt(o3), o3++, c2++, 92 !== n3) {
+              if (34 === n3)
                 break;
             } else
               o3++, c2++;
@@ -25581,53 +25563,53 @@ var main = { exports: {} };
             }
             throw new Error("unreachable");
           });
-        } else if (n3 === 91)
+        } else if (91 === n3)
           t3.type = 2, o3++, c2++;
-        else if (n3 === 123)
+        else if (123 === n3)
           t3.type = 3, o3++, c2++;
-        else if (n3 === 93)
+        else if (93 === n3)
           t3.type = 4, o3++, c2++;
-        else if (n3 === 125)
+        else if (125 === n3)
           t3.type = 5, o3++, c2++;
-        else if (n3 === 58)
+        else if (58 === n3)
           t3.type = 6, o3++, c2++;
-        else if (n3 === 44)
+        else if (44 === n3)
           t3.type = 7, o3++, c2++;
-        else if (n3 === 110) {
-          if (t3.type = 8, o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 117)
+        else if (110 === n3) {
+          if (t3.type = 8, o3++, c2++, 117 !== (n3 = i3.charCodeAt(o3)))
             return false;
-          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 108)
+          if (o3++, c2++, 108 !== (n3 = i3.charCodeAt(o3)))
             return false;
-          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 108)
-            return false;
-          o3++, c2++;
-        } else if (n3 === 116) {
-          if (t3.type = 9, o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 114)
-            return false;
-          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 117)
-            return false;
-          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 101)
+          if (o3++, c2++, 108 !== (n3 = i3.charCodeAt(o3)))
             return false;
           o3++, c2++;
-        } else if (n3 === 102) {
-          if (t3.type = 10, o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 97)
+        } else if (116 === n3) {
+          if (t3.type = 9, o3++, c2++, 114 !== (n3 = i3.charCodeAt(o3)))
             return false;
-          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 108)
+          if (o3++, c2++, 117 !== (n3 = i3.charCodeAt(o3)))
             return false;
-          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 115)
+          if (o3++, c2++, 101 !== (n3 = i3.charCodeAt(o3)))
             return false;
-          if (o3++, c2++, (n3 = i3.charCodeAt(o3)) !== 101)
+          o3++, c2++;
+        } else if (102 === n3) {
+          if (t3.type = 10, o3++, c2++, 97 !== (n3 = i3.charCodeAt(o3)))
+            return false;
+          if (o3++, c2++, 108 !== (n3 = i3.charCodeAt(o3)))
+            return false;
+          if (o3++, c2++, 115 !== (n3 = i3.charCodeAt(o3)))
+            return false;
+          if (o3++, c2++, 101 !== (n3 = i3.charCodeAt(o3)))
             return false;
           o3++, c2++;
         } else
           for (t3.type = 11; ; ) {
             if (o3 >= s3)
               return false;
-            if (!((n3 = i3.charCodeAt(o3)) === 46 || n3 >= 48 && n3 <= 57 || n3 === 101 || n3 === 69 || n3 === 45 || n3 === 43))
+            if (!(46 === (n3 = i3.charCodeAt(o3)) || n3 >= 48 && n3 <= 57 || 101 === n3 || 69 === n3 || 45 === n3 || 43 === n3))
               break;
             o3++, c2++;
           }
-        return t3.len = o3 - t3.offset, t3.value === null && (t3.value = i3.substr(t3.offset, t3.len)), e3.pos = o3, e3.line = a2, e3.char = c2, true;
+        return t3.len = o3 - t3.offset, null === t3.value && (t3.value = i3.substr(t3.offset, t3.len)), e3.pos = o3, e3.line = a2, e3.char = c2, true;
       }
     }, function(e2, t2, n2) {
       Object.defineProperty(t2, "__esModule", { value: true });
@@ -25646,12 +25628,12 @@ var main = { exports: {} };
           var c3 = t3[s3];
           if (c3.settings) {
             var u3 = void 0;
-            if (typeof c3.scope == "string")
+            if ("string" == typeof c3.scope)
               u3 = c3.scope.replace(/^[,]+/, "").replace(/[,]+$/, "").split(",");
             else
               u3 = Array.isArray(c3.scope) ? c3.scope : [""];
             var l3 = -1;
-            if (typeof c3.settings.fontStyle == "string") {
+            if ("string" == typeof c3.settings.fontStyle) {
               l3 = 0;
               for (var h3 = 0, p3 = (g2 = c3.settings.fontStyle.split(" ")).length; h3 < p3; h3++) {
                 switch (g2[h3]) {
@@ -25667,9 +25649,9 @@ var main = { exports: {} };
               }
             }
             var f2 = null;
-            typeof c3.settings.foreground == "string" && i2(c3.settings.foreground) && (f2 = c3.settings.foreground);
+            "string" == typeof c3.settings.foreground && i2(c3.settings.foreground) && (f2 = c3.settings.foreground);
             var d2 = null;
-            typeof c3.settings.background == "string" && i2(c3.settings.background) && (d2 = c3.settings.background);
+            "string" == typeof c3.settings.background && i2(c3.settings.background) && (d2 = c3.settings.background);
             for (h3 = 0, p3 = u3.length; h3 < p3; h3++) {
               var g2, m2 = (g2 = u3[h3].trim().split(" "))[g2.length - 1], _2 = null;
               g2.length > 1 && (_2 = g2.slice(0, g2.length - 1)).reverse(), n3[o3++] = new r2(m2, _2, s3, l3, f2, d2);
@@ -25681,11 +25663,11 @@ var main = { exports: {} };
       function s2(e3, t3) {
         e3.sort(function(e4, t4) {
           var n4 = u2(e4.scope, t4.scope);
-          return n4 !== 0 || (n4 = l2(e4.parentScopes, t4.parentScopes)) !== 0 ? n4 : e4.index - t4.index;
+          return 0 !== n4 || 0 !== (n4 = l2(e4.parentScopes, t4.parentScopes)) ? n4 : e4.index - t4.index;
         });
-        for (var n3 = 0, r3 = "#000000", i3 = "#ffffff"; e3.length >= 1 && e3[0].scope === ""; ) {
+        for (var n3 = 0, r3 = "#000000", i3 = "#ffffff"; e3.length >= 1 && "" === e3[0].scope; ) {
           var o3 = e3.shift();
-          o3.fontStyle !== -1 && (n3 = o3.fontStyle), o3.foreground !== null && (r3 = o3.foreground), o3.background !== null && (i3 = o3.background);
+          -1 !== o3.fontStyle && (n3 = o3.fontStyle), null !== o3.foreground && (r3 = o3.foreground), null !== o3.background && (i3 = o3.background);
         }
         for (var s3 = new a2(t3), f2 = new h2(0, null, n3, s3.getId(r3), s3.getId(i3)), d2 = new p2(new h2(0, null, -1, 0, 0), []), g2 = 0, m2 = e3.length; g2 < m2; g2++) {
           var _2 = e3[g2];
@@ -25704,7 +25686,7 @@ var main = { exports: {} };
             this._isFrozen = false;
         }
         return e3.prototype.getId = function(e4) {
-          if (e4 === null)
+          if (null === e4)
             return 0;
           e4 = e4.toUpperCase();
           var t3 = this._color2id[e4];
@@ -25738,7 +25720,7 @@ var main = { exports: {} };
         return e3 < t3 ? -1 : e3 > t3 ? 1 : 0;
       }
       function l2(e3, t3) {
-        if (e3 === null && t3 === null)
+        if (null === e3 && null === t3)
           return 0;
         if (!e3)
           return -1;
@@ -25748,7 +25730,7 @@ var main = { exports: {} };
         if (n3 === r3) {
           for (var i3 = 0; i3 < n3; i3++) {
             var o3 = u2(e3[i3], t3[i3]);
-            if (o3 !== 0)
+            if (0 !== o3)
               return o3;
           }
           return 0;
@@ -25767,19 +25749,19 @@ var main = { exports: {} };
             t3[n3] = e4[n3].clone();
           return t3;
         }, e3.prototype.acceptOverwrite = function(e4, t3, n3, r3) {
-          this.scopeDepth > e4 ? console.log("how did this happen?") : this.scopeDepth = e4, t3 !== -1 && (this.fontStyle = t3), n3 !== 0 && (this.foreground = n3), r3 !== 0 && (this.background = r3);
+          this.scopeDepth > e4 ? console.log("how did this happen?") : this.scopeDepth = e4, -1 !== t3 && (this.fontStyle = t3), 0 !== n3 && (this.foreground = n3), 0 !== r3 && (this.background = r3);
         }, e3;
       }();
       t2.ThemeTrieElementRule = h2;
       var p2 = function() {
         function e3(e4, t3, n3) {
-          t3 === void 0 && (t3 = []), n3 === void 0 && (n3 = {}), this._mainRule = e4, this._rulesWithParentScopes = t3, this._children = n3;
+          void 0 === t3 && (t3 = []), void 0 === n3 && (n3 = {}), this._mainRule = e4, this._rulesWithParentScopes = t3, this._children = n3;
         }
         return e3._sortBySpecificity = function(e4) {
-          return e4.length === 1 || e4.sort(this._cmpBySpecificity), e4;
+          return 1 === e4.length || e4.sort(this._cmpBySpecificity), e4;
         }, e3._cmpBySpecificity = function(e4, t3) {
           if (e4.scopeDepth === t3.scopeDepth) {
-            var n3 = e4.parentScopes, r3 = t3.parentScopes, i3 = n3 === null ? 0 : n3.length, o3 = r3 === null ? 0 : r3.length;
+            var n3 = e4.parentScopes, r3 = t3.parentScopes, i3 = null === n3 ? 0 : n3.length, o3 = null === r3 ? 0 : r3.length;
             if (i3 === o3)
               for (var s3 = 0; s3 < i3; s3++) {
                 var a3 = n3[s3].length, c3 = r3[s3].length;
@@ -25790,24 +25772,24 @@ var main = { exports: {} };
           }
           return t3.scopeDepth - e4.scopeDepth;
         }, e3.prototype.match = function(t3) {
-          if (t3 === "")
+          if ("" === t3)
             return e3._sortBySpecificity([].concat(this._mainRule).concat(this._rulesWithParentScopes));
           var n3, r3, i3 = t3.indexOf(".");
-          return i3 === -1 ? (n3 = t3, r3 = "") : (n3 = t3.substring(0, i3), r3 = t3.substring(i3 + 1)), this._children.hasOwnProperty(n3) ? this._children[n3].match(r3) : e3._sortBySpecificity([].concat(this._mainRule).concat(this._rulesWithParentScopes));
+          return -1 === i3 ? (n3 = t3, r3 = "") : (n3 = t3.substring(0, i3), r3 = t3.substring(i3 + 1)), this._children.hasOwnProperty(n3) ? this._children[n3].match(r3) : e3._sortBySpecificity([].concat(this._mainRule).concat(this._rulesWithParentScopes));
         }, e3.prototype.insert = function(t3, n3, r3, i3, o3, s3) {
-          if (n3 !== "") {
+          if ("" !== n3) {
             var a3, c3, u3, l3 = n3.indexOf(".");
-            l3 === -1 ? (a3 = n3, c3 = "") : (a3 = n3.substring(0, l3), c3 = n3.substring(l3 + 1)), this._children.hasOwnProperty(a3) ? u3 = this._children[a3] : (u3 = new e3(this._mainRule.clone(), h2.cloneArr(this._rulesWithParentScopes)), this._children[a3] = u3), u3.insert(t3 + 1, c3, r3, i3, o3, s3);
+            -1 === l3 ? (a3 = n3, c3 = "") : (a3 = n3.substring(0, l3), c3 = n3.substring(l3 + 1)), this._children.hasOwnProperty(a3) ? u3 = this._children[a3] : (u3 = new e3(this._mainRule.clone(), h2.cloneArr(this._rulesWithParentScopes)), this._children[a3] = u3), u3.insert(t3 + 1, c3, r3, i3, o3, s3);
           } else
             this._doInsertHere(t3, r3, i3, o3, s3);
         }, e3.prototype._doInsertHere = function(e4, t3, n3, r3, i3) {
-          if (t3 !== null) {
+          if (null !== t3) {
             for (var o3 = 0, s3 = this._rulesWithParentScopes.length; o3 < s3; o3++) {
               var a3 = this._rulesWithParentScopes[o3];
-              if (l2(a3.parentScopes, t3) === 0)
+              if (0 === l2(a3.parentScopes, t3))
                 return void a3.acceptOverwrite(e4, n3, r3, i3);
             }
-            n3 === -1 && (n3 = this._mainRule.fontStyle), r3 === 0 && (r3 = this._mainRule.foreground), i3 === 0 && (i3 = this._mainRule.background), this._rulesWithParentScopes.push(new h2(e4, t3, n3, r3, i3));
+            -1 === n3 && (n3 = this._mainRule.fontStyle), 0 === r3 && (r3 = this._mainRule.foreground), 0 === i3 && (i3 = this._mainRule.background), this._rulesWithParentScopes.push(new h2(e4, t3, n3, r3, i3));
           } else
             this._mainRule.acceptOverwrite(e4, n3, r3, i3);
         }, e3;
@@ -27918,7 +27900,7 @@ var flexsearch_bundle = { exports: {} };
     self._factory = _f;
     var t;
     function u(a2) {
-      return typeof a2 !== "undefined" ? a2 : true;
+      return "undefined" !== typeof a2 ? a2 : true;
     }
     function aa(a2) {
       const b2 = Array(a2);
@@ -27933,17 +27915,17 @@ var flexsearch_bundle = { exports: {} };
       return b2.length - a2.length;
     }
     function x(a2) {
-      return typeof a2 === "string";
+      return "string" === typeof a2;
     }
     function C(a2) {
-      return typeof a2 === "object";
+      return "object" === typeof a2;
     }
     function D(a2) {
-      return typeof a2 === "function";
+      return "function" === typeof a2;
     }
     function ca(a2, b2) {
       var c2 = da;
-      if (a2 && (b2 && (a2 = E(a2, b2)), this.H && (a2 = E(a2, this.H)), this.J && 1 < a2.length && (a2 = E(a2, this.J)), c2 || c2 === "")) {
+      if (a2 && (b2 && (a2 = E(a2, b2)), this.H && (a2 = E(a2, this.H)), this.J && 1 < a2.length && (a2 = E(a2, this.J)), c2 || "" === c2)) {
         a2 = a2.split(c2);
         if (this.filter) {
           b2 = this.filter;
@@ -28074,7 +28056,7 @@ var flexsearch_bundle = { exports: {} };
       return e2;
     }
     function J(a2) {
-      this.l = a2 !== true && a2;
+      this.l = true !== a2 && a2;
       this.cache = v();
       this.h = [];
     }
@@ -28120,7 +28102,7 @@ var flexsearch_bundle = { exports: {} };
         x(a2) ? a2 = qa[a2] : (c2 = a2.preset) && (a2 = Object.assign({}, c2[c2], a2));
         c2 = a2.charset;
         var d2 = a2.lang;
-        x(c2) && (c2.indexOf(":") === -1 && (c2 += ":default"), c2 = G[c2]);
+        x(c2) && (-1 === c2.indexOf(":") && (c2 += ":default"), c2 = G[c2]);
         x(d2) && (d2 = ka[d2]);
       } else
         a2 = {};
@@ -28129,7 +28111,7 @@ var flexsearch_bundle = { exports: {} };
       this.register = b2 || v();
       this.D = e2 = a2.resolution || 9;
       this.G = b2 = c2 && c2.G || a2.tokenize || "strict";
-      this.depth = b2 === "strict" && g2.depth;
+      this.depth = "strict" === b2 && g2.depth;
       this.l = u(g2.bidirectional);
       this.s = f2 = u(a2.optimize);
       this.m = u(a2.fastupdate);
@@ -28156,7 +28138,7 @@ var flexsearch_bundle = { exports: {} };
       return this.add(a2, b2, true);
     };
     t.add = function(a2, b2, c2, d2) {
-      if (b2 && (a2 || a2 === 0)) {
+      if (b2 && (a2 || 0 === a2)) {
         if (!d2 && !c2 && this.register[a2])
           return this.update(a2, b2);
         b2 = this.encode(b2);
@@ -28214,7 +28196,7 @@ var flexsearch_bundle = { exports: {} };
     function M(a2, b2, c2, d2, e2, f2, g2) {
       let h2 = g2 ? a2.h : a2.map;
       if (!b2[c2] || g2 && !b2[c2][g2])
-        a2.s && (h2 = h2[d2]), g2 ? (b2 = b2[c2] || (b2[c2] = v()), b2[g2] = 1, h2 = h2[g2] || (h2[g2] = v())) : b2[c2] = 1, h2 = h2[c2] || (h2[c2] = []), a2.s || (h2 = h2[d2] || (h2[d2] = [])), f2 && h2.indexOf(e2) !== -1 || (h2[h2.length] = e2, a2.m && (a2 = a2.register[e2] || (a2.register[e2] = []), a2[a2.length] = h2));
+        a2.s && (h2 = h2[d2]), g2 ? (b2 = b2[c2] || (b2[c2] = v()), b2[g2] = 1, h2 = h2[g2] || (h2[g2] = v())) : b2[c2] = 1, h2 = h2[c2] || (h2[c2] = []), a2.s || (h2 = h2[d2] || (h2[d2] = [])), f2 && -1 !== h2.indexOf(e2) || (h2[h2.length] = e2, a2.m && (a2 = a2.register[e2] || (a2.register[e2] = []), a2[a2.length] = h2));
     }
     t.search = function(a2, b2, c2) {
       c2 || (!b2 && C(a2) ? (c2 = a2, a2 = c2.query) : C(b2) && (c2 = b2));
@@ -28241,13 +28223,13 @@ var flexsearch_bundle = { exports: {} };
       if (!e2)
         return d2;
       b2 || (b2 = 100);
-      h2 = this.depth && 1 < e2 && h2 !== false;
+      h2 = this.depth && 1 < e2 && false !== h2;
       c2 = 0;
       let m2;
       h2 ? (m2 = a2[0], c2 = 1) : 1 < e2 && a2.sort(ba);
       for (let n2, w2; c2 < e2; c2++) {
         w2 = a2[c2];
-        h2 ? (n2 = sa(this, d2, f2, b2, g2, e2 === 2, w2, m2), f2 && n2 === false && d2.length || (m2 = w2)) : n2 = sa(this, d2, f2, b2, g2, e2 === 1, w2);
+        h2 ? (n2 = sa(this, d2, f2, b2, g2, 2 === e2, w2, m2), f2 && false === n2 && d2.length || (m2 = w2)) : n2 = sa(this, d2, f2, b2, g2, 1 === e2, w2);
         if (n2)
           return n2;
         if (f2 && c2 === e2 - 1) {
@@ -28260,7 +28242,7 @@ var flexsearch_bundle = { exports: {} };
             }
             return d2;
           }
-          if (k2 === 1)
+          if (1 === k2)
             return ta(d2[0], b2, g2);
         }
       }
@@ -28287,7 +28269,7 @@ var flexsearch_bundle = { exports: {} };
       return !c2 && k2;
     }
     function ta(a2, b2, c2) {
-      a2 = a2.length === 1 ? a2[0] : [].concat.apply([], a2);
+      a2 = 1 === a2.length ? a2[0] : [].concat.apply([], a2);
       return c2 || a2.length > b2 ? a2.slice(c2, c2 + b2) : a2;
     }
     function ua(a2, b2, c2, d2) {
@@ -28312,7 +28294,7 @@ var flexsearch_bundle = { exports: {} };
         if (this.cache) {
           b2 = this.cache;
           for (let d2 = 0, e2, f2; d2 < b2.h.length; d2++)
-            f2 = b2.h[d2], e2 = b2.cache[f2], e2.indexOf(a2) !== -1 && (b2.h.splice(d2--, 1), delete b2.cache[f2]);
+            f2 = b2.h[d2], e2 = b2.cache[f2], -1 !== e2.indexOf(a2) && (b2.h.splice(d2--, 1), delete b2.cache[f2]);
         }
       }
       return this;
@@ -28321,7 +28303,7 @@ var flexsearch_bundle = { exports: {} };
       let f2 = 0;
       if (a2.constructor === Array)
         if (e2)
-          b2 = a2.indexOf(b2), b2 !== -1 ? 1 < a2.length && (a2.splice(b2, 1), f2++) : f2++;
+          b2 = a2.indexOf(b2), -1 !== b2 ? 1 < a2.length && (a2.splice(b2, 1), f2++) : f2++;
         else {
           e2 = Math.min(a2.length, c2);
           for (let g2 = 0, h2; g2 < e2; g2++)
@@ -28393,11 +28375,11 @@ var flexsearch_bundle = { exports: {} };
           a2 = a2.factory;
           b2 = d2.encode;
           d2.cache = false;
-          b2 && b2.indexOf("function") === 0 && (d2.encode = Function("return " + b2)());
+          b2 && 0 === b2.indexOf("function") && (d2.encode = Function("return " + b2)());
           a2 ? (Function("return " + a2)()(self), self._index = new self.FlexSearch.Index(d2), delete self.FlexSearch) : self._index = new K(d2);
           break;
         default:
-          a2 = a2.id, b2 = b2[d2].apply(b2, c2), postMessage(d2 === "search" ? { id: a2, msg: b2 } : { id: a2 });
+          a2 = a2.id, b2 = b2[d2].apply(b2, c2), postMessage("search" === d2 ? { id: a2, msg: b2 } : { id: a2 });
       }
     }
     let wa = 0;
@@ -28463,7 +28445,7 @@ var flexsearch_bundle = { exports: {} };
       this.register = v();
       this.key = (c2 = b2.key || b2.id) && S(c2, this.A) || "id";
       this.m = u(a2.fastupdate);
-      this.C = (c2 = b2.store) && c2 !== true && [];
+      this.C = (c2 = b2.store) && true !== c2 && [];
       this.store = c2 && v();
       this.I = (c2 = b2.tag) && S(c2, this.A);
       this.l = c2 && v();
@@ -28529,7 +28511,7 @@ var flexsearch_bundle = { exports: {} };
     t = Q.prototype;
     t.add = function(a2, b2, c2) {
       C(a2) && (b2 = a2, a2 = T(b2, this.key));
-      if (b2 && (a2 || a2 === 0)) {
+      if (b2 && (a2 || 0 === a2)) {
         if (!c2 && this.register[a2])
           return this.update(a2, b2);
         for (let d2 = 0, e2, f2; d2 < this.h.length; d2++)
@@ -28538,7 +28520,7 @@ var flexsearch_bundle = { exports: {} };
           let d2 = T(b2, this.I), e2 = v();
           x(d2) && (d2 = [d2]);
           for (let f2 = 0, g2, h2; f2 < d2.length; f2++)
-            if (g2 = d2[f2], !e2[g2] && (e2[g2] = 1, h2 = this.l[g2] || (this.l[g2] = []), !c2 || h2.indexOf(a2) === -1)) {
+            if (g2 = d2[f2], !e2[g2] && (e2[g2] = 1, h2 = this.l[g2] || (this.l[g2] = []), !c2 || -1 === h2.indexOf(a2))) {
               if (h2[h2.length] = a2, this.m) {
                 const k2 = this.register[a2] || (this.register[a2] = []);
                 k2[k2.length] = h2;
@@ -28572,7 +28554,7 @@ var flexsearch_bundle = { exports: {} };
           for (let c2 in this.l) {
             b2 = this.l[c2];
             const d2 = b2.indexOf(a2);
-            d2 !== -1 && (1 < b2.length ? b2.splice(d2, 1) : delete this.l[c2]);
+            -1 !== d2 && (1 < b2.length ? b2.splice(d2, 1) : delete this.l[c2]);
           }
         this.store && delete this.store[a2];
         delete this.register[a2];
@@ -28589,7 +28571,7 @@ var flexsearch_bundle = { exports: {} };
           k2 = (g2 = c2.pluck) || c2.index || c2.field;
           m2 = c2.tag;
           h2 = this.store && c2.enrich;
-          n2 = c2.bool === "and";
+          n2 = "and" === c2.bool;
           b2 = c2.limit || 100;
           w2 = c2.offset || 0;
           if (m2 && (x(m2) && (m2 = [m2]), !a2)) {
@@ -28808,10 +28790,10 @@ var gun = { exports: {} };
       };
       String.match = function(t2, o2) {
         var tmp, u2;
-        if (typeof t2 !== "string") {
+        if ("string" !== typeof t2) {
           return false;
         }
-        if (typeof o2 == "string") {
+        if ("string" == typeof o2) {
           o2 = { "=": o2 };
         }
         o2 = o2 || {};
@@ -28861,7 +28843,7 @@ var gun = { exports: {} };
       };
       Object.empty = function(o2, n2) {
         for (var k2 in o2) {
-          if (has2.call(o2, k2) && (!n2 || n2.indexOf(k2) == -1)) {
+          if (has2.call(o2, k2) && (!n2 || -1 == n2.indexOf(k2))) {
             return false;
           }
         }
@@ -28892,12 +28874,12 @@ var gun = { exports: {} };
       })();
       (function() {
         var sT = setTimeout, t2 = sT.turn = sT.turn || function(f3) {
-          s2.push(f3) == 1 && p2(T2);
+          1 == s2.push(f3) && p2(T2);
         }, s2 = t2.s = [], p2 = sT.poll, i2 = 0, f2, T2 = function() {
           if (f2 = s2[i2++]) {
             f2();
           }
-          if (i2 == s2.length || i2 == 99) {
+          if (i2 == s2.length || 99 == i2) {
             s2 = t2.s = s2.slice(i2);
             i2 = 0;
           }
@@ -28932,7 +28914,7 @@ var gun = { exports: {} };
         if (!tag) {
           return { to: onto };
         }
-        var u2, f2 = typeof arg == "function", tag = (this.tag || (this.tag = {}))[tag] || f2 && (this.tag[tag] = { tag, to: onto._ = { next: function(arg2) {
+        var u2, f2 = "function" == typeof arg, tag = (this.tag || (this.tag = {}))[tag] || f2 && (this.tag[tag] = { tag, to: onto._ = { next: function(arg2) {
           var tmp;
           if (tmp = this.to) {
             tmp.next(arg2);
@@ -28971,7 +28953,7 @@ var gun = { exports: {} };
     })(USE, "./onto");
     USE(function(module3) {
       module3.exports = function(v2) {
-        return v2 === null || typeof v2 === "string" || typeof v2 === "boolean" || typeof v2 === "number" && v2 != Infinity && v2 != -Infinity && v2 === v2 || !!v2 && typeof v2["#"] == "string" && Object.keys(v2).length === 1 && v2["#"];
+        return v2 === null || "string" === typeof v2 || "boolean" === typeof v2 || "number" === typeof v2 && v2 != Infinity && v2 != -Infinity && v2 === v2 || !!v2 && "string" == typeof v2["#"] && Object.keys(v2).length === 1 && v2["#"];
       };
     })(USE, "./valid");
     USE(function(module3) {
@@ -28990,7 +28972,7 @@ var gun = { exports: {} };
         if (!tmp) {
           return;
         }
-        return typeof (tmp = tmp[k2]) == "number" ? tmp : NI;
+        return "number" == typeof (tmp = tmp[k2]) ? tmp : NI;
       };
       State.ify = function(n2, k2, s2, v2, soul) {
         (n2 = n2 || {})._ = n2._ || {};
@@ -28999,7 +28981,7 @@ var gun = { exports: {} };
         }
         var tmp = n2._[">"] || (n2._[">"] = {});
         if (u2 !== k2 && k2 !== "_") {
-          if (typeof s2 == "number") {
+          if ("number" == typeof s2) {
             tmp[k2] = s2;
           }
           if (u2 !== v2) {
@@ -29053,7 +29035,7 @@ var gun = { exports: {} };
           return;
         }
         var lack = (this.opt || {}).lack || 9e3;
-        if (!(typeof cb == "function")) {
+        if (!("function" == typeof cb)) {
           if (!cb) {
             return;
           }
@@ -29141,7 +29123,7 @@ var gun = { exports: {} };
           }
           dup.track(tmp);
           tmp = msg._;
-          msg._ = typeof tmp == "function" ? tmp : function() {
+          msg._ = "function" == typeof tmp ? tmp : function() {
           };
           msg.$ && msg.$ === (msg.$._ || "").$ || (msg.$ = gun2);
           if (msg["@"] && !msg.put) {
@@ -29219,7 +29201,7 @@ var gun = { exports: {} };
             var i2 = 0, key;
             o2 = o2 || 0;
             while (o2++ < 9 && (key = kl[i2++])) {
-              if (key === "_") {
+              if ("_" === key) {
                 continue;
               }
               var val = node[key], state = states[key];
@@ -29383,7 +29365,7 @@ var gun = { exports: {} };
             return root.on("get", msg);
           }
           if (has2) {
-            if (typeof has2 != "string" || u2 === node[has2]) {
+            if ("string" != typeof has2 || u2 === node[has2]) {
               return root.on("get", msg);
             }
             node = state_ify({}, has2, state_is(node, has2), node[has2], soul);
@@ -29438,7 +29420,7 @@ var gun = { exports: {} };
           if (!Object.plain(at2.opt)) {
             at2.opt = opt;
           }
-          if (typeof tmp == "string") {
+          if ("string" == typeof tmp) {
             tmp = [tmp];
           }
           if (!Object.plain(at2.opt.peers)) {
@@ -29454,7 +29436,7 @@ var gun = { exports: {} };
           }
           obj_each(opt, function each(k2) {
             var v2 = this[k2];
-            if (this && this.hasOwnProperty(k2) || typeof v2 == "string" || Object.empty(v2)) {
+            if (this && this.hasOwnProperty(k2) || "string" == typeof v2 || Object.empty(v2)) {
               this[k2] = v2;
               return;
             }
@@ -29502,9 +29484,9 @@ var gun = { exports: {} };
       Gun2.chain.back = function(n2, opt) {
         var tmp;
         n2 = n2 || 1;
-        if (n2 === -1 || n2 === Infinity) {
+        if (-1 === n2 || Infinity === n2) {
           return this._.root.$;
-        } else if (n2 === 1) {
+        } else if (1 === n2) {
           return (this._.back || this._).$;
         }
         var gun2 = this, at2 = gun2._;
@@ -29523,13 +29505,13 @@ var gun = { exports: {} };
           }
           return;
         }
-        if (typeof n2 == "function") {
+        if ("function" == typeof n2) {
           var yes, tmp = { back: at2 };
           while ((tmp = tmp.back) && u2 === (yes = n2(tmp, opt))) {
           }
           return yes;
         }
-        if (typeof n2 == "number") {
+        if ("number" == typeof n2) {
           return (at2.back || at2).$.back(n2 - 1);
         }
         return this;
@@ -29622,7 +29604,7 @@ var gun = { exports: {} };
             }
             gun2 = cat.root.$.get(soul);
             return setTimeout.each(Object.keys(tmp).sort(), function(k2) {
-              if (k2 == "_" || u2 === (state2 = state_is(tmp, k2))) {
+              if ("_" == k2 || u2 === (state2 = state_is(tmp, k2))) {
                 return;
               }
               cat.on("in", { $: gun2, put: { "#": soul, ".": k2, "=": tmp[k2], ">": state2 }, VIA: msg });
@@ -29655,7 +29637,7 @@ var gun = { exports: {} };
         }
         if (!at2.soul && state2 >= state_is(root.graph[soul], key) && (sat = (root.$.get(soul)._.next || "")[key])) {
           sat.put = change;
-          if (typeof (tmp = valid(change)) == "string") {
+          if ("string" == typeof (tmp = valid(change))) {
             sat.put = root.$.get(tmp)._.put || change;
           }
         }
@@ -29691,7 +29673,7 @@ var gun = { exports: {} };
         }
         var put = msg.put || "", link4 = put["="] || put[":"], tmp;
         var root = cat.root, tat = root.$.get(put["#"]).get(put["."])._;
-        if (typeof (link4 = valid(link4)) != "string") {
+        if ("string" != typeof (link4 = valid(link4))) {
           if (this === Gun2.on) {
             (tat.echo || (tat.echo = {}))[cat.id] = cat;
           }
@@ -29761,7 +29743,7 @@ var gun = { exports: {} };
         link4 = valid(change);
         tmp = msg.$._ || "";
         if (link4 === tmp.link || cat.has && !tmp.link) {
-          if ((root.pass || "")[cat.id] && typeof link4 !== "string")
+          if ((root.pass || "")[cat.id] && "string" !== typeof link4)
             ;
           else {
             return;
@@ -29775,7 +29757,7 @@ var gun = { exports: {} };
         var as2 = this.as, at2 = as2.$._;
         at2.root;
         var get2 = as2.get || "", tmp = (msg.put || "")[get2["#"]] || "";
-        if (!msg.put || typeof get2["."] == "string" && u2 === tmp[get2["."]]) {
+        if (!msg.put || "string" == typeof get2["."] && u2 === tmp[get2["."]]) {
           if (u2 !== at2.put) {
             return;
           }
@@ -29817,7 +29799,7 @@ var gun = { exports: {} };
             gun2 = key && cache2(key, back);
           }
           gun2 = gun2 && gun2.$;
-        } else if (typeof key == "function") {
+        } else if ("function" == typeof key) {
           let any = function(msg, eve, f2) {
             if (any.stun) {
               return;
@@ -29829,7 +29811,7 @@ var gun = { exports: {} };
             if (odd || u2 === data2) {
               data2 = u2 === ((tmp2 = msg.put) || "")["="] ? u2 === (tmp2 || "")[":"] ? tmp2 : tmp2[":"] : tmp2["="];
             }
-            if (typeof (tmp2 = Gun2.valid(data2)) == "string") {
+            if ("string" == typeof (tmp2 = Gun2.valid(data2))) {
               data2 = u2 === (tmp2 = root.$.get(tmp2)._.put) ? opt.not ? u2 : data2 : tmp2;
             }
             if (opt.not && u2 === data2) {
@@ -29894,7 +29876,7 @@ var gun = { exports: {} };
             msg.put = data2;
             opt.ok.call(opt.as, msg, eve || any);
           };
-          if (cb === true) {
+          if (true === cb) {
             return soul(this, key, cb, as2), this;
           }
           gun2 = this;
@@ -29919,9 +29901,9 @@ var gun = { exports: {} };
           cat.on("out", opt.out);
           root.pass = tmp;
           return gun2;
-        } else if (typeof key == "number") {
+        } else if ("number" == typeof key) {
           return this.get("" + key, cb, as2);
-        } else if (typeof (tmp = valid(key)) == "string") {
+        } else if ("string" == typeof (tmp = valid(key))) {
           return this.get(tmp, cb, as2);
         } else if (tmp = this.get.next) {
           gun2 = tmp(this, key);
@@ -29933,7 +29915,7 @@ var gun = { exports: {} };
           }
           return gun2;
         }
-        if (cb && typeof cb == "function") {
+        if (cb && "function" == typeof cb) {
           gun2.get(cb, as2);
         }
         return gun2;
@@ -30005,9 +29987,9 @@ var gun = { exports: {} };
         as2.ack = as2.ack || cb;
         as2.via = as2.via || gun2;
         as2.data = as2.data || data2;
-        as2.soul || (as2.soul = at2.soul || typeof cb == "string" && cb);
+        as2.soul || (as2.soul = at2.soul || "string" == typeof cb && cb);
         var s2 = as2.state = as2.state || Gun2.state();
-        if (typeof data2 == "function") {
+        if ("function" == typeof data2) {
           data2(function(d2) {
             as2.data = d2;
             gun2.put(u2, u2, as2);
@@ -30220,7 +30202,7 @@ var gun = { exports: {} };
           return gun2;
         }
         var opt = arg;
-        (opt = opt === true ? { change: true } : opt || {}).not = 1;
+        (opt = true === opt ? { change: true } : opt || {}).not = 1;
         opt.on = 1;
         gun2.get(tag, opt);
         return gun2;
@@ -30238,14 +30220,14 @@ var gun = { exports: {} };
           if (eve.stun) {
             return;
           }
-          if (one[id] === "") {
+          if ("" === one[id]) {
             return;
           }
-          if ((tmp = Gun2.valid(data2)) === true) {
+          if (true === (tmp = Gun2.valid(data2))) {
             once();
             return;
           }
-          if (typeof tmp == "string") {
+          if ("string" == typeof tmp) {
             return;
           }
           clearTimeout((cat.one || "")[id]);
@@ -30258,7 +30240,7 @@ var gun = { exports: {} };
             if (u2 === (tmp = at2.put)) {
               tmp = ((msg.$$ || "")._ || "").put;
             }
-            if (typeof Gun2.valid(tmp) == "string") {
+            if ("string" == typeof Gun2.valid(tmp)) {
               tmp = root.$.get(tmp)._.put;
               if (tmp === u2 && !f2) {
                 one[id] = setTimeout(function() {
@@ -30270,7 +30252,7 @@ var gun = { exports: {} };
             if (eve.stun) {
               return;
             }
-            if (one[id] === "") {
+            if ("" === one[id]) {
               return;
             }
             one[id] = "";
@@ -30412,7 +30394,7 @@ var gun = { exports: {} };
         if (soul = ((item || "")._ || "")["#"]) {
           (item = {})["#"] = soul;
         }
-        if (typeof (tmp = Gun2.valid(item)) == "string") {
+        if ("string" == typeof (tmp = Gun2.valid(item))) {
           return gun2.get(soul = tmp).put(item, cb, opt);
         }
         if (!Gun2.is(item)) {
@@ -30483,7 +30465,7 @@ var gun = { exports: {} };
           }
           var S2 = peer.SH = +new Date();
           var tmp = raw[0], msg;
-          if (tmp === "[") {
+          if ("[" === tmp) {
             parse2(raw, function(err, msg2) {
               if (err || !msg2) {
                 return mesh.say({ dam: "!", err: "DAM JSON parse error." }, peer);
@@ -30508,7 +30490,7 @@ var gun = { exports: {} };
             raw = "";
             return;
           }
-          if (tmp === "{" || (raw["#"] || Object.plain(raw)) && (msg = raw)) {
+          if ("{" === tmp || (raw["#"] || Object.plain(raw)) && (msg = raw)) {
             if (msg) {
               return hear.one(msg, peer, S2);
             }
@@ -30541,7 +30523,7 @@ var gun = { exports: {} };
           }
           (msg._ = function() {
           }).via = mesh.leap = peer;
-          if ((tmp = msg["><"]) && typeof tmp == "string") {
+          if ((tmp = msg["><"]) && "string" == typeof tmp) {
             tmp.slice(0, 99).split(",").forEach(function(k2) {
               this[k2] = 1;
             }, msg._.yo = {});
@@ -30720,7 +30702,7 @@ var gun = { exports: {} };
             if (tmp = meta.raw) {
               return tmp;
             }
-            if (typeof msg == "string") {
+            if ("string" == typeof msg) {
               return msg;
             }
             var hash2 = msg["##"], ack = msg["@"];
@@ -30779,7 +30761,7 @@ var gun = { exports: {} };
           };
         })();
         function flush(peer) {
-          var tmp = peer.batch, t2 = typeof tmp == "string";
+          var tmp = peer.batch, t2 = "string" == typeof tmp;
           if (t2) {
             tmp += "]";
           }
@@ -30792,7 +30774,7 @@ var gun = { exports: {} };
           }
           if (!t2) {
             try {
-              tmp = tmp.length === 1 ? tmp[0] : JSON.stringify(tmp);
+              tmp = 1 === tmp.length ? tmp[0] : JSON.stringify(tmp);
             } catch (e2) {
               return opt.log("DAM JSON stringify error", e2);
             }
@@ -30923,7 +30905,7 @@ var gun = { exports: {} };
           return;
         }
         var opt = root.opt;
-        if (opt.WebSocket === false) {
+        if (false === opt.WebSocket) {
           return;
         }
         var env = Gun2.window || {};
@@ -31019,7 +31001,7 @@ var gun = { exports: {} };
         var opt = root.opt;
         root.graph;
         var acks = [], disk, to2, size2, stop;
-        if (opt.localStorage === false) {
+        if (false === opt.localStorage) {
           return;
         }
         opt.prefix = opt.file || "gun/";
@@ -31099,7 +31081,7 @@ var gun = { exports: {} };
     var Type = Gun;
     Type.fn = Type.fn || { is: function(fn2) {
       DEP("fn");
-      return !!fn2 && typeof fn2 == "function";
+      return !!fn2 && "function" == typeof fn2;
     } };
     Type.bi = Type.bi || { is: function(b2) {
       DEP("bi");
@@ -31107,7 +31089,7 @@ var gun = { exports: {} };
     } };
     Type.num = Type.num || { is: function(n2) {
       DEP("num");
-      return !list_is(n2) && (n2 - parseFloat(n2) + 1 >= 0 || n2 === Infinity || n2 === -Infinity);
+      return !list_is(n2) && (n2 - parseFloat(n2) + 1 >= 0 || Infinity === n2 || -Infinity === n2);
     } };
     Type.text = Type.text || { is: function(t2) {
       DEP("text");
@@ -31137,10 +31119,10 @@ var gun = { exports: {} };
     Type.text.match = Type.text.match || function(t2, o2) {
       var tmp, u3;
       DEP("text.match");
-      if (typeof t2 !== "string") {
+      if ("string" !== typeof t2) {
         return false;
       }
-      if (typeof o2 == "string") {
+      if ("string" == typeof o2) {
         o2 = { "=": o2 };
       }
       o2 = o2 || {};
@@ -31288,7 +31270,7 @@ var gun = { exports: {} };
     })();
     (function() {
       function t2(k2, v2) {
-        if (arguments.length === 2) {
+        if (2 === arguments.length) {
           t2.r = t2.r || {};
           t2.r[k2] = v2;
           return;
@@ -31304,7 +31286,7 @@ var gun = { exports: {} };
       };
       Type.obj.map = map2 = Type.obj.map || function(l2, c2, _2) {
         DEP("obj.map");
-        var u3, i2 = 0, x2, r2, ll2, lle, f2 = typeof c2 == "function";
+        var u3, i2 = 0, x2, r2, ll2, lle, f2 = "function" == typeof c2;
         t2.r = u3;
         if (keys2 && obj_is(l2)) {
           ll2 = keys2(l2);
@@ -31451,7 +31433,7 @@ var gun = { exports: {} };
           o2 = {};
         } else if (typeof o2 === "string") {
           o2 = { soul: o2 };
-        } else if (typeof o2 == "function") {
+        } else if ("function" == typeof o2) {
           o2 = { map: o2 };
         }
         if (o2.map) {
@@ -31569,7 +31551,7 @@ var gun = { exports: {} };
           env = {};
         } else if (typeof env === "string") {
           env = { soul: env };
-        } else if (typeof env == "function") {
+        } else if ("function" == typeof env) {
           env.map = env;
         }
         if (typeof as2 === "string") {
@@ -31634,7 +31616,7 @@ var gun = { exports: {} };
         if (!k2) {
           return at2.node;
         }
-        if (is === true) {
+        if (true === is) {
           return v2;
         }
         tmp = node(env, { obj: v2, path: at2.path.concat(k2) });
@@ -31787,9 +31769,9 @@ var radix = { exports: {} };
             var __ = {};
             __[s2.slice(ii2)] = r2;
             ii2 = key.slice(ii2);
-            ii2 === "" ? __[""] = val : (__[ii2] = {})[""] = val;
+            "" === ii2 ? __[""] = val : (__[ii2] = {})[""] = val;
             t2[kk] = __;
-            if (Radix.debug && "" + kk === "undefined") {
+            if (Radix.debug && "undefined" === "" + kk) {
               console.log(0, kk);
               debugger;
             }
@@ -31801,7 +31783,7 @@ var radix = { exports: {} };
             return;
           }
           (t2[k2] || (t2[k2] = {}))[""] = val;
-          if (Radix.debug && "" + k2 === "undefined") {
+          if (Radix.debug && "undefined" === "" + k2) {
             console.log(1, k2);
             debugger;
           }
@@ -31825,12 +31807,12 @@ var radix = { exports: {} };
   }
   Radix.map = function rap(radix2, cb, opt, pre2) {
     pre2 = pre2 || [];
-    var t2 = typeof radix2 == "function" ? radix2.$ || {} : radix2;
+    var t2 = "function" == typeof radix2 ? radix2.$ || {} : radix2;
     //!opt && console.log("WHAT IS T?", JSON.stringify(t).length);
     if (!t2) {
       return;
     }
-    if (typeof t2 == "string") {
+    if ("string" == typeof t2) {
       if (Radix.debug) {
         throw ["BUG:", radix2, cb, opt, pre2];
       }
@@ -31840,7 +31822,7 @@ var radix = { exports: {} };
       $2.sort = Object.keys(t2).sort();
       return $2;
     }()).sort, rev;
-    opt = opt === true ? { branch: true } : opt || {};
+    opt = true === opt ? { branch: true } : opt || {};
     if (rev = opt.reverse) {
       keys2 = keys2.slice(0).reverse();
     }
@@ -31848,7 +31830,7 @@ var radix = { exports: {} };
     var i2 = 0, l2 = keys2.length;
     for (; i2 < l2; i2++) {
       var key = keys2[i2], tree = t2[key], tmp, p2, pt;
-      if (!tree || key === "" || _2 === key || key === "undefined") {
+      if (!tree || "" === key || _2 === key || "undefined" === key) {
         continue;
       }
       p2 = pre2.slice(0);
@@ -31922,7 +31904,7 @@ var yson = { exports: {} };
   (function() {
     var yson2 = {}, u2, sI = setTimeout.turn || typeof setImmediate != "" + u2 && setImmediate || setTimeout;
     yson2.parseAsync = function(text3, done, revive, M2) {
-      if (typeof text3 != "string") {
+      if ("string" != typeof text3) {
         try {
           done(u2, JSON.parse(text3));
         } catch (e2) {
@@ -31947,11 +31929,11 @@ var yson = { exports: {} };
             i2 = s2.indexOf('"', i2 - 1);
             c2 = s2[i2];
             tmp = 0;
-            while (s2[i2 - ++tmp] == "\\") {
+            while ("\\" == s2[i2 - ++tmp]) {
             }
             tmp = !(tmp % 2);
             b2 = b2 || tmp;
-            if (c2 == '"' && !tmp) {
+            if ('"' == c2 && !tmp) {
               w2 = u2;
               tmp = ctx.s;
               if (ctx.a) {
@@ -32086,13 +32068,13 @@ var yson = { exports: {} };
         return n2;
       }
       s2 = s2.trim();
-      if (s2 == "true") {
+      if ("true" == s2) {
         return true;
       }
-      if (s2 == "false") {
+      if ("false" == s2) {
         return false;
       }
-      if (s2 == "null") {
+      if ("null" == s2) {
         return null;
       }
     }
@@ -32134,7 +32116,7 @@ var yson = { exports: {} };
               ctx.up.push(ctx.at = at2);
               break;
             }
-            if (typeof (data3 || "").toJSON != "function") {
+            if ("function" != typeof (data3 || "").toJSON) {
               add3 += "{";
               at2 = { i: -1, ok: Object.keys(data3).sort(), as: data3, up: at2, j: 0 };
               at2.l = at2.ok.length;
@@ -32180,7 +32162,7 @@ var yson = { exports: {} };
       window.YSON = yson2;
     }
     try {
-      if ("" + u2 != "object") {
+      if ("object" != "" + u2) {
         module2.exports = yson2;
       }
     } catch (e2) {
@@ -32211,7 +32193,7 @@ var yson = { exports: {} };
       return encodeURIComponent(t2).replace(/\*/g, "%2A");
     }
     function atomic(v2) {
-      return u2 !== v2 && (!v2 || typeof v2 != "object");
+      return u2 !== v2 && (!v2 || "object" != typeof v2);
     }
     var timediate = "" + u2 === typeof setImmediate ? setTimeout : setImmediate;
     var puff = setTimeout.turn || timediate, u2;
@@ -32237,7 +32219,7 @@ var yson = { exports: {} };
       }
     };
     var r2 = function(key, data2, cb, tag, DBG) {
-      if (typeof data2 === "function") {
+      if ("function" === typeof data2) {
         var o2 = cb || {};
         cb = data2;
         r2.read(key, cb, o2, DBG || tag);
@@ -32354,7 +32336,7 @@ var yson = { exports: {} };
         cb("No radix!");
         return;
       }
-      o2 = typeof o2 == "object" ? o2 : { force: o2 };
+      o2 = "object" == typeof o2 ? o2 : { force: o2 };
       var f2 = function Fractal() {
       }, a2, b2;
       f2.text = "";
@@ -32553,10 +32535,10 @@ var yson = { exports: {} };
             o2.more = 0;
           }
           if (o2.next) {
-            if (!o2.reverse && (key < o2.next && o2.next.indexOf(key) != 0 || u2 !== o2.end && (o2.end || "\uFFFF") < o2.next)) {
+            if (!o2.reverse && (key < o2.next && 0 != o2.next.indexOf(key) || u2 !== o2.end && (o2.end || "\uFFFF") < o2.next)) {
               o2.more = 0;
             }
-            if (o2.reverse && (key > o2.next && key.indexOf(o2.next) != 0 || u2 !== o2.start && (o2.start || "") > o2.next && file <= o2.start)) {
+            if (o2.reverse && (key > o2.next && 0 != key.indexOf(o2.next) || u2 !== o2.start && (o2.start || "") > o2.next && file <= o2.start)) {
               o2.more = 0;
             }
           }
@@ -32632,7 +32614,7 @@ var yson = { exports: {} };
             p2.map(q2, p2.ack);
             return;
           }
-          if (typeof data2 !== "string") {
+          if ("string" !== typeof data2) {
             try {
               if (opt.max <= data2.length) {
                 p2.err = "Chunk too big!";
@@ -32652,7 +32634,7 @@ var yson = { exports: {} };
           DBG && (DBG.rpl = info.parsed);
           DBG && (DBG.rpa = q2.length);
           S2 = +new Date();
-          if (!(opt.jsonify || data2[0] === "{")) {
+          if (!(opt.jsonify || "{" === data2[0])) {
             p2.radec(err, data2);
             return;
           }
@@ -32665,7 +32647,7 @@ var yson = { exports: {} };
               p2.map(q2, p2.ack);
               return;
             }
-            if (data2[0] === "{") {
+            if ("{" === data2[0]) {
               delete Q2[file];
               p2.err = "JSON error!";
               p2.map(q2, p2.ack);
@@ -32705,7 +32687,7 @@ var yson = { exports: {} };
           delete Q2[file];
           S2 = +new Date();
           var tmp = p2.split(data2), pre2 = [], i2, k2, v2;
-          if (!tmp || tmp[1] !== 0) {
+          if (!tmp || 0 !== tmp[1]) {
             p2.err = "File '" + file + "' does not have root radix! ";
             p2.map(q2, p2.ack);
             return;
@@ -32714,7 +32696,7 @@ var yson = { exports: {} };
             k2 = v2 = u2;
             i2 = tmp[1];
             tmp = p2.split(tmp[2]) || "";
-            if (tmp[0] == "#") {
+            if ("#" == tmp[0]) {
               k2 = tmp[1];
               pre2 = pre2.slice(0, i2);
               if (i2 <= pre2.length) {
@@ -32722,10 +32704,10 @@ var yson = { exports: {} };
               }
             }
             tmp = p2.split(tmp[2]) || "";
-            if (tmp[0] == "\n") {
+            if ("\n" == tmp[0]) {
               continue;
             }
-            if (tmp[0] == "=" || tmp[0] == ":") {
+            if ("=" == tmp[0] || ":" == tmp[0]) {
               v2 = tmp[1];
             }
             if (u2 !== k2 && u2 !== v2) {
@@ -32797,7 +32779,7 @@ var yson = { exports: {} };
             return;
           }
           cb.found = (cb.found || 0) - 1;
-          if (cb.found !== 0) {
+          if (0 !== cb.found) {
             return;
           }
           cb(u2, 1);
@@ -32863,15 +32845,15 @@ var yson = { exports: {} };
           i2 = d2.indexOf(s2, i2 + 1);
         }
         return t2 + '"' + d2 + s2;
-      } else if (d2 && d2["#"] && Object.keys(d2).length == 1) {
+      } else if (d2 && d2["#"] && 1 == Object.keys(d2).length) {
         return t2 + "#" + tmp + t2;
-      } else if (typeof d2 == "number") {
+      } else if ("number" == typeof d2) {
         return t2 + "+" + (d2 || 0) + t2;
-      } else if (d2 === null) {
+      } else if (null === d2) {
         return t2 + " " + t2;
-      } else if (d2 === true) {
+      } else if (true === d2) {
         return t2 + "+" + t2;
-      } else if (d2 === false) {
+      } else if (false === d2) {
         return t2 + "-" + t2;
       }
     };
@@ -32895,18 +32877,18 @@ var yson = { exports: {} };
       if (o2) {
         o2.i = i2 + 1;
       }
-      if (p2 === '"') {
+      if ('"' === p2) {
         return d2;
-      } else if (p2 === "#") {
+      } else if ("#" === p2) {
         return { "#": d2 };
-      } else if (p2 === "+") {
-        if (d2.length === 0) {
+      } else if ("+" === p2) {
+        if (0 === d2.length) {
           return true;
         }
         return parseFloat(d2);
-      } else if (p2 === " ") {
+      } else if (" " === p2) {
         return null;
-      } else if (p2 === "-") {
+      } else if ("-" === p2) {
         return false;
       }
     };
@@ -32932,10 +32914,10 @@ Gun$1.on("create", function(root) {
   }
   this.to.next(root);
   var opt = root.opt, u2;
-  if (opt.rad === false || opt.radisk === false) {
+  if (false === opt.rad || false === opt.radisk) {
     return;
   }
-  if (u2 + "" != typeof process && "" + (process.env || "").RAD === "false") {
+  if (u2 + "" != typeof process && "false" === "" + (process.env || "").RAD) {
     return;
   }
   var Radisk = Gun$1.window && Gun$1.window.Radisk || radisk.exports;
@@ -32967,7 +32949,7 @@ Gun$1.on("create", function(root) {
     var ctx = msg._ || "", DBG = ctx.DBG = msg.DBG;
     DBG && (DBG.sg = +new Date());
     var id = msg["#"], get2 = msg.get, soul = msg.get["#"], has2 = msg.get["."] || "", o2 = {}, graph, key, tmp, force;
-    if (typeof soul == "string") {
+    if ("string" == typeof soul) {
       key = soul;
     } else if (soul) {
       if (u2 !== (tmp = soul["*"])) {
@@ -32983,7 +32965,7 @@ Gun$1.on("create", function(root) {
       force = null;
     }
     if (key && !o2.limit) {
-      if (typeof has2 == "string") {
+      if ("string" == typeof has2) {
         key = key + esc + (o2.atom = has2);
       } else if (has2) {
         if (u2 !== has2[">"]) {
@@ -33052,7 +33034,7 @@ Gun$1.on("create", function(root) {
         if (!graph && data2) {
           each(data2, "");
         }
-        if (!o2.atom && !has2 & typeof soul == "string" && !o2.limit && !o2.more) {
+        if (!o2.atom && !has2 & "string" == typeof soul && !o2.limit && !o2.more) {
           root.$.get(soul)._.rad = now2;
         }
       }
@@ -33085,7 +33067,7 @@ Gun$1.on("create", function(root) {
         return true;
       }
       var va2, ve, so = soul2, ha2 = has3;
-      if (typeof val != "string") {
+      if ("string" != typeof val) {
         va2 = val[":"];
         ve = val[">"];
         (graph = graph || {})[so] = Gun$1.state.ify(graph[so], ha2, ve, va2, so);
@@ -33120,7 +33102,7 @@ var rindexed = { exports: {} };
     } catch (e2) {
     }
     try {
-      if (!opt.indexedDB || location.protocol == "file:") {
+      if (!opt.indexedDB || "file:" == location.protocol) {
         var s2 = store.d || (store.d = {});
         store.put = function(f2, d2, cb) {
           s2[f2] = d2;
@@ -33227,7 +33209,7 @@ var rindexed = { exports: {} };
     if (!Gun2.Mesh) {
       return;
     }
-    if (opt.RTCPeerConnection === false) {
+    if (false === opt.RTCPeerConnection) {
       return;
     }
     var env;
@@ -35365,7 +35347,7 @@ var sea = { exports: {} };
                 throw new TypeError("Invalid first argument for type 'hex'.");
               }
               buf = SeaArray.from(bytes);
-            } else if (enc === "utf8" || enc === "binary") {
+            } else if (enc === "utf8" || "binary" === enc) {
               const length2 = input.length;
               const words = new Uint16Array(length2);
               Array.from({ length: length2 }, (_2, i2) => words[i2] = input.charCodeAt(i2));
@@ -35503,12 +35485,12 @@ var sea = { exports: {} };
         }
       };
       s2.check = function(t2) {
-        return typeof t2 == "string" && t2.slice(0, 4) === "SEA{";
+        return typeof t2 == "string" && "SEA{" === t2.slice(0, 4);
       };
       s2.parse = async function p2(t2) {
         try {
           var yes = typeof t2 == "string";
-          if (yes && t2.slice(0, 4) === "SEA{") {
+          if (yes && "SEA{" === t2.slice(0, 4)) {
             t2 = t2.slice(3);
           }
           return yes ? await shim.parse(t2) : t2;
@@ -35549,7 +35531,7 @@ var sea = { exports: {} };
             salt = u2;
           }
           data2 = typeof data2 == "string" ? data2 : await shim.stringify(data2);
-          if ((opt.name || "").toLowerCase().slice(0, 3) === "sha") {
+          if ("sha" === (opt.name || "").toLowerCase().slice(0, 3)) {
             var rsha = shim.Buffer.from(await sha(data2, opt.name), "binary").toString(opt.encode || "base64");
             if (cb) {
               try {
@@ -35744,7 +35726,7 @@ var sea = { exports: {} };
       SEA2.verify = SEA2.verify || (async (data2, pair, cb, opt) => {
         try {
           var json = await S2.parse(data2);
-          if (pair === false) {
+          if (false === pair) {
             var raw = await S2.parse(json.m);
             if (cb) {
               try {
@@ -35945,7 +35927,7 @@ var sea = { exports: {} };
               tagLength: 128
             }, aes, new Uint8Array(bufct)));
           } catch (e2) {
-            if (opt.encode === "utf8") {
+            if ("utf8" === opt.encode) {
               throw "Could not decrypt";
             }
             if (SEA2.opt.fallback) {
@@ -36072,9 +36054,14 @@ var sea = { exports: {} };
           const writeBlock = typeof block3 === "string" ? block3 : block3.write && (typeof block3.write === "string" || block3.write["#"]) ? block3.write : null;
           if (!readPolicy && !writePolicy)
             return console.log("No policy found.");
-          const data2 = JSON.stringify(__spreadValues3(__spreadValues3(__spreadValues3(__spreadValues3(__spreadValues3({
-            c: certificants
-          }, expiry ? { e: expiry } : {}), readPolicy ? { r: readPolicy } : {}), writePolicy ? { w: writePolicy } : {}), readBlock ? { rb: readBlock } : {}), writeBlock ? { wb: writeBlock } : {}));
+          const data2 = JSON.stringify({
+            c: certificants,
+            ...expiry ? { e: expiry } : {},
+            ...readPolicy ? { r: readPolicy } : {},
+            ...writePolicy ? { w: writePolicy } : {},
+            ...readBlock ? { rb: readBlock } : {},
+            ...writeBlock ? { wb: writeBlock } : {}
+          });
           const certificate = await SEA2.sign(data2, authority, null, { raw: 1 });
           var r2 = certificate;
           if (!opt.raw) {
@@ -36201,7 +36188,7 @@ var sea = { exports: {} };
         var gun2 = this, cat = gun2._, root = gun2.back(-1);
         cb = cb || noop2;
         opt = opt || {};
-        if (opt.check !== false) {
+        if (false !== opt.check) {
           var err;
           if (!alias) {
             err = "No user.";
@@ -36330,7 +36317,7 @@ var sea = { exports: {} };
           if (!data2.pub) {
             var tmp = [];
             Object.keys(data2).forEach(function(k2) {
-              if (k2 == "_") {
+              if ("_" == k2) {
                 return;
               }
               tmp.push(data2[k2]);
@@ -36356,7 +36343,7 @@ var sea = { exports: {} };
           if (u2 === auth) {
             return act.b();
           }
-          if (typeof auth == "string") {
+          if ("string" == typeof auth) {
             return act.c(obj_ify(auth));
           }
           SEA2.work(pass, (act.auth = auth).s, act.d, act.enc);
@@ -36454,7 +36441,7 @@ var sea = { exports: {} };
             return act.err();
           }
           var tmp = [name];
-          if (name[0] !== "~") {
+          if ("~" !== name[0]) {
             tmp[1] = "~" + name;
             tmp[2] = "~@" + name;
           }
@@ -36470,7 +36457,7 @@ var sea = { exports: {} };
         return gun2;
       };
       function obj_ify(o2) {
-        if (typeof o2 != "string") {
+        if ("string" != typeof o2) {
           return o2;
         }
         try {
@@ -36629,7 +36616,7 @@ var sea = { exports: {} };
         if (!soul || !key) {
           return;
         }
-        if ((msg._ || "").faith && (at2.opt || "").faith && typeof msg._ == "function") {
+        if ((msg._ || "").faith && (at2.opt || "").faith && "function" == typeof msg._) {
           SEA2.opt.pack(put, function(raw) {
             SEA2.verify(raw, false, function(data2) {
               put["="] = SEA2.opt.unpack(data2);
@@ -36649,11 +36636,11 @@ var sea = { exports: {} };
             return;
           }
         }
-        if (soul === "~@") {
+        if ("~@" === soul) {
           check2.alias(eve, msg, val, key, soul, at2, no);
           return;
         }
-        if (soul.slice(0, 2) === "~@") {
+        if ("~@" === soul.slice(0, 2)) {
           check2.pubs(eve, msg, val, key, soul, at2, no);
           return;
         }
@@ -36712,7 +36699,7 @@ var sea = { exports: {} };
                       return no(`Path "${path2}" or key "${key}" must contain string "${certificant}".`);
                     if (data2.wb && (typeof data2.wb === "string" || (data2.wb || {})["#"])) {
                       var root = eve.as.root.$.back(-1);
-                      if (typeof data2.wb === "string" && data2.wb.slice(0, 1) !== "~")
+                      if (typeof data2.wb === "string" && "~" !== data2.wb.slice(0, 1))
                         root = root.get("~" + pub);
                       return root.get(data2.wb).get(certificant).once((value) => {
                         if (value && (value === 1 || value === true))
@@ -36728,7 +36715,7 @@ var sea = { exports: {} };
             });
           return;
         };
-        if (key === "pub" && "~" + pub === soul) {
+        if ("pub" === key && "~" + pub === soul) {
           if (val === pub)
             return eve.to.next(msg);
           return no("Account not same!");
@@ -36807,7 +36794,7 @@ var sea = { exports: {} };
         return;
       };
       var valid = Gun2.valid, link_is = function(d2, l2) {
-        return typeof (l2 = valid(d2)) == "string" && l2;
+        return "string" == typeof (l2 = valid(d2)) && l2;
       };
       (Gun2.state || "").ify;
       var pubcut = /[^\w_-]/;
@@ -36820,10 +36807,10 @@ var sea = { exports: {} };
           return;
         }
         s2 = s2.split(pubcut).slice(0, 2);
-        if (!s2 || s2.length != 2) {
+        if (!s2 || 2 != s2.length) {
           return;
         }
-        if ((s2[0] || "")[0] === "@") {
+        if ("@" === (s2[0] || "")[0]) {
           return;
         }
         s2 = s2.slice(0, 2).join(".");
@@ -36873,7 +36860,7 @@ var sea = { exports: {} };
           return d2;
         }
         var soul = n2 && n2._ && n2._["#"] || O2.fall_soul, s2 = Gun2.state.is(n2, k2) || O2.fall_state;
-        if (d2 && d2.length === 4 && soul === d2[0] && k2 === d2[1] && fl(s2) === fl(d2[3])) {
+        if (d2 && 4 === d2.length && soul === d2[0] && k2 === d2[1] && fl(s2) === fl(d2[3])) {
           return d2[2];
         }
         if (s2 < SEA2.opt.shuffle_attack) {
@@ -38401,9 +38388,10 @@ var require$$1$1 = [
 const ipRegex = ipRegex$1;
 const tlds = require$$1$1;
 var urlRegex = (options) => {
-  options = __spreadValues3({
-    strict: true
-  }, options);
+  options = {
+    strict: true,
+    ...options
+  };
   const protocol = `(?:(?:[a-z]+:)?//)${options.strict ? "" : "?"}`;
   const auth = "(?:\\S+(?::\\S*)?@)?";
   const ip2 = ipRegex.v4().source;
@@ -38435,7 +38423,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       function u2(r2, e3) {
         if (!o2[r2]) {
           if (!a2[r2]) {
-            var t2 = typeof commonjsRequire == "function" && commonjsRequire;
+            var t2 = "function" == typeof commonjsRequire && commonjsRequire;
             if (!e3 && t2)
               return t2(r2, true);
             if (l2)
@@ -38451,13 +38439,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }
         return o2[r2].exports;
       }
-      for (var l2 = typeof commonjsRequire == "function" && commonjsRequire, e2 = 0; e2 < h2.length; e2++)
+      for (var l2 = "function" == typeof commonjsRequire && commonjsRequire, e2 = 0; e2 < h2.length; e2++)
         u2(h2[e2]);
       return u2;
     }({ 1: [function(e2, t2, r2) {
       var d2 = e2("./utils"), c2 = e2("./support"), p2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
       r2.encode = function(e3) {
-        for (var t3, r3, n2, i2, s2, a2, o2, h2 = [], u2 = 0, l2 = e3.length, f2 = l2, c3 = d2.getTypeOf(e3) !== "string"; u2 < e3.length; )
+        for (var t3, r3, n2, i2, s2, a2, o2, h2 = [], u2 = 0, l2 = e3.length, f2 = l2, c3 = "string" !== d2.getTypeOf(e3); u2 < e3.length; )
           f2 = l2 - u2, n2 = c3 ? (t3 = e3[u2++], r3 = u2 < l2 ? e3[u2++] : 0, u2 < l2 ? e3[u2++] : 0) : (t3 = e3.charCodeAt(u2++), r3 = u2 < l2 ? e3.charCodeAt(u2++) : 0, u2 < l2 ? e3.charCodeAt(u2++) : 0), i2 = t3 >> 2, s2 = (3 & t3) << 4 | r3 >> 4, a2 = 1 < f2 ? (15 & r3) << 2 | n2 >> 6 : 64, o2 = 2 < f2 ? 63 & n2 : 64, h2.push(p2.charAt(i2) + p2.charAt(s2) + p2.charAt(a2) + p2.charAt(o2));
         return h2.join("");
       }, r2.decode = function(e3) {
@@ -38468,7 +38456,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         if (e3.charAt(e3.length - 1) === p2.charAt(64) && f2--, e3.charAt(e3.length - 2) === p2.charAt(64) && f2--, f2 % 1 != 0)
           throw new Error("Invalid base64 input, bad content length.");
         for (l2 = c2.uint8array ? new Uint8Array(0 | f2) : new Array(0 | f2); o2 < e3.length; )
-          t3 = p2.indexOf(e3.charAt(o2++)) << 2 | (i2 = p2.indexOf(e3.charAt(o2++))) >> 4, r3 = (15 & i2) << 4 | (s2 = p2.indexOf(e3.charAt(o2++))) >> 2, n2 = (3 & s2) << 6 | (a2 = p2.indexOf(e3.charAt(o2++))), l2[h2++] = t3, s2 !== 64 && (l2[h2++] = r3), a2 !== 64 && (l2[h2++] = n2);
+          t3 = p2.indexOf(e3.charAt(o2++)) << 2 | (i2 = p2.indexOf(e3.charAt(o2++))) >> 4, r3 = (15 & i2) << 4 | (s2 = p2.indexOf(e3.charAt(o2++))) >> 2, n2 = (3 & s2) << 6 | (a2 = p2.indexOf(e3.charAt(o2++))), l2[h2++] = t3, 64 !== s2 && (l2[h2++] = r3), 64 !== a2 && (l2[h2++] = n2);
         return l2;
       };
     }, { "./support": 30, "./utils": 32 }], 2: [function(e2, t2, r2) {
@@ -38506,7 +38494,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return t3;
       }();
       t2.exports = function(e3, t3) {
-        return e3 !== void 0 && e3.length ? n2.getTypeOf(e3) !== "string" ? function(e4, t4, r3, n3) {
+        return void 0 !== e3 && e3.length ? "string" !== n2.getTypeOf(e3) ? function(e4, t4, r3, n3) {
           var i2 = o2, s2 = n3 + r3;
           e4 ^= -1;
           for (var a2 = n3; a2 < s2; a2++)
@@ -38524,16 +38512,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       r2.base64 = false, r2.binary = false, r2.dir = false, r2.createFolders = true, r2.date = null, r2.compression = null, r2.compressionOptions = null, r2.comment = null, r2.unixPermissions = null, r2.dosPermissions = null;
     }, {}], 6: [function(e2, t2, r2) {
       var n2 = null;
-      n2 = typeof Promise != "undefined" ? Promise : e2("lie"), t2.exports = { Promise: n2 };
+      n2 = "undefined" != typeof Promise ? Promise : e2("lie"), t2.exports = { Promise: n2 };
     }, { lie: 37 }], 7: [function(e2, t2, r2) {
-      var n2 = typeof Uint8Array != "undefined" && typeof Uint16Array != "undefined" && typeof Uint32Array != "undefined", i2 = e2("pako"), s2 = e2("./utils"), a2 = e2("./stream/GenericWorker"), o2 = n2 ? "uint8array" : "array";
+      var n2 = "undefined" != typeof Uint8Array && "undefined" != typeof Uint16Array && "undefined" != typeof Uint32Array, i2 = e2("pako"), s2 = e2("./utils"), a2 = e2("./stream/GenericWorker"), o2 = n2 ? "uint8array" : "array";
       function h2(e3, t3) {
         a2.call(this, "FlateWorker/" + e3), this._pako = null, this._pakoAction = e3, this._pakoOptions = t3, this.meta = {};
       }
       r2.magic = "\b\0", s2.inherits(h2, a2), h2.prototype.processChunk = function(e3) {
-        this.meta = e3.meta, this._pako === null && this._createPako(), this._pako.push(s2.transformTo(o2, e3.data), false);
+        this.meta = e3.meta, null === this._pako && this._createPako(), this._pako.push(s2.transformTo(o2, e3.data), false);
       }, h2.prototype.flush = function() {
-        a2.prototype.flush.call(this), this._pako === null && this._createPako(), this._pako.push([], true);
+        a2.prototype.flush.call(this), null === this._pako && this._createPako(), this._pako.push([], true);
       }, h2.prototype.cleanUp = function() {
         a2.prototype.cleanUp.call(this), this._pako = null;
       }, h2.prototype._createPako = function() {
@@ -38560,7 +38548,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var S2 = 0;
         t3 && (S2 |= 8), l2 || !_2 && !g2 || (S2 |= 2048);
         var z2 = 0, C2 = 0;
-        w2 && (z2 |= 16), i3 === "UNIX" ? (C2 = 798, z2 |= function(e4, t4) {
+        w2 && (z2 |= 16), "UNIX" === i3 ? (C2 = 798, z2 |= function(e4, t4) {
           var r4 = e4;
           return e4 || (r4 = t4 ? 16893 : 33204), (65535 & r4) << 16;
         }(h2.unixPermissions, w2)) : (C2 = 20, z2 |= function(e4) {
@@ -38661,7 +38649,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         this.files = /* @__PURE__ */ Object.create(null), this.comment = null, this.root = "", this.clone = function() {
           var e3 = new n2();
           for (var t3 in this)
-            typeof this[t3] != "function" && (e3[t3] = this[t3]);
+            "function" != typeof this[t3] && (e3[t3] = this[t3]);
           return e3;
         };
       }
@@ -38735,10 +38723,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         this._helper.resume();
       }, t2.exports = n2;
     }, { "../utils": 32, "readable-stream": 16 }], 14: [function(e2, t2, r2) {
-      t2.exports = { isNode: typeof Buffer != "undefined", newBufferFrom: function(e3, t3) {
+      t2.exports = { isNode: "undefined" != typeof Buffer, newBufferFrom: function(e3, t3) {
         if (Buffer.from && Buffer.from !== Uint8Array.from)
           return Buffer.from(e3, t3);
-        if (typeof e3 == "number")
+        if ("number" == typeof e3)
           throw new Error('The "data" argument must not be a number');
         return new Buffer(e3, t3);
       }, allocBuffer: function(e3) {
@@ -38749,30 +38737,30 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, isBuffer: function(e3) {
         return Buffer.isBuffer(e3);
       }, isStream: function(e3) {
-        return e3 && typeof e3.on == "function" && typeof e3.pause == "function" && typeof e3.resume == "function";
+        return e3 && "function" == typeof e3.on && "function" == typeof e3.pause && "function" == typeof e3.resume;
       } };
     }, {}], 15: [function(e2, t2, r2) {
       function s2(e3, t3, r3) {
         var n3, i3 = u2.getTypeOf(t3), s3 = u2.extend(r3 || {}, f2);
-        s3.date = s3.date || new Date(), s3.compression !== null && (s3.compression = s3.compression.toUpperCase()), typeof s3.unixPermissions == "string" && (s3.unixPermissions = parseInt(s3.unixPermissions, 8)), s3.unixPermissions && 16384 & s3.unixPermissions && (s3.dir = true), s3.dosPermissions && 16 & s3.dosPermissions && (s3.dir = true), s3.dir && (e3 = g2(e3)), s3.createFolders && (n3 = _2(e3)) && b2.call(this, n3, true);
-        var a3 = i3 === "string" && s3.binary === false && s3.base64 === false;
-        r3 && r3.binary !== void 0 || (s3.binary = !a3), (t3 instanceof c2 && t3.uncompressedSize === 0 || s3.dir || !t3 || t3.length === 0) && (s3.base64 = false, s3.binary = true, t3 = "", s3.compression = "STORE", i3 = "string");
+        s3.date = s3.date || new Date(), null !== s3.compression && (s3.compression = s3.compression.toUpperCase()), "string" == typeof s3.unixPermissions && (s3.unixPermissions = parseInt(s3.unixPermissions, 8)), s3.unixPermissions && 16384 & s3.unixPermissions && (s3.dir = true), s3.dosPermissions && 16 & s3.dosPermissions && (s3.dir = true), s3.dir && (e3 = g2(e3)), s3.createFolders && (n3 = _2(e3)) && b2.call(this, n3, true);
+        var a3 = "string" === i3 && false === s3.binary && false === s3.base64;
+        r3 && void 0 !== r3.binary || (s3.binary = !a3), (t3 instanceof c2 && 0 === t3.uncompressedSize || s3.dir || !t3 || 0 === t3.length) && (s3.base64 = false, s3.binary = true, t3 = "", s3.compression = "STORE", i3 = "string");
         var o3 = null;
         o3 = t3 instanceof c2 || t3 instanceof l2 ? t3 : p2.isNode && p2.isStream(t3) ? new m2(e3, t3) : u2.prepareContent(e3, t3, s3.binary, s3.optimizedBinaryString, s3.base64);
         var h3 = new d2(e3, o3, s3);
         this.files[e3] = h3;
       }
       var i2 = e2("./utf8"), u2 = e2("./utils"), l2 = e2("./stream/GenericWorker"), a2 = e2("./stream/StreamHelper"), f2 = e2("./defaults"), c2 = e2("./compressedObject"), d2 = e2("./zipObject"), o2 = e2("./generate"), p2 = e2("./nodejsUtils"), m2 = e2("./nodejs/NodejsStreamInputAdapter"), _2 = function(e3) {
-        e3.slice(-1) === "/" && (e3 = e3.substring(0, e3.length - 1));
+        "/" === e3.slice(-1) && (e3 = e3.substring(0, e3.length - 1));
         var t3 = e3.lastIndexOf("/");
         return 0 < t3 ? e3.substring(0, t3) : "";
       }, g2 = function(e3) {
-        return e3.slice(-1) !== "/" && (e3 += "/"), e3;
+        return "/" !== e3.slice(-1) && (e3 += "/"), e3;
       }, b2 = function(e3, t3) {
-        return t3 = t3 !== void 0 ? t3 : f2.createFolders, e3 = g2(e3), this.files[e3] || s2.call(this, e3, null, { dir: true, createFolders: t3 }), this.files[e3];
+        return t3 = void 0 !== t3 ? t3 : f2.createFolders, e3 = g2(e3), this.files[e3] || s2.call(this, e3, null, { dir: true, createFolders: t3 }), this.files[e3];
       };
       function h2(e3) {
-        return Object.prototype.toString.call(e3) === "[object RegExp]";
+        return "[object RegExp]" === Object.prototype.toString.call(e3);
       }
       var n2 = { load: function() {
         throw new Error("This method has been removed in JSZip 3.0, please check the upgrade guide.");
@@ -38786,7 +38774,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           r3(e3, t3) && n3.push(t3);
         }), n3;
       }, file: function(e3, t3, r3) {
-        if (arguments.length !== 1)
+        if (1 !== arguments.length)
           return e3 = this.root + e3, s2.call(this, e3, t3, r3), this;
         if (h2(e3)) {
           var n3 = e3;
@@ -38808,7 +38796,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, remove: function(r3) {
         r3 = this.root + r3;
         var e3 = this.files[r3];
-        if (e3 || (r3.slice(-1) !== "/" && (r3 += "/"), e3 = this.files[r3]), e3 && !e3.dir)
+        if (e3 || ("/" !== r3.slice(-1) && (r3 += "/"), e3 = this.files[r3]), e3 && !e3.dir)
           delete this.files[r3];
         else
           for (var t3 = this.filter(function(e4, t4) {
@@ -38821,9 +38809,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, generateInternalStream: function(e3) {
         var t3, r3 = {};
         try {
-          if ((r3 = u2.extend(e3 || {}, { streamFiles: false, compression: "STORE", compressionOptions: null, type: "", platform: "DOS", comment: null, mimeType: "application/zip", encodeFileName: i2.utf8encode })).type = r3.type.toLowerCase(), r3.compression = r3.compression.toUpperCase(), r3.type === "binarystring" && (r3.type = "string"), !r3.type)
+          if ((r3 = u2.extend(e3 || {}, { streamFiles: false, compression: "STORE", compressionOptions: null, type: "", platform: "DOS", comment: null, mimeType: "application/zip", encodeFileName: i2.utf8encode })).type = r3.type.toLowerCase(), r3.compression = r3.compression.toUpperCase(), "binarystring" === r3.type && (r3.type = "string"), !r3.type)
             throw new Error("No output type specified.");
-          u2.checkSupport(r3.type), r3.platform !== "darwin" && r3.platform !== "freebsd" && r3.platform !== "linux" && r3.platform !== "sunos" || (r3.platform = "UNIX"), r3.platform === "win32" && (r3.platform = "DOS");
+          u2.checkSupport(r3.type), "darwin" !== r3.platform && "freebsd" !== r3.platform && "linux" !== r3.platform && "sunos" !== r3.platform || (r3.platform = "UNIX"), "win32" === r3.platform && (r3.platform = "DOS");
           var n3 = r3.comment || this.comment || "";
           t3 = o2.generateWorker(this, r3, n3);
         } catch (e4) {
@@ -38856,7 +38844,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var t3 = e3.charCodeAt(0), r3 = e3.charCodeAt(1), n3 = e3.charCodeAt(2), i3 = e3.charCodeAt(3), s2 = this.readData(4);
         return t3 === s2[0] && r3 === s2[1] && n3 === s2[2] && i3 === s2[3];
       }, i2.prototype.readData = function(e3) {
-        if (this.checkOffset(e3), e3 === 0)
+        if (this.checkOffset(e3), 0 === e3)
           return [];
         var t3 = this.data.slice(this.zero + this.index, this.zero + this.index + e3);
         return this.index += e3, t3;
@@ -38922,7 +38910,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         n2.call(this, e3);
       }
       e2("../utils").inherits(i2, n2), i2.prototype.readData = function(e3) {
-        if (this.checkOffset(e3), e3 === 0)
+        if (this.checkOffset(e3), 0 === e3)
           return new Uint8Array(0);
         var t3 = this.data.subarray(this.zero + this.index, this.zero + this.index + e3);
         return this.index += e3, t3;
@@ -38931,7 +38919,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       var n2 = e2("../utils"), i2 = e2("../support"), s2 = e2("./ArrayReader"), a2 = e2("./StringReader"), o2 = e2("./NodeBufferReader"), h2 = e2("./Uint8ArrayReader");
       t2.exports = function(e3) {
         var t3 = n2.getTypeOf(e3);
-        return n2.checkSupport(t3), t3 !== "string" || i2.uint8array ? t3 === "nodebuffer" ? new o2(e3) : i2.uint8array ? new h2(n2.transformTo("uint8array", e3)) : new s2(n2.transformTo("array", e3)) : new a2(e3);
+        return n2.checkSupport(t3), "string" !== t3 || i2.uint8array ? "nodebuffer" === t3 ? new o2(e3) : i2.uint8array ? new h2(n2.transformTo("uint8array", e3)) : new s2(n2.transformTo("array", e3)) : new a2(e3);
       };
     }, { "../support": 30, "../utils": 32, "./ArrayReader": 17, "./NodeBufferReader": 19, "./StringReader": 20, "./Uint8ArrayReader": 21 }], 23: [function(e2, t2, r2) {
       r2.LOCAL_FILE_HEADER = "PK", r2.CENTRAL_FILE_HEADER = "PK", r2.CENTRAL_DIRECTORY_END = "PK", r2.ZIP64_CENTRAL_DIRECTORY_LOCATOR = "PK\x07", r2.ZIP64_CENTRAL_DIRECTORY_END = "PK", r2.DATA_DESCRIPTOR = "PK\x07\b";
@@ -39134,7 +39122,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return l2(this, e3);
       }, on: function(e3, t3) {
         var r3 = this;
-        return e3 === "data" ? this._worker.on(e3, function(e4) {
+        return "data" === e3 ? this._worker.on(e3, function(e4) {
           t3.call(r3, e4.data, e4.meta);
         }) : this._worker.on(e3, function() {
           h2.delay(t3, arguments, r3);
@@ -39144,21 +39132,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, pause: function() {
         return this._worker.pause(), this;
       }, toNodejsStream: function(e3) {
-        if (h2.checkSupport("nodestream"), this._outputType !== "nodebuffer")
+        if (h2.checkSupport("nodestream"), "nodebuffer" !== this._outputType)
           throw new Error(this._outputType + " is not supported by this method");
-        return new o2(this, { objectMode: this._outputType !== "nodebuffer" }, e3);
+        return new o2(this, { objectMode: "nodebuffer" !== this._outputType }, e3);
       } }, t2.exports = f2;
     }, { "../base64": 1, "../external": 6, "../nodejs/NodejsStreamOutputAdapter": 13, "../support": 30, "../utils": 32, "./ConvertWorker": 24, "./GenericWorker": 28 }], 30: [function(e2, t2, r2) {
-      if (r2.base64 = true, r2.array = true, r2.string = true, r2.arraybuffer = typeof ArrayBuffer != "undefined" && typeof Uint8Array != "undefined", r2.nodebuffer = typeof Buffer != "undefined", r2.uint8array = typeof Uint8Array != "undefined", typeof ArrayBuffer == "undefined")
+      if (r2.base64 = true, r2.array = true, r2.string = true, r2.arraybuffer = "undefined" != typeof ArrayBuffer && "undefined" != typeof Uint8Array, r2.nodebuffer = "undefined" != typeof Buffer, r2.uint8array = "undefined" != typeof Uint8Array, "undefined" == typeof ArrayBuffer)
         r2.blob = false;
       else {
         var n2 = new ArrayBuffer(0);
         try {
-          r2.blob = new Blob([n2], { type: "application/zip" }).size === 0;
+          r2.blob = 0 === new Blob([n2], { type: "application/zip" }).size;
         } catch (e3) {
           try {
             var i2 = new (self.BlobBuilder || self.WebKitBlobBuilder || self.MozBlobBuilder || self.MSBlobBuilder)();
-            i2.append(n2), r2.blob = i2.getBlob("application/zip").size === 0;
+            i2.append(n2), r2.blob = 0 === i2.getBlob("application/zip").size;
           } catch (e4) {
             r2.blob = false;
           }
@@ -39183,9 +39171,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return h2.nodebuffer ? r2.newBufferFrom(e3, "utf-8") : function(e4) {
           var t3, r3, n3, i3, s3, a3 = e4.length, o3 = 0;
           for (i3 = 0; i3 < a3; i3++)
-            (64512 & (r3 = e4.charCodeAt(i3))) == 55296 && i3 + 1 < a3 && (64512 & (n3 = e4.charCodeAt(i3 + 1))) == 56320 && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), o3 += r3 < 128 ? 1 : r3 < 2048 ? 2 : r3 < 65536 ? 3 : 4;
+            55296 == (64512 & (r3 = e4.charCodeAt(i3))) && i3 + 1 < a3 && 56320 == (64512 & (n3 = e4.charCodeAt(i3 + 1))) && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), o3 += r3 < 128 ? 1 : r3 < 2048 ? 2 : r3 < 65536 ? 3 : 4;
           for (t3 = h2.uint8array ? new Uint8Array(o3) : new Array(o3), i3 = s3 = 0; s3 < o3; i3++)
-            (64512 & (r3 = e4.charCodeAt(i3))) == 55296 && i3 + 1 < a3 && (64512 & (n3 = e4.charCodeAt(i3 + 1))) == 56320 && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), r3 < 128 ? t3[s3++] = r3 : (r3 < 2048 ? t3[s3++] = 192 | r3 >>> 6 : (r3 < 65536 ? t3[s3++] = 224 | r3 >>> 12 : (t3[s3++] = 240 | r3 >>> 18, t3[s3++] = 128 | r3 >>> 12 & 63), t3[s3++] = 128 | r3 >>> 6 & 63), t3[s3++] = 128 | 63 & r3);
+            55296 == (64512 & (r3 = e4.charCodeAt(i3))) && i3 + 1 < a3 && 56320 == (64512 & (n3 = e4.charCodeAt(i3 + 1))) && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), r3 < 128 ? t3[s3++] = r3 : (r3 < 2048 ? t3[s3++] = 192 | r3 >>> 6 : (r3 < 65536 ? t3[s3++] = 224 | r3 >>> 12 : (t3[s3++] = 240 | r3 >>> 18, t3[s3++] = 128 | r3 >>> 12 & 63), t3[s3++] = 128 | r3 >>> 6 & 63), t3[s3++] = 128 | 63 & r3);
           return t3;
         }(e3);
       }, s2.utf8decode = function(e3) {
@@ -39197,7 +39185,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             else if (4 < (i3 = u2[n3]))
               a3[r3++] = 65533, t3 += i3 - 1;
             else {
-              for (n3 &= i3 === 2 ? 31 : i3 === 3 ? 15 : 7; 1 < i3 && t3 < s3; )
+              for (n3 &= 2 === i3 ? 31 : 3 === i3 ? 15 : 7; 1 < i3 && t3 < s3; )
                 n3 = n3 << 6 | 63 & e4[t3++], i3--;
               1 < i3 ? a3[r3++] = 65533 : n3 < 65536 ? a3[r3++] = n3 : (n3 -= 65536, a3[r3++] = 55296 | n3 >> 10 & 1023, a3[r3++] = 56320 | 1023 & n3);
             }
@@ -39215,9 +39203,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }
         var n3 = function(e4, t4) {
           var r4;
-          for ((t4 = t4 || e4.length) > e4.length && (t4 = e4.length), r4 = t4 - 1; 0 <= r4 && (192 & e4[r4]) == 128; )
+          for ((t4 = t4 || e4.length) > e4.length && (t4 = e4.length), r4 = t4 - 1; 0 <= r4 && 128 == (192 & e4[r4]); )
             r4--;
-          return r4 < 0 ? t4 : r4 === 0 ? t4 : r4 + u2[e4[r4]] > t4 ? r4 : t4;
+          return r4 < 0 ? t4 : 0 === r4 ? t4 : r4 + u2[e4[r4]] > t4 ? r4 : t4;
         }(t3), i3 = t3;
         n3 !== t3.length && (h2.uint8array ? (i3 = t3.subarray(0, n3), this.leftOver = t3.subarray(n3, t3.length)) : (i3 = t3.slice(0, n3), this.leftOver = t3.slice(n3, t3.length))), this.push({ data: s2.utf8decode(i3), meta: e3.meta });
       }, a2.prototype.flush = function() {
@@ -39253,7 +39241,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         if (s3 <= r3)
           return String.fromCharCode.apply(null, e3);
         for (; i3 < s3; )
-          t3 === "array" || t3 === "nodebuffer" ? n3.push(String.fromCharCode.apply(null, e3.slice(i3, Math.min(i3 + r3, s3)))) : n3.push(String.fromCharCode.apply(null, e3.subarray(i3, Math.min(i3 + r3, s3)))), i3 += r3;
+          "array" === t3 || "nodebuffer" === t3 ? n3.push(String.fromCharCode.apply(null, e3.slice(i3, Math.min(i3 + r3, s3)))) : n3.push(String.fromCharCode.apply(null, e3.subarray(i3, Math.min(i3 + r3, s3)))), i3 += r3;
         return n3.join("");
       }, stringifyByChar: function(e3) {
         for (var t3 = "", r3 = 0; r3 < e3.length; r3++)
@@ -39261,20 +39249,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return t3;
       }, applyCanBeUsed: { uint8array: function() {
         try {
-          return o2.uint8array && String.fromCharCode.apply(null, new Uint8Array(1)).length === 1;
+          return o2.uint8array && 1 === String.fromCharCode.apply(null, new Uint8Array(1)).length;
         } catch (e3) {
           return false;
         }
       }(), nodebuffer: function() {
         try {
-          return o2.nodebuffer && String.fromCharCode.apply(null, r2.allocBuffer(1)).length === 1;
+          return o2.nodebuffer && 1 === String.fromCharCode.apply(null, r2.allocBuffer(1)).length;
         } catch (e3) {
           return false;
         }
       }() } };
       function s2(e3) {
         var t3 = 65536, r3 = a2.getTypeOf(e3), n3 = true;
-        if (r3 === "uint8array" ? n3 = i2.applyCanBeUsed.uint8array : r3 === "nodebuffer" && (n3 = i2.applyCanBeUsed.nodebuffer), n3)
+        if ("uint8array" === r3 ? n3 = i2.applyCanBeUsed.uint8array : "nodebuffer" === r3 && (n3 = i2.applyCanBeUsed.nodebuffer), n3)
           for (; 1 < t3; )
             try {
               return i2.stringifyByChunk(e3, r3, t3);
@@ -39333,11 +39321,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, a2.resolve = function(e3) {
         for (var t3 = e3.split("/"), r3 = [], n3 = 0; n3 < t3.length; n3++) {
           var i3 = t3[n3];
-          i3 === "." || i3 === "" && n3 !== 0 && n3 !== t3.length - 1 || (i3 === ".." ? r3.pop() : r3.push(i3));
+          "." === i3 || "" === i3 && 0 !== n3 && n3 !== t3.length - 1 || (".." === i3 ? r3.pop() : r3.push(i3));
         }
         return r3.join("/");
       }, a2.getTypeOf = function(e3) {
-        return typeof e3 == "string" ? "string" : Object.prototype.toString.call(e3) === "[object Array]" ? "array" : o2.nodebuffer && r2.isBuffer(e3) ? "nodebuffer" : o2.uint8array && e3 instanceof Uint8Array ? "uint8array" : o2.arraybuffer && e3 instanceof ArrayBuffer ? "arraybuffer" : void 0;
+        return "string" == typeof e3 ? "string" : "[object Array]" === Object.prototype.toString.call(e3) ? "array" : o2.nodebuffer && r2.isBuffer(e3) ? "nodebuffer" : o2.uint8array && e3 instanceof Uint8Array ? "uint8array" : o2.arraybuffer && e3 instanceof ArrayBuffer ? "arraybuffer" : void 0;
       }, a2.checkSupport = function(e3) {
         if (!o2[e3.toLowerCase()])
           throw new Error(e3 + " is not supported by this platform");
@@ -39358,11 +39346,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var e3, t3, r3 = {};
         for (e3 = 0; e3 < arguments.length; e3++)
           for (t3 in arguments[e3])
-            arguments[e3].hasOwnProperty(t3) && r3[t3] === void 0 && (r3[t3] = arguments[e3][t3]);
+            arguments[e3].hasOwnProperty(t3) && void 0 === r3[t3] && (r3[t3] = arguments[e3][t3]);
         return r3;
       }, a2.prepareContent = function(r3, e3, n3, i3, s3) {
         return u2.Promise.resolve(e3).then(function(n4) {
-          return o2.blob && (n4 instanceof Blob || ["[object File]", "[object Blob]"].indexOf(Object.prototype.toString.call(n4)) !== -1) && typeof FileReader != "undefined" ? new u2.Promise(function(t3, r4) {
+          return o2.blob && (n4 instanceof Blob || -1 !== ["[object File]", "[object Blob]"].indexOf(Object.prototype.toString.call(n4))) && "undefined" != typeof FileReader ? new u2.Promise(function(t3, r4) {
             var e4 = new FileReader();
             e4.onload = function(e5) {
               t3(e5.target.result);
@@ -39372,7 +39360,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           }) : n4;
         }).then(function(e4) {
           var t3 = a2.getTypeOf(e4);
-          return t3 ? (t3 === "arraybuffer" ? e4 = a2.transformTo("uint8array", e4) : t3 === "string" && (s3 ? e4 = h2.decode(e4) : n3 && i3 !== true && (e4 = function(e5) {
+          return t3 ? ("arraybuffer" === t3 ? e4 = a2.transformTo("uint8array", e4) : "string" === t3 && (s3 ? e4 = h2.decode(e4) : n3 && true !== i3 && (e4 = function(e5) {
             return l2(e5, o2.uint8array ? new Uint8Array(e5.length) : new Array(e5.length));
           }(e4))), e4) : u2.Promise.reject(new Error("Can't read the data of '" + r3 + "'. Is it in a supported JavaScript type (String, Blob, ArrayBuffer, etc) ?"));
         });
@@ -39412,7 +39400,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var e3;
         for (this.reader.setIndex(this.centralDirOffset); this.reader.readAndCheckSignature(s2.CENTRAL_FILE_HEADER); )
           (e3 = new a2({ zip64: this.zip64 }, this.loadOptions)).readCentralPart(this.reader), this.files.push(e3);
-        if (this.centralDirRecords !== this.files.length && this.centralDirRecords !== 0 && this.files.length === 0)
+        if (this.centralDirRecords !== this.files.length && 0 !== this.centralDirRecords && 0 === this.files.length)
           throw new Error("Corrupted zip or bug: expected " + this.centralDirRecords + " records in central dir, got " + this.files.length);
       }, readEndOfCentral: function() {
         var e3 = this.reader.lastIndexOfSignature(s2.CENTRAL_DIRECTORY_END);
@@ -39445,19 +39433,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         this.options = e3, this.loadOptions = t3;
       }
       l2.prototype = { isEncrypted: function() {
-        return (1 & this.bitFlag) == 1;
+        return 1 == (1 & this.bitFlag);
       }, useUTF8: function() {
-        return (2048 & this.bitFlag) == 2048;
+        return 2048 == (2048 & this.bitFlag);
       }, readLocalPart: function(e3) {
         var t3, r3;
-        if (e3.skip(22), this.fileNameLength = e3.readInt(2), r3 = e3.readInt(2), this.fileName = e3.readData(this.fileNameLength), e3.skip(r3), this.compressedSize === -1 || this.uncompressedSize === -1)
+        if (e3.skip(22), this.fileNameLength = e3.readInt(2), r3 = e3.readInt(2), this.fileName = e3.readData(this.fileNameLength), e3.skip(r3), -1 === this.compressedSize || -1 === this.uncompressedSize)
           throw new Error("Bug or corrupted zip : didn't get enough information from the central directory (compressedSize === -1 || uncompressedSize === -1)");
-        if ((t3 = function(e4) {
+        if (null === (t3 = function(e4) {
           for (var t4 in h2)
             if (h2.hasOwnProperty(t4) && h2[t4].magic === e4)
               return h2[t4];
           return null;
-        }(this.compressionMethod)) === null)
+        }(this.compressionMethod)))
           throw new Error("Corrupted zip : compression " + s2.pretty(this.compressionMethod) + " unknown (inner file : " + s2.transformTo("string", this.fileName) + ")");
         this.decompressed = new i2(this.compressedSize, this.uncompressedSize, this.crc32, t3, e3.readData(this.compressedSize));
       }, readCentralPart: function(e3) {
@@ -39469,7 +39457,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, processAttributes: function() {
         this.unixPermissions = null, this.dosPermissions = null;
         var e3 = this.versionMadeBy >> 8;
-        this.dir = !!(16 & this.externalFileAttributes), e3 == 0 && (this.dosPermissions = 63 & this.externalFileAttributes), e3 == 3 && (this.unixPermissions = this.externalFileAttributes >> 16 & 65535), this.dir || this.fileNameStr.slice(-1) !== "/" || (this.dir = true);
+        this.dir = !!(16 & this.externalFileAttributes), 0 == e3 && (this.dosPermissions = 63 & this.externalFileAttributes), 3 == e3 && (this.unixPermissions = this.externalFileAttributes >> 16 & 65535), this.dir || "/" !== this.fileNameStr.slice(-1) || (this.dir = true);
       }, parseZIP64ExtraField: function(e3) {
         if (this.extraFields[1]) {
           var t3 = n2(this.extraFields[1].value);
@@ -39486,14 +39474,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           this.fileNameStr = o2.utf8decode(this.fileName), this.fileCommentStr = o2.utf8decode(this.fileComment);
         else {
           var t3 = this.findExtraFieldUnicodePath();
-          if (t3 !== null)
+          if (null !== t3)
             this.fileNameStr = t3;
           else {
             var r3 = s2.transformTo(e3, this.fileName);
             this.fileNameStr = this.loadOptions.decodeFileName(r3);
           }
           var n3 = this.findExtraFieldUnicodeComment();
-          if (n3 !== null)
+          if (null !== n3)
             this.fileCommentStr = n3;
           else {
             var i3 = s2.transformTo(e3, this.fileComment);
@@ -39504,14 +39492,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var e3 = this.extraFields[28789];
         if (e3) {
           var t3 = n2(e3.value);
-          return t3.readInt(1) !== 1 ? null : a2(this.fileName) !== t3.readInt(4) ? null : o2.utf8decode(t3.readData(e3.length - 5));
+          return 1 !== t3.readInt(1) ? null : a2(this.fileName) !== t3.readInt(4) ? null : o2.utf8decode(t3.readData(e3.length - 5));
         }
         return null;
       }, findExtraFieldUnicodeComment: function() {
         var e3 = this.extraFields[25461];
         if (e3) {
           var t3 = n2(e3.value);
-          return t3.readInt(1) !== 1 ? null : a2(this.fileComment) !== t3.readInt(4) ? null : o2.utf8decode(t3.readData(e3.length - 5));
+          return 1 !== t3.readInt(1) ? null : a2(this.fileComment) !== t3.readInt(4) ? null : o2.utf8decode(t3.readData(e3.length - 5));
         }
         return null;
       } }, t2.exports = l2;
@@ -39525,8 +39513,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         try {
           if (!e3)
             throw new Error("No output type specified.");
-          var n3 = (r3 = e3.toLowerCase()) === "string" || r3 === "text";
-          r3 !== "binarystring" && r3 !== "text" || (r3 = "string"), t3 = this._decompressWorker();
+          var n3 = "string" === (r3 = e3.toLowerCase()) || "text" === r3;
+          "binarystring" !== r3 && "text" !== r3 || (r3 = "string"), t3 = this._decompressWorker();
           var i3 = !this._dataBinary;
           i3 && !n3 && (t3 = t3.pipe(new a2.Utf8EncodeWorker())), !i3 && n3 && (t3 = t3.pipe(new a2.Utf8DecodeWorker()));
         } catch (e4) {
@@ -39558,7 +39546,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           s2.observe(a2, { characterData: true }), r2 = function() {
             a2.data = i2 = ++i2 % 2;
           };
-        } else if (t3.setImmediate || t3.MessageChannel === void 0)
+        } else if (t3.setImmediate || void 0 === t3.MessageChannel)
           r2 = "document" in t3 && "onreadystatechange" in t3.document.createElement("script") ? function() {
             var e4 = t3.document.createElement("script");
             e4.onreadystatechange = function() {
@@ -39585,21 +39573,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           n2 = false;
         }
         l2.exports = function(e4) {
-          h2.push(e4) !== 1 || n2 || r2();
+          1 !== h2.push(e4) || n2 || r2();
         };
-      }).call(this, typeof commonjsGlobal != "undefined" ? commonjsGlobal : typeof self != "undefined" ? self : typeof window != "undefined" ? window : {});
+      }).call(this, "undefined" != typeof commonjsGlobal ? commonjsGlobal : "undefined" != typeof self ? self : "undefined" != typeof window ? window : {});
     }, {}], 37: [function(e2, t2, r2) {
       var i2 = e2("immediate");
       function u2() {
       }
       var l2 = {}, s2 = ["REJECTED"], a2 = ["FULFILLED"], n2 = ["PENDING"];
       function o2(e3) {
-        if (typeof e3 != "function")
+        if ("function" != typeof e3)
           throw new TypeError("resolver must be a function");
         this.state = n2, this.queue = [], this.outcome = void 0, e3 !== u2 && d2(this, e3);
       }
       function h2(e3, t3, r3) {
-        this.promise = e3, typeof t3 == "function" && (this.onFulfilled = t3, this.callFulfilled = this.otherCallFulfilled), typeof r3 == "function" && (this.onRejected = r3, this.callRejected = this.otherCallRejected);
+        this.promise = e3, "function" == typeof t3 && (this.onFulfilled = t3, this.callFulfilled = this.otherCallFulfilled), "function" == typeof r3 && (this.onRejected = r3, this.callRejected = this.otherCallRejected);
       }
       function f2(t3, r3, n3) {
         i2(function() {
@@ -39614,7 +39602,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
       function c2(e3) {
         var t3 = e3 && e3.then;
-        if (e3 && (typeof e3 == "object" || typeof e3 == "function") && typeof t3 == "function")
+        if (e3 && ("object" == typeof e3 || "function" == typeof e3) && "function" == typeof t3)
           return function() {
             t3.apply(e3, arguments);
           };
@@ -39630,7 +39618,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var s3 = p2(function() {
           e3(i3, n3);
         });
-        s3.status === "error" && n3(s3.value);
+        "error" === s3.status && n3(s3.value);
       }
       function p2(e3, t3) {
         var r3 = {};
@@ -39642,7 +39630,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return r3;
       }
       (t2.exports = o2).prototype.finally = function(t3) {
-        if (typeof t3 != "function")
+        if ("function" != typeof t3)
           return this;
         var r3 = this.constructor;
         return this.then(function(e3) {
@@ -39657,7 +39645,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }, o2.prototype.catch = function(e3) {
         return this.then(null, e3);
       }, o2.prototype.then = function(e3, t3) {
-        if (typeof e3 != "function" && this.state === a2 || typeof t3 != "function" && this.state === s2)
+        if ("function" != typeof e3 && this.state === a2 || "function" != typeof t3 && this.state === s2)
           return this;
         var r3 = new this.constructor(u2);
         this.state !== n2 ? f2(r3, this.state === a2 ? e3 : t3, this.outcome) : this.queue.push(new h2(r3, e3, t3));
@@ -39672,7 +39660,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         f2(this.promise, this.onRejected, e3);
       }, l2.resolve = function(e3, t3) {
         var r3 = p2(c2, t3);
-        if (r3.status === "error")
+        if ("error" === r3.status)
           return l2.reject(e3, r3.value);
         var n3 = r3.value;
         if (n3)
@@ -39697,7 +39685,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return l2.reject(t3, e3);
       }, o2.all = function(e3) {
         var r3 = this;
-        if (Object.prototype.toString.call(e3) !== "[object Array]")
+        if ("[object Array]" !== Object.prototype.toString.call(e3))
           return this.reject(new TypeError("must be an array"));
         var n3 = e3.length, i3 = false;
         if (!n3)
@@ -39715,7 +39703,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }
       }, o2.race = function(e3) {
         var t3 = this;
-        if (Object.prototype.toString.call(e3) !== "[object Array]")
+        if ("[object Array]" !== Object.prototype.toString.call(e3))
           return this.reject(new TypeError("must be an array"));
         var r3 = e3.length, n3 = false;
         if (!r3)
@@ -39746,7 +39734,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           throw new Error(i2[r3]);
         if (t3.header && a2.deflateSetHeader(this.strm, t3.header), t3.dictionary) {
           var n3;
-          if (n3 = typeof t3.dictionary == "string" ? h2.string2buf(t3.dictionary) : u2.call(t3.dictionary) === "[object ArrayBuffer]" ? new Uint8Array(t3.dictionary) : t3.dictionary, (r3 = a2.deflateSetDictionary(this.strm, n3)) !== l2)
+          if (n3 = "string" == typeof t3.dictionary ? h2.string2buf(t3.dictionary) : "[object ArrayBuffer]" === u2.call(t3.dictionary) ? new Uint8Array(t3.dictionary) : t3.dictionary, (r3 = a2.deflateSetDictionary(this.strm, n3)) !== l2)
             throw new Error(i2[r3]);
           this._dict_set = true;
         }
@@ -39761,17 +39749,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var r3, n3, i3 = this.strm, s3 = this.options.chunkSize;
         if (this.ended)
           return false;
-        n3 = t3 === ~~t3 ? t3 : t3 === true ? 4 : 0, typeof e3 == "string" ? i3.input = h2.string2buf(e3) : u2.call(e3) === "[object ArrayBuffer]" ? i3.input = new Uint8Array(e3) : i3.input = e3, i3.next_in = 0, i3.avail_in = i3.input.length;
+        n3 = t3 === ~~t3 ? t3 : true === t3 ? 4 : 0, "string" == typeof e3 ? i3.input = h2.string2buf(e3) : "[object ArrayBuffer]" === u2.call(e3) ? i3.input = new Uint8Array(e3) : i3.input = e3, i3.next_in = 0, i3.avail_in = i3.input.length;
         do {
-          if (i3.avail_out === 0 && (i3.output = new o2.Buf8(s3), i3.next_out = 0, i3.avail_out = s3), (r3 = a2.deflate(i3, n3)) !== 1 && r3 !== l2)
+          if (0 === i3.avail_out && (i3.output = new o2.Buf8(s3), i3.next_out = 0, i3.avail_out = s3), 1 !== (r3 = a2.deflate(i3, n3)) && r3 !== l2)
             return this.onEnd(r3), !(this.ended = true);
-          i3.avail_out !== 0 && (i3.avail_in !== 0 || n3 !== 4 && n3 !== 2) || (this.options.to === "string" ? this.onData(h2.buf2binstring(o2.shrinkBuf(i3.output, i3.next_out))) : this.onData(o2.shrinkBuf(i3.output, i3.next_out)));
-        } while ((0 < i3.avail_in || i3.avail_out === 0) && r3 !== 1);
-        return n3 === 4 ? (r3 = a2.deflateEnd(this.strm), this.onEnd(r3), this.ended = true, r3 === l2) : n3 !== 2 || (this.onEnd(l2), !(i3.avail_out = 0));
+          0 !== i3.avail_out && (0 !== i3.avail_in || 4 !== n3 && 2 !== n3) || ("string" === this.options.to ? this.onData(h2.buf2binstring(o2.shrinkBuf(i3.output, i3.next_out))) : this.onData(o2.shrinkBuf(i3.output, i3.next_out)));
+        } while ((0 < i3.avail_in || 0 === i3.avail_out) && 1 !== r3);
+        return 4 === n3 ? (r3 = a2.deflateEnd(this.strm), this.onEnd(r3), this.ended = true, r3 === l2) : 2 !== n3 || (this.onEnd(l2), !(i3.avail_out = 0));
       }, p2.prototype.onData = function(e3) {
         this.chunks.push(e3);
       }, p2.prototype.onEnd = function(e3) {
-        e3 === l2 && (this.options.to === "string" ? this.result = this.chunks.join("") : this.result = o2.flattenChunks(this.chunks)), this.chunks = [], this.err = e3, this.msg = this.strm.msg;
+        e3 === l2 && ("string" === this.options.to ? this.result = this.chunks.join("") : this.result = o2.flattenChunks(this.chunks)), this.chunks = [], this.err = e3, this.msg = this.strm.msg;
       }, r2.Deflate = p2, r2.deflate = n2, r2.deflateRaw = function(e3, t3) {
         return (t3 = t3 || {}).raw = true, n2(e3, t3);
       }, r2.gzip = function(e3, t3) {
@@ -39784,7 +39772,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           return new a2(e3);
         this.options = d2.assign({ chunkSize: 16384, windowBits: 0, to: "" }, e3 || {});
         var t3 = this.options;
-        t3.raw && 0 <= t3.windowBits && t3.windowBits < 16 && (t3.windowBits = -t3.windowBits, t3.windowBits === 0 && (t3.windowBits = -15)), !(0 <= t3.windowBits && t3.windowBits < 16) || e3 && e3.windowBits || (t3.windowBits += 32), 15 < t3.windowBits && t3.windowBits < 48 && (15 & t3.windowBits) == 0 && (t3.windowBits |= 15), this.err = 0, this.msg = "", this.ended = false, this.chunks = [], this.strm = new i2(), this.strm.avail_out = 0;
+        t3.raw && 0 <= t3.windowBits && t3.windowBits < 16 && (t3.windowBits = -t3.windowBits, 0 === t3.windowBits && (t3.windowBits = -15)), !(0 <= t3.windowBits && t3.windowBits < 16) || e3 && e3.windowBits || (t3.windowBits += 32), 15 < t3.windowBits && t3.windowBits < 48 && 0 == (15 & t3.windowBits) && (t3.windowBits |= 15), this.err = 0, this.msg = "", this.ended = false, this.chunks = [], this.strm = new i2(), this.strm.avail_out = 0;
         var r3 = c2.inflateInit2(this.strm, t3.windowBits);
         if (r3 !== m2.Z_OK)
           throw new Error(n2[r3]);
@@ -39800,27 +39788,27 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var r3, n3, i3, s3, a3, o3, h2 = this.strm, u2 = this.options.chunkSize, l2 = this.options.dictionary, f2 = false;
         if (this.ended)
           return false;
-        n3 = t3 === ~~t3 ? t3 : t3 === true ? m2.Z_FINISH : m2.Z_NO_FLUSH, typeof e3 == "string" ? h2.input = p2.binstring2buf(e3) : _2.call(e3) === "[object ArrayBuffer]" ? h2.input = new Uint8Array(e3) : h2.input = e3, h2.next_in = 0, h2.avail_in = h2.input.length;
+        n3 = t3 === ~~t3 ? t3 : true === t3 ? m2.Z_FINISH : m2.Z_NO_FLUSH, "string" == typeof e3 ? h2.input = p2.binstring2buf(e3) : "[object ArrayBuffer]" === _2.call(e3) ? h2.input = new Uint8Array(e3) : h2.input = e3, h2.next_in = 0, h2.avail_in = h2.input.length;
         do {
-          if (h2.avail_out === 0 && (h2.output = new d2.Buf8(u2), h2.next_out = 0, h2.avail_out = u2), (r3 = c2.inflate(h2, m2.Z_NO_FLUSH)) === m2.Z_NEED_DICT && l2 && (o3 = typeof l2 == "string" ? p2.string2buf(l2) : _2.call(l2) === "[object ArrayBuffer]" ? new Uint8Array(l2) : l2, r3 = c2.inflateSetDictionary(this.strm, o3)), r3 === m2.Z_BUF_ERROR && f2 === true && (r3 = m2.Z_OK, f2 = false), r3 !== m2.Z_STREAM_END && r3 !== m2.Z_OK)
+          if (0 === h2.avail_out && (h2.output = new d2.Buf8(u2), h2.next_out = 0, h2.avail_out = u2), (r3 = c2.inflate(h2, m2.Z_NO_FLUSH)) === m2.Z_NEED_DICT && l2 && (o3 = "string" == typeof l2 ? p2.string2buf(l2) : "[object ArrayBuffer]" === _2.call(l2) ? new Uint8Array(l2) : l2, r3 = c2.inflateSetDictionary(this.strm, o3)), r3 === m2.Z_BUF_ERROR && true === f2 && (r3 = m2.Z_OK, f2 = false), r3 !== m2.Z_STREAM_END && r3 !== m2.Z_OK)
             return this.onEnd(r3), !(this.ended = true);
-          h2.next_out && (h2.avail_out !== 0 && r3 !== m2.Z_STREAM_END && (h2.avail_in !== 0 || n3 !== m2.Z_FINISH && n3 !== m2.Z_SYNC_FLUSH) || (this.options.to === "string" ? (i3 = p2.utf8border(h2.output, h2.next_out), s3 = h2.next_out - i3, a3 = p2.buf2string(h2.output, i3), h2.next_out = s3, h2.avail_out = u2 - s3, s3 && d2.arraySet(h2.output, h2.output, i3, s3, 0), this.onData(a3)) : this.onData(d2.shrinkBuf(h2.output, h2.next_out)))), h2.avail_in === 0 && h2.avail_out === 0 && (f2 = true);
-        } while ((0 < h2.avail_in || h2.avail_out === 0) && r3 !== m2.Z_STREAM_END);
+          h2.next_out && (0 !== h2.avail_out && r3 !== m2.Z_STREAM_END && (0 !== h2.avail_in || n3 !== m2.Z_FINISH && n3 !== m2.Z_SYNC_FLUSH) || ("string" === this.options.to ? (i3 = p2.utf8border(h2.output, h2.next_out), s3 = h2.next_out - i3, a3 = p2.buf2string(h2.output, i3), h2.next_out = s3, h2.avail_out = u2 - s3, s3 && d2.arraySet(h2.output, h2.output, i3, s3, 0), this.onData(a3)) : this.onData(d2.shrinkBuf(h2.output, h2.next_out)))), 0 === h2.avail_in && 0 === h2.avail_out && (f2 = true);
+        } while ((0 < h2.avail_in || 0 === h2.avail_out) && r3 !== m2.Z_STREAM_END);
         return r3 === m2.Z_STREAM_END && (n3 = m2.Z_FINISH), n3 === m2.Z_FINISH ? (r3 = c2.inflateEnd(this.strm), this.onEnd(r3), this.ended = true, r3 === m2.Z_OK) : n3 !== m2.Z_SYNC_FLUSH || (this.onEnd(m2.Z_OK), !(h2.avail_out = 0));
       }, a2.prototype.onData = function(e3) {
         this.chunks.push(e3);
       }, a2.prototype.onEnd = function(e3) {
-        e3 === m2.Z_OK && (this.options.to === "string" ? this.result = this.chunks.join("") : this.result = d2.flattenChunks(this.chunks)), this.chunks = [], this.err = e3, this.msg = this.strm.msg;
+        e3 === m2.Z_OK && ("string" === this.options.to ? this.result = this.chunks.join("") : this.result = d2.flattenChunks(this.chunks)), this.chunks = [], this.err = e3, this.msg = this.strm.msg;
       }, r2.Inflate = a2, r2.inflate = o2, r2.inflateRaw = function(e3, t3) {
         return (t3 = t3 || {}).raw = true, o2(e3, t3);
       }, r2.ungzip = o2;
     }, { "./utils/common": 41, "./utils/strings": 42, "./zlib/constants": 44, "./zlib/gzheader": 47, "./zlib/inflate": 49, "./zlib/messages": 51, "./zlib/zstream": 53 }], 41: [function(e2, t2, r2) {
-      var n2 = typeof Uint8Array != "undefined" && typeof Uint16Array != "undefined" && typeof Int32Array != "undefined";
+      var n2 = "undefined" != typeof Uint8Array && "undefined" != typeof Uint16Array && "undefined" != typeof Int32Array;
       r2.assign = function(e3) {
         for (var t3 = Array.prototype.slice.call(arguments, 1); t3.length; ) {
           var r3 = t3.shift();
           if (r3) {
-            if (typeof r3 != "object")
+            if ("object" != typeof r3)
               throw new TypeError(r3 + "must be non-object");
             for (var n3 in r3)
               r3.hasOwnProperty(n3) && (e3[n3] = r3[n3]);
@@ -39876,9 +39864,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       u2[254] = u2[254] = 1, r2.string2buf = function(e3) {
         var t3, r3, n3, i3, s3, a2 = e3.length, o2 = 0;
         for (i3 = 0; i3 < a2; i3++)
-          (64512 & (r3 = e3.charCodeAt(i3))) == 55296 && i3 + 1 < a2 && (64512 & (n3 = e3.charCodeAt(i3 + 1))) == 56320 && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), o2 += r3 < 128 ? 1 : r3 < 2048 ? 2 : r3 < 65536 ? 3 : 4;
+          55296 == (64512 & (r3 = e3.charCodeAt(i3))) && i3 + 1 < a2 && 56320 == (64512 & (n3 = e3.charCodeAt(i3 + 1))) && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), o2 += r3 < 128 ? 1 : r3 < 2048 ? 2 : r3 < 65536 ? 3 : 4;
         for (t3 = new h2.Buf8(o2), i3 = s3 = 0; s3 < o2; i3++)
-          (64512 & (r3 = e3.charCodeAt(i3))) == 55296 && i3 + 1 < a2 && (64512 & (n3 = e3.charCodeAt(i3 + 1))) == 56320 && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), r3 < 128 ? t3[s3++] = r3 : (r3 < 2048 ? t3[s3++] = 192 | r3 >>> 6 : (r3 < 65536 ? t3[s3++] = 224 | r3 >>> 12 : (t3[s3++] = 240 | r3 >>> 18, t3[s3++] = 128 | r3 >>> 12 & 63), t3[s3++] = 128 | r3 >>> 6 & 63), t3[s3++] = 128 | 63 & r3);
+          55296 == (64512 & (r3 = e3.charCodeAt(i3))) && i3 + 1 < a2 && 56320 == (64512 & (n3 = e3.charCodeAt(i3 + 1))) && (r3 = 65536 + (r3 - 55296 << 10) + (n3 - 56320), i3++), r3 < 128 ? t3[s3++] = r3 : (r3 < 2048 ? t3[s3++] = 192 | r3 >>> 6 : (r3 < 65536 ? t3[s3++] = 224 | r3 >>> 12 : (t3[s3++] = 240 | r3 >>> 18, t3[s3++] = 128 | r3 >>> 12 & 63), t3[s3++] = 128 | r3 >>> 6 & 63), t3[s3++] = 128 | 63 & r3);
         return t3;
       }, r2.buf2binstring = function(e3) {
         return l2(e3, e3.length);
@@ -39894,20 +39882,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           else if (4 < (s3 = u2[i3]))
             o2[n3++] = 65533, r3 += s3 - 1;
           else {
-            for (i3 &= s3 === 2 ? 31 : s3 === 3 ? 15 : 7; 1 < s3 && r3 < a2; )
+            for (i3 &= 2 === s3 ? 31 : 3 === s3 ? 15 : 7; 1 < s3 && r3 < a2; )
               i3 = i3 << 6 | 63 & e3[r3++], s3--;
             1 < s3 ? o2[n3++] = 65533 : i3 < 65536 ? o2[n3++] = i3 : (i3 -= 65536, o2[n3++] = 55296 | i3 >> 10 & 1023, o2[n3++] = 56320 | 1023 & i3);
           }
         return l2(o2, n3);
       }, r2.utf8border = function(e3, t3) {
         var r3;
-        for ((t3 = t3 || e3.length) > e3.length && (t3 = e3.length), r3 = t3 - 1; 0 <= r3 && (192 & e3[r3]) == 128; )
+        for ((t3 = t3 || e3.length) > e3.length && (t3 = e3.length), r3 = t3 - 1; 0 <= r3 && 128 == (192 & e3[r3]); )
           r3--;
-        return r3 < 0 ? t3 : r3 === 0 ? t3 : r3 + u2[e3[r3]] > t3 ? r3 : t3;
+        return r3 < 0 ? t3 : 0 === r3 ? t3 : r3 + u2[e3[r3]] > t3 ? r3 : t3;
       };
     }, { "./common": 41 }], 43: [function(e2, t2, r2) {
       t2.exports = function(e3, t3, r3, n2) {
-        for (var i2 = 65535 & e3 | 0, s2 = e3 >>> 16 & 65535 | 0, a2 = 0; r3 !== 0; ) {
+        for (var i2 = 65535 & e3 | 0, s2 = e3 >>> 16 & 65535 | 0, a2 = 0; 0 !== r3; ) {
           for (r3 -= a2 = 2e3 < r3 ? 2e3 : r3; s2 = s2 + (i2 = i2 + t3[n2++] | 0) | 0, --a2; )
             ;
           i2 %= 65521, s2 %= 65521;
@@ -39947,7 +39935,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
       function F2(e3) {
         var t3 = e3.state, r3 = t3.pending;
-        r3 > e3.avail_out && (r3 = e3.avail_out), r3 !== 0 && (c2.arraySet(e3.output, t3.pending_buf, t3.pending_out, r3, e3.next_out), e3.next_out += r3, t3.pending_out += r3, e3.total_out += r3, e3.avail_out -= r3, t3.pending -= r3, t3.pending === 0 && (t3.pending_out = 0));
+        r3 > e3.avail_out && (r3 = e3.avail_out), 0 !== r3 && (c2.arraySet(e3.output, t3.pending_buf, t3.pending_out, r3, e3.next_out), e3.next_out += r3, t3.pending_out += r3, e3.total_out += r3, e3.avail_out -= r3, t3.pending -= r3, 0 === t3.pending && (t3.pending_out = 0));
       }
       function N2(e3, t3) {
         u2._tr_flush_block(e3, 0 <= e3.block_start ? e3.block_start : -1, e3.strstart - e3.block_start, t3), e3.block_start = e3.strstart, F2(e3.strm);
@@ -39972,7 +39960,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               d3 = u3[s3 + a3 - 1], p3 = u3[s3 + a3];
             }
           }
-        } while ((t3 = f3[t3 & l3]) > h3 && --i3 != 0);
+        } while ((t3 = f3[t3 & l3]) > h3 && 0 != --i3);
         return a3 <= e3.lookahead ? a3 : e3.lookahead;
       }
       function j2(e3) {
@@ -39985,55 +39973,55 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               ;
             i3 += f3;
           }
-          if (e3.strm.avail_in === 0)
+          if (0 === e3.strm.avail_in)
             break;
-          if (a3 = e3.strm, o3 = e3.window, h3 = e3.strstart + e3.lookahead, u3 = i3, l3 = void 0, l3 = a3.avail_in, u3 < l3 && (l3 = u3), r3 = l3 === 0 ? 0 : (a3.avail_in -= l3, c2.arraySet(o3, a3.input, a3.next_in, l3, h3), a3.state.wrap === 1 ? a3.adler = d2(a3.adler, o3, l3, h3) : a3.state.wrap === 2 && (a3.adler = p2(a3.adler, o3, l3, h3)), a3.next_in += l3, a3.total_in += l3, l3), e3.lookahead += r3, e3.lookahead + e3.insert >= x2)
+          if (a3 = e3.strm, o3 = e3.window, h3 = e3.strstart + e3.lookahead, u3 = i3, l3 = void 0, l3 = a3.avail_in, u3 < l3 && (l3 = u3), r3 = 0 === l3 ? 0 : (a3.avail_in -= l3, c2.arraySet(o3, a3.input, a3.next_in, l3, h3), 1 === a3.state.wrap ? a3.adler = d2(a3.adler, o3, l3, h3) : 2 === a3.state.wrap && (a3.adler = p2(a3.adler, o3, l3, h3)), a3.next_in += l3, a3.total_in += l3, l3), e3.lookahead += r3, e3.lookahead + e3.insert >= x2)
             for (s3 = e3.strstart - e3.insert, e3.ins_h = e3.window[s3], e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[s3 + 1]) & e3.hash_mask; e3.insert && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[s3 + x2 - 1]) & e3.hash_mask, e3.prev[s3 & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = s3, s3++, e3.insert--, !(e3.lookahead + e3.insert < x2)); )
               ;
-        } while (e3.lookahead < z2 && e3.strm.avail_in !== 0);
+        } while (e3.lookahead < z2 && 0 !== e3.strm.avail_in);
       }
       function Z2(e3, t3) {
         for (var r3, n3; ; ) {
           if (e3.lookahead < z2) {
             if (j2(e3), e3.lookahead < z2 && t3 === l2)
               return A2;
-            if (e3.lookahead === 0)
+            if (0 === e3.lookahead)
               break;
           }
-          if (r3 = 0, e3.lookahead >= x2 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), r3 !== 0 && e3.strstart - r3 <= e3.w_size - z2 && (e3.match_length = L2(e3, r3)), e3.match_length >= x2)
+          if (r3 = 0, e3.lookahead >= x2 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), 0 !== r3 && e3.strstart - r3 <= e3.w_size - z2 && (e3.match_length = L2(e3, r3)), e3.match_length >= x2)
             if (n3 = u2._tr_tally(e3, e3.strstart - e3.match_start, e3.match_length - x2), e3.lookahead -= e3.match_length, e3.match_length <= e3.max_lazy_match && e3.lookahead >= x2) {
-              for (e3.match_length--; e3.strstart++, e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart, --e3.match_length != 0; )
+              for (e3.match_length--; e3.strstart++, e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart, 0 != --e3.match_length; )
                 ;
               e3.strstart++;
             } else
               e3.strstart += e3.match_length, e3.match_length = 0, e3.ins_h = e3.window[e3.strstart], e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + 1]) & e3.hash_mask;
           else
             n3 = u2._tr_tally(e3, 0, e3.window[e3.strstart]), e3.lookahead--, e3.strstart++;
-          if (n3 && (N2(e3, false), e3.strm.avail_out === 0))
+          if (n3 && (N2(e3, false), 0 === e3.strm.avail_out))
             return A2;
         }
-        return e3.insert = e3.strstart < x2 - 1 ? e3.strstart : x2 - 1, t3 === f2 ? (N2(e3, true), e3.strm.avail_out === 0 ? O2 : B2) : e3.last_lit && (N2(e3, false), e3.strm.avail_out === 0) ? A2 : I2;
+        return e3.insert = e3.strstart < x2 - 1 ? e3.strstart : x2 - 1, t3 === f2 ? (N2(e3, true), 0 === e3.strm.avail_out ? O2 : B2) : e3.last_lit && (N2(e3, false), 0 === e3.strm.avail_out) ? A2 : I2;
       }
       function W2(e3, t3) {
         for (var r3, n3, i3; ; ) {
           if (e3.lookahead < z2) {
             if (j2(e3), e3.lookahead < z2 && t3 === l2)
               return A2;
-            if (e3.lookahead === 0)
+            if (0 === e3.lookahead)
               break;
           }
-          if (r3 = 0, e3.lookahead >= x2 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), e3.prev_length = e3.match_length, e3.prev_match = e3.match_start, e3.match_length = x2 - 1, r3 !== 0 && e3.prev_length < e3.max_lazy_match && e3.strstart - r3 <= e3.w_size - z2 && (e3.match_length = L2(e3, r3), e3.match_length <= 5 && (e3.strategy === 1 || e3.match_length === x2 && 4096 < e3.strstart - e3.match_start) && (e3.match_length = x2 - 1)), e3.prev_length >= x2 && e3.match_length <= e3.prev_length) {
-            for (i3 = e3.strstart + e3.lookahead - x2, n3 = u2._tr_tally(e3, e3.strstart - 1 - e3.prev_match, e3.prev_length - x2), e3.lookahead -= e3.prev_length - 1, e3.prev_length -= 2; ++e3.strstart <= i3 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), --e3.prev_length != 0; )
+          if (r3 = 0, e3.lookahead >= x2 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), e3.prev_length = e3.match_length, e3.prev_match = e3.match_start, e3.match_length = x2 - 1, 0 !== r3 && e3.prev_length < e3.max_lazy_match && e3.strstart - r3 <= e3.w_size - z2 && (e3.match_length = L2(e3, r3), e3.match_length <= 5 && (1 === e3.strategy || e3.match_length === x2 && 4096 < e3.strstart - e3.match_start) && (e3.match_length = x2 - 1)), e3.prev_length >= x2 && e3.match_length <= e3.prev_length) {
+            for (i3 = e3.strstart + e3.lookahead - x2, n3 = u2._tr_tally(e3, e3.strstart - 1 - e3.prev_match, e3.prev_length - x2), e3.lookahead -= e3.prev_length - 1, e3.prev_length -= 2; ++e3.strstart <= i3 && (e3.ins_h = (e3.ins_h << e3.hash_shift ^ e3.window[e3.strstart + x2 - 1]) & e3.hash_mask, r3 = e3.prev[e3.strstart & e3.w_mask] = e3.head[e3.ins_h], e3.head[e3.ins_h] = e3.strstart), 0 != --e3.prev_length; )
               ;
-            if (e3.match_available = 0, e3.match_length = x2 - 1, e3.strstart++, n3 && (N2(e3, false), e3.strm.avail_out === 0))
+            if (e3.match_available = 0, e3.match_length = x2 - 1, e3.strstart++, n3 && (N2(e3, false), 0 === e3.strm.avail_out))
               return A2;
           } else if (e3.match_available) {
-            if ((n3 = u2._tr_tally(e3, 0, e3.window[e3.strstart - 1])) && N2(e3, false), e3.strstart++, e3.lookahead--, e3.strm.avail_out === 0)
+            if ((n3 = u2._tr_tally(e3, 0, e3.window[e3.strstart - 1])) && N2(e3, false), e3.strstart++, e3.lookahead--, 0 === e3.strm.avail_out)
               return A2;
           } else
             e3.match_available = 1, e3.strstart++, e3.lookahead--;
         }
-        return e3.match_available && (n3 = u2._tr_tally(e3, 0, e3.window[e3.strstart - 1]), e3.match_available = 0), e3.insert = e3.strstart < x2 - 1 ? e3.strstart : x2 - 1, t3 === f2 ? (N2(e3, true), e3.strm.avail_out === 0 ? O2 : B2) : e3.last_lit && (N2(e3, false), e3.strm.avail_out === 0) ? A2 : I2;
+        return e3.match_available && (n3 = u2._tr_tally(e3, 0, e3.window[e3.strstart - 1]), e3.match_available = 0), e3.insert = e3.strstart < x2 - 1 ? e3.strstart : x2 - 1, t3 === f2 ? (N2(e3, true), 0 === e3.strm.avail_out ? O2 : B2) : e3.last_lit && (N2(e3, false), 0 === e3.strm.avail_out) ? A2 : I2;
       }
       function M2(e3, t3, r3, n3, i3) {
         this.good_length = e3, this.max_lazy = t3, this.nice_length = r3, this.max_chain = n3, this.func = i3;
@@ -40043,7 +40031,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
       function G2(e3) {
         var t3;
-        return e3 && e3.state ? (e3.total_in = e3.total_out = 0, e3.data_type = i2, (t3 = e3.state).pending = 0, t3.pending_out = 0, t3.wrap < 0 && (t3.wrap = -t3.wrap), t3.status = t3.wrap ? C2 : E2, e3.adler = t3.wrap === 2 ? 0 : 1, t3.last_flush = l2, u2._tr_init(t3), m2) : R2(e3, _2);
+        return e3 && e3.state ? (e3.total_in = e3.total_out = 0, e3.data_type = i2, (t3 = e3.state).pending = 0, t3.pending_out = 0, t3.wrap < 0 && (t3.wrap = -t3.wrap), t3.status = t3.wrap ? C2 : E2, e3.adler = 2 === t3.wrap ? 0 : 1, t3.last_flush = l2, u2._tr_init(t3), m2) : R2(e3, _2);
       }
       function K2(e3) {
         var t3 = G2(e3);
@@ -40057,7 +40045,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var a3 = 1;
         if (t3 === g2 && (t3 = 6), n3 < 0 ? (a3 = 0, n3 = -n3) : 15 < n3 && (a3 = 2, n3 -= 16), i3 < 1 || y2 < i3 || r3 !== v2 || n3 < 8 || 15 < n3 || t3 < 0 || 9 < t3 || s3 < 0 || b2 < s3)
           return R2(e3, _2);
-        n3 === 8 && (n3 = 9);
+        8 === n3 && (n3 = 9);
         var o3 = new H2();
         return (e3.state = o3).strm = e3, o3.wrap = a3, o3.gzhead = null, o3.w_bits = n3, o3.w_size = 1 << o3.w_bits, o3.w_mask = o3.w_size - 1, o3.hash_bits = i3 + 7, o3.hash_size = 1 << o3.hash_bits, o3.hash_mask = o3.hash_size - 1, o3.hash_shift = ~~((o3.hash_bits + x2 - 1) / x2), o3.window = new c2.Buf8(2 * o3.w_size), o3.head = new c2.Buf16(o3.hash_size), o3.prev = new c2.Buf16(o3.w_size), o3.lit_bufsize = 1 << i3 + 6, o3.pending_buf_size = 4 * o3.lit_bufsize, o3.pending_buf = new c2.Buf8(o3.pending_buf_size), o3.d_buf = 1 * o3.lit_bufsize, o3.l_buf = 3 * o3.lit_bufsize, o3.level = t3, o3.strategy = s3, o3.method = r3, K2(e3);
       }
@@ -40065,44 +40053,44 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         var r3 = 65535;
         for (r3 > e3.pending_buf_size - 5 && (r3 = e3.pending_buf_size - 5); ; ) {
           if (e3.lookahead <= 1) {
-            if (j2(e3), e3.lookahead === 0 && t3 === l2)
+            if (j2(e3), 0 === e3.lookahead && t3 === l2)
               return A2;
-            if (e3.lookahead === 0)
+            if (0 === e3.lookahead)
               break;
           }
           e3.strstart += e3.lookahead, e3.lookahead = 0;
           var n3 = e3.block_start + r3;
-          if ((e3.strstart === 0 || e3.strstart >= n3) && (e3.lookahead = e3.strstart - n3, e3.strstart = n3, N2(e3, false), e3.strm.avail_out === 0))
+          if ((0 === e3.strstart || e3.strstart >= n3) && (e3.lookahead = e3.strstart - n3, e3.strstart = n3, N2(e3, false), 0 === e3.strm.avail_out))
             return A2;
-          if (e3.strstart - e3.block_start >= e3.w_size - z2 && (N2(e3, false), e3.strm.avail_out === 0))
+          if (e3.strstart - e3.block_start >= e3.w_size - z2 && (N2(e3, false), 0 === e3.strm.avail_out))
             return A2;
         }
-        return e3.insert = 0, t3 === f2 ? (N2(e3, true), e3.strm.avail_out === 0 ? O2 : B2) : (e3.strstart > e3.block_start && (N2(e3, false), e3.strm.avail_out), A2);
+        return e3.insert = 0, t3 === f2 ? (N2(e3, true), 0 === e3.strm.avail_out ? O2 : B2) : (e3.strstart > e3.block_start && (N2(e3, false), e3.strm.avail_out), A2);
       }), new M2(4, 4, 8, 4, Z2), new M2(4, 5, 16, 8, Z2), new M2(4, 6, 32, 32, Z2), new M2(4, 4, 16, 16, W2), new M2(8, 16, 32, 32, W2), new M2(8, 16, 128, 128, W2), new M2(8, 32, 128, 256, W2), new M2(32, 128, 258, 1024, W2), new M2(32, 258, 258, 4096, W2)], r2.deflateInit = function(e3, t3) {
         return Y2(e3, t3, v2, 15, 8, 0);
       }, r2.deflateInit2 = Y2, r2.deflateReset = K2, r2.deflateResetKeep = G2, r2.deflateSetHeader = function(e3, t3) {
-        return e3 && e3.state ? e3.state.wrap !== 2 ? _2 : (e3.state.gzhead = t3, m2) : _2;
+        return e3 && e3.state ? 2 !== e3.state.wrap ? _2 : (e3.state.gzhead = t3, m2) : _2;
       }, r2.deflate = function(e3, t3) {
         var r3, n3, i3, s3;
         if (!e3 || !e3.state || 5 < t3 || t3 < 0)
           return e3 ? R2(e3, _2) : _2;
-        if (n3 = e3.state, !e3.output || !e3.input && e3.avail_in !== 0 || n3.status === 666 && t3 !== f2)
-          return R2(e3, e3.avail_out === 0 ? -5 : _2);
+        if (n3 = e3.state, !e3.output || !e3.input && 0 !== e3.avail_in || 666 === n3.status && t3 !== f2)
+          return R2(e3, 0 === e3.avail_out ? -5 : _2);
         if (n3.strm = e3, r3 = n3.last_flush, n3.last_flush = t3, n3.status === C2)
-          if (n3.wrap === 2)
-            e3.adler = 0, U2(n3, 31), U2(n3, 139), U2(n3, 8), n3.gzhead ? (U2(n3, (n3.gzhead.text ? 1 : 0) + (n3.gzhead.hcrc ? 2 : 0) + (n3.gzhead.extra ? 4 : 0) + (n3.gzhead.name ? 8 : 0) + (n3.gzhead.comment ? 16 : 0)), U2(n3, 255 & n3.gzhead.time), U2(n3, n3.gzhead.time >> 8 & 255), U2(n3, n3.gzhead.time >> 16 & 255), U2(n3, n3.gzhead.time >> 24 & 255), U2(n3, n3.level === 9 ? 2 : 2 <= n3.strategy || n3.level < 2 ? 4 : 0), U2(n3, 255 & n3.gzhead.os), n3.gzhead.extra && n3.gzhead.extra.length && (U2(n3, 255 & n3.gzhead.extra.length), U2(n3, n3.gzhead.extra.length >> 8 & 255)), n3.gzhead.hcrc && (e3.adler = p2(e3.adler, n3.pending_buf, n3.pending, 0)), n3.gzindex = 0, n3.status = 69) : (U2(n3, 0), U2(n3, 0), U2(n3, 0), U2(n3, 0), U2(n3, 0), U2(n3, n3.level === 9 ? 2 : 2 <= n3.strategy || n3.level < 2 ? 4 : 0), U2(n3, 3), n3.status = E2);
+          if (2 === n3.wrap)
+            e3.adler = 0, U2(n3, 31), U2(n3, 139), U2(n3, 8), n3.gzhead ? (U2(n3, (n3.gzhead.text ? 1 : 0) + (n3.gzhead.hcrc ? 2 : 0) + (n3.gzhead.extra ? 4 : 0) + (n3.gzhead.name ? 8 : 0) + (n3.gzhead.comment ? 16 : 0)), U2(n3, 255 & n3.gzhead.time), U2(n3, n3.gzhead.time >> 8 & 255), U2(n3, n3.gzhead.time >> 16 & 255), U2(n3, n3.gzhead.time >> 24 & 255), U2(n3, 9 === n3.level ? 2 : 2 <= n3.strategy || n3.level < 2 ? 4 : 0), U2(n3, 255 & n3.gzhead.os), n3.gzhead.extra && n3.gzhead.extra.length && (U2(n3, 255 & n3.gzhead.extra.length), U2(n3, n3.gzhead.extra.length >> 8 & 255)), n3.gzhead.hcrc && (e3.adler = p2(e3.adler, n3.pending_buf, n3.pending, 0)), n3.gzindex = 0, n3.status = 69) : (U2(n3, 0), U2(n3, 0), U2(n3, 0), U2(n3, 0), U2(n3, 0), U2(n3, 9 === n3.level ? 2 : 2 <= n3.strategy || n3.level < 2 ? 4 : 0), U2(n3, 3), n3.status = E2);
           else {
             var a3 = v2 + (n3.w_bits - 8 << 4) << 8;
-            a3 |= (2 <= n3.strategy || n3.level < 2 ? 0 : n3.level < 6 ? 1 : n3.level === 6 ? 2 : 3) << 6, n3.strstart !== 0 && (a3 |= 32), a3 += 31 - a3 % 31, n3.status = E2, P2(n3, a3), n3.strstart !== 0 && (P2(n3, e3.adler >>> 16), P2(n3, 65535 & e3.adler)), e3.adler = 1;
+            a3 |= (2 <= n3.strategy || n3.level < 2 ? 0 : n3.level < 6 ? 1 : 6 === n3.level ? 2 : 3) << 6, 0 !== n3.strstart && (a3 |= 32), a3 += 31 - a3 % 31, n3.status = E2, P2(n3, a3), 0 !== n3.strstart && (P2(n3, e3.adler >>> 16), P2(n3, 65535 & e3.adler)), e3.adler = 1;
           }
-        if (n3.status === 69)
+        if (69 === n3.status)
           if (n3.gzhead.extra) {
             for (i3 = n3.pending; n3.gzindex < (65535 & n3.gzhead.extra.length) && (n3.pending !== n3.pending_buf_size || (n3.gzhead.hcrc && n3.pending > i3 && (e3.adler = p2(e3.adler, n3.pending_buf, n3.pending - i3, i3)), F2(e3), i3 = n3.pending, n3.pending !== n3.pending_buf_size)); )
               U2(n3, 255 & n3.gzhead.extra[n3.gzindex]), n3.gzindex++;
             n3.gzhead.hcrc && n3.pending > i3 && (e3.adler = p2(e3.adler, n3.pending_buf, n3.pending - i3, i3)), n3.gzindex === n3.gzhead.extra.length && (n3.gzindex = 0, n3.status = 73);
           } else
             n3.status = 73;
-        if (n3.status === 73)
+        if (73 === n3.status)
           if (n3.gzhead.name) {
             i3 = n3.pending;
             do {
@@ -40111,11 +40099,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 break;
               }
               s3 = n3.gzindex < n3.gzhead.name.length ? 255 & n3.gzhead.name.charCodeAt(n3.gzindex++) : 0, U2(n3, s3);
-            } while (s3 !== 0);
-            n3.gzhead.hcrc && n3.pending > i3 && (e3.adler = p2(e3.adler, n3.pending_buf, n3.pending - i3, i3)), s3 === 0 && (n3.gzindex = 0, n3.status = 91);
+            } while (0 !== s3);
+            n3.gzhead.hcrc && n3.pending > i3 && (e3.adler = p2(e3.adler, n3.pending_buf, n3.pending - i3, i3)), 0 === s3 && (n3.gzindex = 0, n3.status = 91);
           } else
             n3.status = 91;
-        if (n3.status === 91)
+        if (91 === n3.status)
           if (n3.gzhead.comment) {
             i3 = n3.pending;
             do {
@@ -40124,35 +40112,35 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 break;
               }
               s3 = n3.gzindex < n3.gzhead.comment.length ? 255 & n3.gzhead.comment.charCodeAt(n3.gzindex++) : 0, U2(n3, s3);
-            } while (s3 !== 0);
-            n3.gzhead.hcrc && n3.pending > i3 && (e3.adler = p2(e3.adler, n3.pending_buf, n3.pending - i3, i3)), s3 === 0 && (n3.status = 103);
+            } while (0 !== s3);
+            n3.gzhead.hcrc && n3.pending > i3 && (e3.adler = p2(e3.adler, n3.pending_buf, n3.pending - i3, i3)), 0 === s3 && (n3.status = 103);
           } else
             n3.status = 103;
-        if (n3.status === 103 && (n3.gzhead.hcrc ? (n3.pending + 2 > n3.pending_buf_size && F2(e3), n3.pending + 2 <= n3.pending_buf_size && (U2(n3, 255 & e3.adler), U2(n3, e3.adler >> 8 & 255), e3.adler = 0, n3.status = E2)) : n3.status = E2), n3.pending !== 0) {
-          if (F2(e3), e3.avail_out === 0)
+        if (103 === n3.status && (n3.gzhead.hcrc ? (n3.pending + 2 > n3.pending_buf_size && F2(e3), n3.pending + 2 <= n3.pending_buf_size && (U2(n3, 255 & e3.adler), U2(n3, e3.adler >> 8 & 255), e3.adler = 0, n3.status = E2)) : n3.status = E2), 0 !== n3.pending) {
+          if (F2(e3), 0 === e3.avail_out)
             return n3.last_flush = -1, m2;
-        } else if (e3.avail_in === 0 && T2(t3) <= T2(r3) && t3 !== f2)
+        } else if (0 === e3.avail_in && T2(t3) <= T2(r3) && t3 !== f2)
           return R2(e3, -5);
-        if (n3.status === 666 && e3.avail_in !== 0)
+        if (666 === n3.status && 0 !== e3.avail_in)
           return R2(e3, -5);
-        if (e3.avail_in !== 0 || n3.lookahead !== 0 || t3 !== l2 && n3.status !== 666) {
-          var o3 = n3.strategy === 2 ? function(e4, t4) {
+        if (0 !== e3.avail_in || 0 !== n3.lookahead || t3 !== l2 && 666 !== n3.status) {
+          var o3 = 2 === n3.strategy ? function(e4, t4) {
             for (var r4; ; ) {
-              if (e4.lookahead === 0 && (j2(e4), e4.lookahead === 0)) {
+              if (0 === e4.lookahead && (j2(e4), 0 === e4.lookahead)) {
                 if (t4 === l2)
                   return A2;
                 break;
               }
-              if (e4.match_length = 0, r4 = u2._tr_tally(e4, 0, e4.window[e4.strstart]), e4.lookahead--, e4.strstart++, r4 && (N2(e4, false), e4.strm.avail_out === 0))
+              if (e4.match_length = 0, r4 = u2._tr_tally(e4, 0, e4.window[e4.strstart]), e4.lookahead--, e4.strstart++, r4 && (N2(e4, false), 0 === e4.strm.avail_out))
                 return A2;
             }
-            return e4.insert = 0, t4 === f2 ? (N2(e4, true), e4.strm.avail_out === 0 ? O2 : B2) : e4.last_lit && (N2(e4, false), e4.strm.avail_out === 0) ? A2 : I2;
-          }(n3, t3) : n3.strategy === 3 ? function(e4, t4) {
+            return e4.insert = 0, t4 === f2 ? (N2(e4, true), 0 === e4.strm.avail_out ? O2 : B2) : e4.last_lit && (N2(e4, false), 0 === e4.strm.avail_out) ? A2 : I2;
+          }(n3, t3) : 3 === n3.strategy ? function(e4, t4) {
             for (var r4, n4, i4, s4, a4 = e4.window; ; ) {
               if (e4.lookahead <= S2) {
                 if (j2(e4), e4.lookahead <= S2 && t4 === l2)
                   return A2;
-                if (e4.lookahead === 0)
+                if (0 === e4.lookahead)
                   break;
               }
               if (e4.match_length = 0, e4.lookahead >= x2 && 0 < e4.strstart && (n4 = a4[i4 = e4.strstart - 1]) === a4[++i4] && n4 === a4[++i4] && n4 === a4[++i4]) {
@@ -40161,27 +40149,27 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 } while (n4 === a4[++i4] && n4 === a4[++i4] && n4 === a4[++i4] && n4 === a4[++i4] && n4 === a4[++i4] && n4 === a4[++i4] && n4 === a4[++i4] && n4 === a4[++i4] && i4 < s4);
                 e4.match_length = S2 - (s4 - i4), e4.match_length > e4.lookahead && (e4.match_length = e4.lookahead);
               }
-              if (e4.match_length >= x2 ? (r4 = u2._tr_tally(e4, 1, e4.match_length - x2), e4.lookahead -= e4.match_length, e4.strstart += e4.match_length, e4.match_length = 0) : (r4 = u2._tr_tally(e4, 0, e4.window[e4.strstart]), e4.lookahead--, e4.strstart++), r4 && (N2(e4, false), e4.strm.avail_out === 0))
+              if (e4.match_length >= x2 ? (r4 = u2._tr_tally(e4, 1, e4.match_length - x2), e4.lookahead -= e4.match_length, e4.strstart += e4.match_length, e4.match_length = 0) : (r4 = u2._tr_tally(e4, 0, e4.window[e4.strstart]), e4.lookahead--, e4.strstart++), r4 && (N2(e4, false), 0 === e4.strm.avail_out))
                 return A2;
             }
-            return e4.insert = 0, t4 === f2 ? (N2(e4, true), e4.strm.avail_out === 0 ? O2 : B2) : e4.last_lit && (N2(e4, false), e4.strm.avail_out === 0) ? A2 : I2;
+            return e4.insert = 0, t4 === f2 ? (N2(e4, true), 0 === e4.strm.avail_out ? O2 : B2) : e4.last_lit && (N2(e4, false), 0 === e4.strm.avail_out) ? A2 : I2;
           }(n3, t3) : h2[n3.level].func(n3, t3);
           if (o3 !== O2 && o3 !== B2 || (n3.status = 666), o3 === A2 || o3 === O2)
-            return e3.avail_out === 0 && (n3.last_flush = -1), m2;
-          if (o3 === I2 && (t3 === 1 ? u2._tr_align(n3) : t3 !== 5 && (u2._tr_stored_block(n3, 0, 0, false), t3 === 3 && (D2(n3.head), n3.lookahead === 0 && (n3.strstart = 0, n3.block_start = 0, n3.insert = 0))), F2(e3), e3.avail_out === 0))
+            return 0 === e3.avail_out && (n3.last_flush = -1), m2;
+          if (o3 === I2 && (1 === t3 ? u2._tr_align(n3) : 5 !== t3 && (u2._tr_stored_block(n3, 0, 0, false), 3 === t3 && (D2(n3.head), 0 === n3.lookahead && (n3.strstart = 0, n3.block_start = 0, n3.insert = 0))), F2(e3), 0 === e3.avail_out))
             return n3.last_flush = -1, m2;
         }
-        return t3 !== f2 ? m2 : n3.wrap <= 0 ? 1 : (n3.wrap === 2 ? (U2(n3, 255 & e3.adler), U2(n3, e3.adler >> 8 & 255), U2(n3, e3.adler >> 16 & 255), U2(n3, e3.adler >> 24 & 255), U2(n3, 255 & e3.total_in), U2(n3, e3.total_in >> 8 & 255), U2(n3, e3.total_in >> 16 & 255), U2(n3, e3.total_in >> 24 & 255)) : (P2(n3, e3.adler >>> 16), P2(n3, 65535 & e3.adler)), F2(e3), 0 < n3.wrap && (n3.wrap = -n3.wrap), n3.pending !== 0 ? m2 : 1);
+        return t3 !== f2 ? m2 : n3.wrap <= 0 ? 1 : (2 === n3.wrap ? (U2(n3, 255 & e3.adler), U2(n3, e3.adler >> 8 & 255), U2(n3, e3.adler >> 16 & 255), U2(n3, e3.adler >> 24 & 255), U2(n3, 255 & e3.total_in), U2(n3, e3.total_in >> 8 & 255), U2(n3, e3.total_in >> 16 & 255), U2(n3, e3.total_in >> 24 & 255)) : (P2(n3, e3.adler >>> 16), P2(n3, 65535 & e3.adler)), F2(e3), 0 < n3.wrap && (n3.wrap = -n3.wrap), 0 !== n3.pending ? m2 : 1);
       }, r2.deflateEnd = function(e3) {
         var t3;
-        return e3 && e3.state ? (t3 = e3.state.status) !== C2 && t3 !== 69 && t3 !== 73 && t3 !== 91 && t3 !== 103 && t3 !== E2 && t3 !== 666 ? R2(e3, _2) : (e3.state = null, t3 === E2 ? R2(e3, -3) : m2) : _2;
+        return e3 && e3.state ? (t3 = e3.state.status) !== C2 && 69 !== t3 && 73 !== t3 && 91 !== t3 && 103 !== t3 && t3 !== E2 && 666 !== t3 ? R2(e3, _2) : (e3.state = null, t3 === E2 ? R2(e3, -3) : m2) : _2;
       }, r2.deflateSetDictionary = function(e3, t3) {
         var r3, n3, i3, s3, a3, o3, h3, u3, l3 = t3.length;
         if (!e3 || !e3.state)
           return _2;
-        if ((s3 = (r3 = e3.state).wrap) === 2 || s3 === 1 && r3.status !== C2 || r3.lookahead)
+        if (2 === (s3 = (r3 = e3.state).wrap) || 1 === s3 && r3.status !== C2 || r3.lookahead)
           return _2;
-        for (s3 === 1 && (e3.adler = d2(e3.adler, t3, l3, 0)), r3.wrap = 0, l3 >= r3.w_size && (s3 === 0 && (D2(r3.head), r3.strstart = 0, r3.block_start = 0, r3.insert = 0), u3 = new c2.Buf8(r3.w_size), c2.arraySet(u3, t3, l3 - r3.w_size, r3.w_size, 0), t3 = u3, l3 = r3.w_size), a3 = e3.avail_in, o3 = e3.next_in, h3 = e3.input, e3.avail_in = l3, e3.next_in = 0, e3.input = t3, j2(r3); r3.lookahead >= x2; ) {
+        for (1 === s3 && (e3.adler = d2(e3.adler, t3, l3, 0)), r3.wrap = 0, l3 >= r3.w_size && (0 === s3 && (D2(r3.head), r3.strstart = 0, r3.block_start = 0, r3.insert = 0), u3 = new c2.Buf8(r3.w_size), c2.arraySet(u3, t3, l3 - r3.w_size, r3.w_size, 0), t3 = u3, l3 = r3.w_size), a3 = e3.avail_in, o3 = e3.next_in, h3 = e3.input, e3.avail_in = l3, e3.next_in = 0, e3.input = t3, j2(r3); r3.lookahead >= x2; ) {
           for (n3 = r3.strstart, i3 = r3.lookahead - (x2 - 1); r3.ins_h = (r3.ins_h << r3.hash_shift ^ r3.window[n3 + x2 - 1]) & r3.hash_mask, r3.prev[n3 & r3.w_mask] = r3.head[r3.ins_h], r3.head[r3.ins_h] = n3, n3++, --i3; )
             ;
           r3.strstart = n3, r3.lookahead = x2 - 1, j2(r3);
@@ -40201,11 +40189,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             p2 < 15 && (d2 += z2[n2++] << p2, p2 += 8, d2 += z2[n2++] << p2, p2 += 8), v2 = m2[d2 & g2];
             t:
               for (; ; ) {
-                if (d2 >>>= y2 = v2 >>> 24, p2 -= y2, (y2 = v2 >>> 16 & 255) === 0)
+                if (d2 >>>= y2 = v2 >>> 24, p2 -= y2, 0 === (y2 = v2 >>> 16 & 255))
                   C2[s2++] = 65535 & v2;
                 else {
                   if (!(16 & y2)) {
-                    if ((64 & y2) == 0) {
+                    if (0 == (64 & y2)) {
                       v2 = m2[(65535 & v2) + (d2 & (1 << y2) - 1)];
                       continue t;
                     }
@@ -40220,7 +40208,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   r:
                     for (; ; ) {
                       if (d2 >>>= y2 = v2 >>> 24, p2 -= y2, !(16 & (y2 = v2 >>> 16 & 255))) {
-                        if ((64 & y2) == 0) {
+                        if (0 == (64 & y2)) {
                           v2 = _2[(65535 & v2) + (d2 & (1 << y2) - 1)];
                           continue r;
                         }
@@ -40291,7 +40279,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
       function h2(e3, t3) {
         var r3, n3;
-        return e3 && e3.state ? (n3 = e3.state, t3 < 0 ? (r3 = 0, t3 = -t3) : (r3 = 1 + (t3 >> 4), t3 < 48 && (t3 &= 15)), t3 && (t3 < 8 || 15 < t3) ? U2 : (n3.window !== null && n3.wbits !== t3 && (n3.window = null), n3.wrap = r3, n3.wbits = t3, o2(e3))) : U2;
+        return e3 && e3.state ? (n3 = e3.state, t3 < 0 ? (r3 = 0, t3 = -t3) : (r3 = 1 + (t3 >> 4), t3 < 48 && (t3 &= 15)), t3 && (t3 < 8 || 15 < t3) ? U2 : (null !== n3.window && n3.wbits !== t3 && (n3.window = null), n3.wrap = r3, n3.wbits = t3, o2(e3))) : U2;
       }
       function u2(e3, t3) {
         var r3, n3;
@@ -40317,29 +40305,29 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
       function Z2(e3, t3, r3, n3) {
         var i3, s3 = e3.state;
-        return s3.window === null && (s3.wsize = 1 << s3.wbits, s3.wnext = 0, s3.whave = 0, s3.window = new I2.Buf8(s3.wsize)), n3 >= s3.wsize ? (I2.arraySet(s3.window, t3, r3 - s3.wsize, s3.wsize, 0), s3.wnext = 0, s3.whave = s3.wsize) : (n3 < (i3 = s3.wsize - s3.wnext) && (i3 = n3), I2.arraySet(s3.window, t3, r3 - n3, i3, s3.wnext), (n3 -= i3) ? (I2.arraySet(s3.window, t3, r3 - n3, n3, 0), s3.wnext = n3, s3.whave = s3.wsize) : (s3.wnext += i3, s3.wnext === s3.wsize && (s3.wnext = 0), s3.whave < s3.wsize && (s3.whave += i3))), 0;
+        return null === s3.window && (s3.wsize = 1 << s3.wbits, s3.wnext = 0, s3.whave = 0, s3.window = new I2.Buf8(s3.wsize)), n3 >= s3.wsize ? (I2.arraySet(s3.window, t3, r3 - s3.wsize, s3.wsize, 0), s3.wnext = 0, s3.whave = s3.wsize) : (n3 < (i3 = s3.wsize - s3.wnext) && (i3 = n3), I2.arraySet(s3.window, t3, r3 - n3, i3, s3.wnext), (n3 -= i3) ? (I2.arraySet(s3.window, t3, r3 - n3, n3, 0), s3.wnext = n3, s3.whave = s3.wsize) : (s3.wnext += i3, s3.wnext === s3.wsize && (s3.wnext = 0), s3.whave < s3.wsize && (s3.whave += i3))), 0;
       }
       r2.inflateReset = o2, r2.inflateReset2 = h2, r2.inflateResetKeep = a2, r2.inflateInit = function(e3) {
         return u2(e3, 15);
       }, r2.inflateInit2 = u2, r2.inflate = function(e3, t3) {
         var r3, n3, i3, s3, a3, o3, h3, u3, l3, f3, c3, d2, p2, m2, _2, g2, b2, v2, y2, w2, k2, x2, S2, z2, C2 = 0, E2 = new I2.Buf8(4), A2 = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
-        if (!e3 || !e3.state || !e3.output || !e3.input && e3.avail_in !== 0)
+        if (!e3 || !e3.state || !e3.output || !e3.input && 0 !== e3.avail_in)
           return U2;
-        (r3 = e3.state).mode === 12 && (r3.mode = 13), a3 = e3.next_out, i3 = e3.output, h3 = e3.avail_out, s3 = e3.next_in, n3 = e3.input, o3 = e3.avail_in, u3 = r3.hold, l3 = r3.bits, f3 = o3, c3 = h3, x2 = N2;
+        12 === (r3 = e3.state).mode && (r3.mode = 13), a3 = e3.next_out, i3 = e3.output, h3 = e3.avail_out, s3 = e3.next_in, n3 = e3.input, o3 = e3.avail_in, u3 = r3.hold, l3 = r3.bits, f3 = o3, c3 = h3, x2 = N2;
         e:
           for (; ; )
             switch (r3.mode) {
               case P2:
-                if (r3.wrap === 0) {
+                if (0 === r3.wrap) {
                   r3.mode = 13;
                   break;
                 }
                 for (; l3 < 16; ) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
-                if (2 & r3.wrap && u3 === 35615) {
+                if (2 & r3.wrap && 35615 === u3) {
                   E2[r3.check = 0] = 255 & u3, E2[1] = u3 >>> 8 & 255, r3.check = B2(r3.check, E2, 2, 0), l3 = u3 = 0, r3.mode = 2;
                   break;
                 }
@@ -40347,11 +40335,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   e3.msg = "incorrect header check", r3.mode = 30;
                   break;
                 }
-                if ((15 & u3) != 8) {
+                if (8 != (15 & u3)) {
                   e3.msg = "unknown compression method", r3.mode = 30;
                   break;
                 }
-                if (l3 -= 4, k2 = 8 + (15 & (u3 >>>= 4)), r3.wbits === 0)
+                if (l3 -= 4, k2 = 8 + (15 & (u3 >>>= 4)), 0 === r3.wbits)
                   r3.wbits = k2;
                 else if (k2 > r3.wbits) {
                   e3.msg = "invalid window size", r3.mode = 30;
@@ -40361,11 +40349,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 break;
               case 2:
                 for (; l3 < 16; ) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
-                if (r3.flags = u3, (255 & r3.flags) != 8) {
+                if (r3.flags = u3, 8 != (255 & r3.flags)) {
                   e3.msg = "unknown compression method", r3.mode = 30;
                   break;
                 }
@@ -40376,14 +40364,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 r3.head && (r3.head.text = u3 >> 8 & 1), 512 & r3.flags && (E2[0] = 255 & u3, E2[1] = u3 >>> 8 & 255, r3.check = B2(r3.check, E2, 2, 0)), l3 = u3 = 0, r3.mode = 3;
               case 3:
                 for (; l3 < 32; ) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
                 r3.head && (r3.head.time = u3), 512 & r3.flags && (E2[0] = 255 & u3, E2[1] = u3 >>> 8 & 255, E2[2] = u3 >>> 16 & 255, E2[3] = u3 >>> 24 & 255, r3.check = B2(r3.check, E2, 4, 0)), l3 = u3 = 0, r3.mode = 4;
               case 4:
                 for (; l3 < 16; ) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
@@ -40391,7 +40379,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 5:
                 if (1024 & r3.flags) {
                   for (; l3 < 16; ) {
-                    if (o3 === 0)
+                    if (0 === o3)
                       break e;
                     o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
@@ -40405,7 +40393,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 r3.length = 0, r3.mode = 7;
               case 7:
                 if (2048 & r3.flags) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   for (d2 = 0; k2 = n3[s3 + d2++], r3.head && k2 && r3.length < 65536 && (r3.head.name += String.fromCharCode(k2)), k2 && d2 < o3; )
                     ;
@@ -40416,7 +40404,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 r3.length = 0, r3.mode = 8;
               case 8:
                 if (4096 & r3.flags) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   for (d2 = 0; k2 = n3[s3 + d2++], r3.head && k2 && r3.length < 65536 && (r3.head.comment += String.fromCharCode(k2)), k2 && d2 < o3; )
                     ;
@@ -40428,7 +40416,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 9:
                 if (512 & r3.flags) {
                   for (; l3 < 16; ) {
-                    if (o3 === 0)
+                    if (0 === o3)
                       break e;
                     o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
@@ -40442,17 +40430,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 break;
               case 10:
                 for (; l3 < 32; ) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
                 e3.adler = r3.check = L2(u3), l3 = u3 = 0, r3.mode = 11;
               case 11:
-                if (r3.havedict === 0)
+                if (0 === r3.havedict)
                   return e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o3, r3.hold = u3, r3.bits = l3, 2;
                 e3.adler = r3.check = 1, r3.mode = 12;
               case 12:
-                if (t3 === 5 || t3 === 6)
+                if (5 === t3 || 6 === t3)
                   break e;
               case 13:
                 if (r3.last) {
@@ -40460,7 +40448,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   break;
                 }
                 for (; l3 < 3; ) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
@@ -40469,7 +40457,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                     r3.mode = 14;
                     break;
                   case 1:
-                    if (j2(r3), r3.mode = 20, t3 !== 6)
+                    if (j2(r3), r3.mode = 20, 6 !== t3)
                       break;
                     u3 >>>= 2, l3 -= 2;
                     break e;
@@ -40483,7 +40471,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 break;
               case 14:
                 for (u3 >>>= 7 & l3, l3 -= 7 & l3; l3 < 32; ) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
@@ -40491,13 +40479,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   e3.msg = "invalid stored block lengths", r3.mode = 30;
                   break;
                 }
-                if (r3.length = 65535 & u3, l3 = u3 = 0, r3.mode = 15, t3 === 6)
+                if (r3.length = 65535 & u3, l3 = u3 = 0, r3.mode = 15, 6 === t3)
                   break e;
               case 15:
                 r3.mode = 16;
               case 16:
                 if (d2 = r3.length) {
-                  if (o3 < d2 && (d2 = o3), h3 < d2 && (d2 = h3), d2 === 0)
+                  if (o3 < d2 && (d2 = o3), h3 < d2 && (d2 = h3), 0 === d2)
                     break e;
                   I2.arraySet(i3, n3, s3, d2, a3), o3 -= d2, s3 += d2, h3 -= d2, a3 += d2, r3.length -= d2;
                   break;
@@ -40506,7 +40494,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 break;
               case 17:
                 for (; l3 < 14; ) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
@@ -40518,7 +40506,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 18:
                 for (; r3.have < r3.ncode; ) {
                   for (; l3 < 3; ) {
-                    if (o3 === 0)
+                    if (0 === o3)
                       break e;
                     o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
@@ -40534,34 +40522,34 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 19:
                 for (; r3.have < r3.nlen + r3.ndist; ) {
                   for (; g2 = (C2 = r3.lencode[u3 & (1 << r3.lenbits) - 1]) >>> 16 & 255, b2 = 65535 & C2, !((_2 = C2 >>> 24) <= l3); ) {
-                    if (o3 === 0)
+                    if (0 === o3)
                       break e;
                     o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
                   if (b2 < 16)
                     u3 >>>= _2, l3 -= _2, r3.lens[r3.have++] = b2;
                   else {
-                    if (b2 === 16) {
+                    if (16 === b2) {
                       for (z2 = _2 + 2; l3 < z2; ) {
-                        if (o3 === 0)
+                        if (0 === o3)
                           break e;
                         o3--, u3 += n3[s3++] << l3, l3 += 8;
                       }
-                      if (u3 >>>= _2, l3 -= _2, r3.have === 0) {
+                      if (u3 >>>= _2, l3 -= _2, 0 === r3.have) {
                         e3.msg = "invalid bit length repeat", r3.mode = 30;
                         break;
                       }
                       k2 = r3.lens[r3.have - 1], d2 = 3 + (3 & u3), u3 >>>= 2, l3 -= 2;
-                    } else if (b2 === 17) {
+                    } else if (17 === b2) {
                       for (z2 = _2 + 3; l3 < z2; ) {
-                        if (o3 === 0)
+                        if (0 === o3)
                           break e;
                         o3--, u3 += n3[s3++] << l3, l3 += 8;
                       }
                       l3 -= _2, k2 = 0, d2 = 3 + (7 & (u3 >>>= _2)), u3 >>>= 3, l3 -= 3;
                     } else {
                       for (z2 = _2 + 7; l3 < z2; ) {
-                        if (o3 === 0)
+                        if (0 === o3)
                           break e;
                         o3--, u3 += n3[s3++] << l3, l3 += 8;
                       }
@@ -40575,9 +40563,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                       r3.lens[r3.have++] = k2;
                   }
                 }
-                if (r3.mode === 30)
+                if (30 === r3.mode)
                   break;
-                if (r3.lens[256] === 0) {
+                if (0 === r3.lens[256]) {
                   e3.msg = "invalid code -- missing end-of-block", r3.mode = 30;
                   break;
                 }
@@ -40589,29 +40577,29 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   e3.msg = "invalid distances set", r3.mode = 30;
                   break;
                 }
-                if (r3.mode = 20, t3 === 6)
+                if (r3.mode = 20, 6 === t3)
                   break e;
               case 20:
                 r3.mode = 21;
               case 21:
                 if (6 <= o3 && 258 <= h3) {
-                  e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o3, r3.hold = u3, r3.bits = l3, R2(e3, c3), a3 = e3.next_out, i3 = e3.output, h3 = e3.avail_out, s3 = e3.next_in, n3 = e3.input, o3 = e3.avail_in, u3 = r3.hold, l3 = r3.bits, r3.mode === 12 && (r3.back = -1);
+                  e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o3, r3.hold = u3, r3.bits = l3, R2(e3, c3), a3 = e3.next_out, i3 = e3.output, h3 = e3.avail_out, s3 = e3.next_in, n3 = e3.input, o3 = e3.avail_in, u3 = r3.hold, l3 = r3.bits, 12 === r3.mode && (r3.back = -1);
                   break;
                 }
                 for (r3.back = 0; g2 = (C2 = r3.lencode[u3 & (1 << r3.lenbits) - 1]) >>> 16 & 255, b2 = 65535 & C2, !((_2 = C2 >>> 24) <= l3); ) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
-                if (g2 && (240 & g2) == 0) {
+                if (g2 && 0 == (240 & g2)) {
                   for (v2 = _2, y2 = g2, w2 = b2; g2 = (C2 = r3.lencode[w2 + ((u3 & (1 << v2 + y2) - 1) >> v2)]) >>> 16 & 255, b2 = 65535 & C2, !(v2 + (_2 = C2 >>> 24) <= l3); ) {
-                    if (o3 === 0)
+                    if (0 === o3)
                       break e;
                     o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
                   u3 >>>= v2, l3 -= v2, r3.back += v2;
                 }
-                if (u3 >>>= _2, l3 -= _2, r3.back += _2, r3.length = b2, g2 === 0) {
+                if (u3 >>>= _2, l3 -= _2, r3.back += _2, r3.length = b2, 0 === g2) {
                   r3.mode = 26;
                   break;
                 }
@@ -40627,7 +40615,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 22:
                 if (r3.extra) {
                   for (z2 = r3.extra; l3 < z2; ) {
-                    if (o3 === 0)
+                    if (0 === o3)
                       break e;
                     o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
@@ -40636,13 +40624,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 r3.was = r3.length, r3.mode = 23;
               case 23:
                 for (; g2 = (C2 = r3.distcode[u3 & (1 << r3.distbits) - 1]) >>> 16 & 255, b2 = 65535 & C2, !((_2 = C2 >>> 24) <= l3); ) {
-                  if (o3 === 0)
+                  if (0 === o3)
                     break e;
                   o3--, u3 += n3[s3++] << l3, l3 += 8;
                 }
-                if ((240 & g2) == 0) {
+                if (0 == (240 & g2)) {
                   for (v2 = _2, y2 = g2, w2 = b2; g2 = (C2 = r3.distcode[w2 + ((u3 & (1 << v2 + y2) - 1) >> v2)]) >>> 16 & 255, b2 = 65535 & C2, !(v2 + (_2 = C2 >>> 24) <= l3); ) {
-                    if (o3 === 0)
+                    if (0 === o3)
                       break e;
                     o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
@@ -40656,7 +40644,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 24:
                 if (r3.extra) {
                   for (z2 = r3.extra; l3 < z2; ) {
-                    if (o3 === 0)
+                    if (0 === o3)
                       break e;
                     o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
@@ -40668,7 +40656,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 }
                 r3.mode = 25;
               case 25:
-                if (h3 === 0)
+                if (0 === h3)
                   break e;
                 if (d2 = c3 - h3, r3.offset > d2) {
                   if ((d2 = r3.offset - d2) > r3.whave && r3.sane) {
@@ -40680,17 +40668,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   m2 = i3, p2 = a3 - r3.offset, d2 = r3.length;
                 for (h3 < d2 && (d2 = h3), h3 -= d2, r3.length -= d2; i3[a3++] = m2[p2++], --d2; )
                   ;
-                r3.length === 0 && (r3.mode = 21);
+                0 === r3.length && (r3.mode = 21);
                 break;
               case 26:
-                if (h3 === 0)
+                if (0 === h3)
                   break e;
                 i3[a3++] = r3.length, h3--, r3.mode = 21;
                 break;
               case 27:
                 if (r3.wrap) {
                   for (; l3 < 32; ) {
-                    if (o3 === 0)
+                    if (0 === o3)
                       break e;
                     o3--, u3 |= n3[s3++] << l3, l3 += 8;
                   }
@@ -40704,7 +40692,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               case 28:
                 if (r3.wrap && r3.flags) {
                   for (; l3 < 32; ) {
-                    if (o3 === 0)
+                    if (0 === o3)
                       break e;
                     o3--, u3 += n3[s3++] << l3, l3 += 8;
                   }
@@ -40727,7 +40715,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               default:
                 return U2;
             }
-        return e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o3, r3.hold = u3, r3.bits = l3, (r3.wsize || c3 !== e3.avail_out && r3.mode < 30 && (r3.mode < 27 || t3 !== 4)) && Z2(e3, e3.output, e3.next_out, c3 - e3.avail_out) ? (r3.mode = 31, -4) : (f3 -= e3.avail_in, c3 -= e3.avail_out, e3.total_in += f3, e3.total_out += c3, r3.total += c3, r3.wrap && c3 && (e3.adler = r3.check = r3.flags ? B2(r3.check, i3, c3, e3.next_out - c3) : O2(r3.check, i3, c3, e3.next_out - c3)), e3.data_type = r3.bits + (r3.last ? 64 : 0) + (r3.mode === 12 ? 128 : 0) + (r3.mode === 20 || r3.mode === 15 ? 256 : 0), (f3 == 0 && c3 === 0 || t3 === 4) && x2 === N2 && (x2 = -5), x2);
+        return e3.next_out = a3, e3.avail_out = h3, e3.next_in = s3, e3.avail_in = o3, r3.hold = u3, r3.bits = l3, (r3.wsize || c3 !== e3.avail_out && r3.mode < 30 && (r3.mode < 27 || 4 !== t3)) && Z2(e3, e3.output, e3.next_out, c3 - e3.avail_out) ? (r3.mode = 31, -4) : (f3 -= e3.avail_in, c3 -= e3.avail_out, e3.total_in += f3, e3.total_out += c3, r3.total += c3, r3.wrap && c3 && (e3.adler = r3.check = r3.flags ? B2(r3.check, i3, c3, e3.next_out - c3) : O2(r3.check, i3, c3, e3.next_out - c3)), e3.data_type = r3.bits + (r3.last ? 64 : 0) + (12 === r3.mode ? 128 : 0) + (20 === r3.mode || 15 === r3.mode ? 256 : 0), (0 == f3 && 0 === c3 || 4 === t3) && x2 === N2 && (x2 = -5), x2);
       }, r2.inflateEnd = function(e3) {
         if (!e3 || !e3.state)
           return U2;
@@ -40735,10 +40723,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return t3.window && (t3.window = null), e3.state = null, N2;
       }, r2.inflateGetHeader = function(e3, t3) {
         var r3;
-        return e3 && e3.state ? (2 & (r3 = e3.state).wrap) == 0 ? U2 : ((r3.head = t3).done = false, N2) : U2;
+        return e3 && e3.state ? 0 == (2 & (r3 = e3.state).wrap) ? U2 : ((r3.head = t3).done = false, N2) : U2;
       }, r2.inflateSetDictionary = function(e3, t3) {
         var r3, n3 = t3.length;
-        return e3 && e3.state ? (r3 = e3.state).wrap !== 0 && r3.mode !== 11 ? U2 : r3.mode === 11 && O2(1, t3, n3, 0) !== r3.check ? -3 : Z2(e3, t3, n3, n3) ? (r3.mode = 31, -4) : (r3.havedict = 1, N2) : U2;
+        return e3 && e3.state ? 0 !== (r3 = e3.state).wrap && 11 !== r3.mode ? U2 : 11 === r3.mode && O2(1, t3, n3, 0) !== r3.check ? -3 : Z2(e3, t3, n3, n3) ? (r3.mode = 31, -4) : (r3.havedict = 1, N2) : U2;
       }, r2.inflateInfo = "pako inflate (from Nodeca project)";
     }, { "../utils/common": 41, "./adler32": 43, "./crc32": 45, "./inffast": 48, "./inftrees": 50 }], 50: [function(e2, t2, r2) {
       var D2 = e2("../utils/common"), F2 = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0], N2 = [16, 16, 16, 16, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 16, 72, 78], U2 = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577, 0, 0], P2 = [16, 16, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 64, 64];
@@ -40748,42 +40736,42 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           O2[b2] = 0;
         for (v2 = 0; v2 < n2; v2++)
           O2[t3[r3 + v2]]++;
-        for (k2 = g2, w2 = 15; 1 <= w2 && O2[w2] === 0; w2--)
+        for (k2 = g2, w2 = 15; 1 <= w2 && 0 === O2[w2]; w2--)
           ;
-        if (w2 < k2 && (k2 = w2), w2 === 0)
+        if (w2 < k2 && (k2 = w2), 0 === w2)
           return i2[s2++] = 20971520, i2[s2++] = 20971520, o2.bits = 1, 0;
-        for (y2 = 1; y2 < w2 && O2[y2] === 0; y2++)
+        for (y2 = 1; y2 < w2 && 0 === O2[y2]; y2++)
           ;
         for (k2 < y2 && (k2 = y2), b2 = z2 = 1; b2 <= 15; b2++)
           if (z2 <<= 1, (z2 -= O2[b2]) < 0)
             return -1;
-        if (0 < z2 && (e3 === 0 || w2 !== 1))
+        if (0 < z2 && (0 === e3 || 1 !== w2))
           return -1;
         for (B2[1] = 0, b2 = 1; b2 < 15; b2++)
           B2[b2 + 1] = B2[b2] + O2[b2];
         for (v2 = 0; v2 < n2; v2++)
-          t3[r3 + v2] !== 0 && (a2[B2[t3[r3 + v2]]++] = v2);
-        if (d2 = e3 === 0 ? (A2 = R2 = a2, 19) : e3 === 1 ? (A2 = F2, I2 -= 257, R2 = N2, T2 -= 257, 256) : (A2 = U2, R2 = P2, -1), b2 = y2, c2 = s2, S2 = v2 = E2 = 0, l2 = -1, f2 = (C2 = 1 << (x2 = k2)) - 1, e3 === 1 && 852 < C2 || e3 === 2 && 592 < C2)
+          0 !== t3[r3 + v2] && (a2[B2[t3[r3 + v2]]++] = v2);
+        if (d2 = 0 === e3 ? (A2 = R2 = a2, 19) : 1 === e3 ? (A2 = F2, I2 -= 257, R2 = N2, T2 -= 257, 256) : (A2 = U2, R2 = P2, -1), b2 = y2, c2 = s2, S2 = v2 = E2 = 0, l2 = -1, f2 = (C2 = 1 << (x2 = k2)) - 1, 1 === e3 && 852 < C2 || 2 === e3 && 592 < C2)
           return 1;
         for (; ; ) {
-          for (p2 = b2 - S2, _2 = a2[v2] < d2 ? (m2 = 0, a2[v2]) : a2[v2] > d2 ? (m2 = R2[T2 + a2[v2]], A2[I2 + a2[v2]]) : (m2 = 96, 0), h2 = 1 << b2 - S2, y2 = u2 = 1 << x2; i2[c2 + (E2 >> S2) + (u2 -= h2)] = p2 << 24 | m2 << 16 | _2 | 0, u2 !== 0; )
+          for (p2 = b2 - S2, _2 = a2[v2] < d2 ? (m2 = 0, a2[v2]) : a2[v2] > d2 ? (m2 = R2[T2 + a2[v2]], A2[I2 + a2[v2]]) : (m2 = 96, 0), h2 = 1 << b2 - S2, y2 = u2 = 1 << x2; i2[c2 + (E2 >> S2) + (u2 -= h2)] = p2 << 24 | m2 << 16 | _2 | 0, 0 !== u2; )
             ;
           for (h2 = 1 << b2 - 1; E2 & h2; )
             h2 >>= 1;
-          if (h2 !== 0 ? (E2 &= h2 - 1, E2 += h2) : E2 = 0, v2++, --O2[b2] == 0) {
+          if (0 !== h2 ? (E2 &= h2 - 1, E2 += h2) : E2 = 0, v2++, 0 == --O2[b2]) {
             if (b2 === w2)
               break;
             b2 = t3[r3 + a2[v2]];
           }
           if (k2 < b2 && (E2 & f2) !== l2) {
-            for (S2 === 0 && (S2 = k2), c2 += y2, z2 = 1 << (x2 = b2 - S2); x2 + S2 < w2 && !((z2 -= O2[x2 + S2]) <= 0); )
+            for (0 === S2 && (S2 = k2), c2 += y2, z2 = 1 << (x2 = b2 - S2); x2 + S2 < w2 && !((z2 -= O2[x2 + S2]) <= 0); )
               x2++, z2 <<= 1;
-            if (C2 += 1 << x2, e3 === 1 && 852 < C2 || e3 === 2 && 592 < C2)
+            if (C2 += 1 << x2, 1 === e3 && 852 < C2 || 2 === e3 && 592 < C2)
               return 1;
             i2[l2 = E2 & f2] = k2 << 24 | x2 << 16 | c2 - s2 | 0;
           }
         }
-        return E2 !== 0 && (i2[c2 + E2] = b2 - S2 << 24 | 64 << 16 | 0), o2.bits = k2, 0;
+        return 0 !== E2 && (i2[c2 + E2] = b2 - S2 << 24 | 64 << 16 | 0), o2.bits = k2, 0;
       };
     }, { "../utils/common": 41 }], 51: [function(e2, t2, r2) {
       t2.exports = { 2: "need dictionary", 1: "stream end", 0: "", "-1": "file error", "-2": "stream error", "-3": "data error", "-4": "insufficient memory", "-5": "buffer error", "-6": "incompatible version" };
@@ -40833,7 +40821,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           s3[n3] = a3 = a3 + r3[n3 - 1] << 1;
         for (i3 = 0; i3 <= t3; i3++) {
           var o3 = e3[2 * i3 + 1];
-          o3 !== 0 && (e3[2 * i3] = j2(s3[o3]++, o3));
+          0 !== o3 && (e3[2 * i3] = j2(s3[o3]++, o3));
         }
       }
       function W2(e3) {
@@ -40860,15 +40848,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
       function K2(e3, t3, r3) {
         var n3, i3, s3, a3, o3 = 0;
-        if (e3.last_lit !== 0)
-          for (; n3 = e3.pending_buf[e3.d_buf + 2 * o3] << 8 | e3.pending_buf[e3.d_buf + 2 * o3 + 1], i3 = e3.pending_buf[e3.l_buf + o3], o3++, n3 === 0 ? L2(e3, i3, t3) : (L2(e3, (s3 = A2[i3]) + u2 + 1, t3), (a3 = w2[s3]) !== 0 && P2(e3, i3 -= I2[s3], a3), L2(e3, s3 = N2(--n3), r3), (a3 = k2[s3]) !== 0 && P2(e3, n3 -= T2[s3], a3)), o3 < e3.last_lit; )
+        if (0 !== e3.last_lit)
+          for (; n3 = e3.pending_buf[e3.d_buf + 2 * o3] << 8 | e3.pending_buf[e3.d_buf + 2 * o3 + 1], i3 = e3.pending_buf[e3.l_buf + o3], o3++, 0 === n3 ? L2(e3, i3, t3) : (L2(e3, (s3 = A2[i3]) + u2 + 1, t3), 0 !== (a3 = w2[s3]) && P2(e3, i3 -= I2[s3], a3), L2(e3, s3 = N2(--n3), r3), 0 !== (a3 = k2[s3]) && P2(e3, n3 -= T2[s3], a3)), o3 < e3.last_lit; )
             ;
         L2(e3, m2, t3);
       }
       function Y2(e3, t3) {
         var r3, n3, i3, s3 = t3.dyn_tree, a3 = t3.stat_desc.static_tree, o3 = t3.stat_desc.has_stree, h3 = t3.stat_desc.elems, u3 = -1;
         for (e3.heap_len = 0, e3.heap_max = _2, r3 = 0; r3 < h3; r3++)
-          s3[2 * r3] !== 0 ? (e3.heap[++e3.heap_len] = u3 = r3, e3.depth[r3] = 0) : s3[2 * r3 + 1] = 0;
+          0 !== s3[2 * r3] ? (e3.heap[++e3.heap_len] = u3 = r3, e3.depth[r3] = 0) : s3[2 * r3 + 1] = 0;
         for (; e3.heap_len < 2; )
           s3[2 * (i3 = e3.heap[++e3.heap_len] = u3 < 2 ? ++u3 : 0)] = 1, e3.depth[i3] = 0, e3.opt_len--, o3 && (e3.static_len -= a3[2 * i3 + 1]);
         for (t3.max_code = u3, r3 = e3.heap_len >> 1; 1 <= r3; r3--)
@@ -40881,32 +40869,32 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             e4.bl_count[s4] = 0;
           for (h4[2 * e4.heap[e4.heap_max] + 1] = 0, r4 = e4.heap_max + 1; r4 < _2; r4++)
             p3 < (s4 = h4[2 * h4[2 * (n4 = e4.heap[r4]) + 1] + 1] + 1) && (s4 = p3, m3++), h4[2 * n4 + 1] = s4, u4 < n4 || (e4.bl_count[s4]++, a4 = 0, d3 <= n4 && (a4 = c3[n4 - d3]), o4 = h4[2 * n4], e4.opt_len += o4 * (s4 + a4), f3 && (e4.static_len += o4 * (l3[2 * n4 + 1] + a4)));
-          if (m3 !== 0) {
+          if (0 !== m3) {
             do {
-              for (s4 = p3 - 1; e4.bl_count[s4] === 0; )
+              for (s4 = p3 - 1; 0 === e4.bl_count[s4]; )
                 s4--;
               e4.bl_count[s4]--, e4.bl_count[s4 + 1] += 2, e4.bl_count[p3]--, m3 -= 2;
             } while (0 < m3);
-            for (s4 = p3; s4 !== 0; s4--)
-              for (n4 = e4.bl_count[s4]; n4 !== 0; )
+            for (s4 = p3; 0 !== s4; s4--)
+              for (n4 = e4.bl_count[s4]; 0 !== n4; )
                 u4 < (i4 = e4.heap[--r4]) || (h4[2 * i4 + 1] !== s4 && (e4.opt_len += (s4 - h4[2 * i4 + 1]) * h4[2 * i4], h4[2 * i4 + 1] = s4), n4--);
           }
         }(e3, t3), Z2(s3, u3, e3.bl_count);
       }
       function X2(e3, t3, r3) {
         var n3, i3, s3 = -1, a3 = t3[1], o3 = 0, h3 = 7, u3 = 4;
-        for (a3 === 0 && (h3 = 138, u3 = 3), t3[2 * (r3 + 1) + 1] = 65535, n3 = 0; n3 <= r3; n3++)
-          i3 = a3, a3 = t3[2 * (n3 + 1) + 1], ++o3 < h3 && i3 === a3 || (o3 < u3 ? e3.bl_tree[2 * i3] += o3 : i3 !== 0 ? (i3 !== s3 && e3.bl_tree[2 * i3]++, e3.bl_tree[2 * b2]++) : o3 <= 10 ? e3.bl_tree[2 * v2]++ : e3.bl_tree[2 * y2]++, s3 = i3, u3 = (o3 = 0) === a3 ? (h3 = 138, 3) : i3 === a3 ? (h3 = 6, 3) : (h3 = 7, 4));
+        for (0 === a3 && (h3 = 138, u3 = 3), t3[2 * (r3 + 1) + 1] = 65535, n3 = 0; n3 <= r3; n3++)
+          i3 = a3, a3 = t3[2 * (n3 + 1) + 1], ++o3 < h3 && i3 === a3 || (o3 < u3 ? e3.bl_tree[2 * i3] += o3 : 0 !== i3 ? (i3 !== s3 && e3.bl_tree[2 * i3]++, e3.bl_tree[2 * b2]++) : o3 <= 10 ? e3.bl_tree[2 * v2]++ : e3.bl_tree[2 * y2]++, s3 = i3, u3 = (o3 = 0) === a3 ? (h3 = 138, 3) : i3 === a3 ? (h3 = 6, 3) : (h3 = 7, 4));
       }
       function V2(e3, t3, r3) {
         var n3, i3, s3 = -1, a3 = t3[1], o3 = 0, h3 = 7, u3 = 4;
-        for (a3 === 0 && (h3 = 138, u3 = 3), n3 = 0; n3 <= r3; n3++)
+        for (0 === a3 && (h3 = 138, u3 = 3), n3 = 0; n3 <= r3; n3++)
           if (i3 = a3, a3 = t3[2 * (n3 + 1) + 1], !(++o3 < h3 && i3 === a3)) {
             if (o3 < u3)
-              for (; L2(e3, i3, e3.bl_tree), --o3 != 0; )
+              for (; L2(e3, i3, e3.bl_tree), 0 != --o3; )
                 ;
             else
-              i3 !== 0 ? (i3 !== s3 && (L2(e3, i3, e3.bl_tree), o3--), L2(e3, b2, e3.bl_tree), P2(e3, o3 - 3, 2)) : o3 <= 10 ? (L2(e3, v2, e3.bl_tree), P2(e3, o3 - 3, 3)) : (L2(e3, y2, e3.bl_tree), P2(e3, o3 - 11, 7));
+              0 !== i3 ? (i3 !== s3 && (L2(e3, i3, e3.bl_tree), o3--), L2(e3, b2, e3.bl_tree), P2(e3, o3 - 3, 2)) : o3 <= 10 ? (L2(e3, v2, e3.bl_tree), P2(e3, o3 - 3, 3)) : (L2(e3, y2, e3.bl_tree), P2(e3, o3 - 11, 7));
             s3 = i3, u3 = (o3 = 0) === a3 ? (h3 = 138, 3) : i3 === a3 ? (h3 = 6, 3) : (h3 = 7, 4);
           }
       }
@@ -40945,33 +40933,33 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }(), q2 = true), e3.l_desc = new F2(e3.dyn_ltree, O2), e3.d_desc = new F2(e3.dyn_dtree, B2), e3.bl_desc = new F2(e3.bl_tree, R2), e3.bi_buf = 0, e3.bi_valid = 0, W2(e3);
       }, r2._tr_stored_block = J2, r2._tr_flush_block = function(e3, t3, r3, n3) {
         var i3, s3, a3 = 0;
-        0 < e3.level ? (e3.strm.data_type === 2 && (e3.strm.data_type = function(e4) {
+        0 < e3.level ? (2 === e3.strm.data_type && (e3.strm.data_type = function(e4) {
           var t4, r4 = 4093624447;
           for (t4 = 0; t4 <= 31; t4++, r4 >>>= 1)
-            if (1 & r4 && e4.dyn_ltree[2 * t4] !== 0)
+            if (1 & r4 && 0 !== e4.dyn_ltree[2 * t4])
               return o2;
-          if (e4.dyn_ltree[18] !== 0 || e4.dyn_ltree[20] !== 0 || e4.dyn_ltree[26] !== 0)
+          if (0 !== e4.dyn_ltree[18] || 0 !== e4.dyn_ltree[20] || 0 !== e4.dyn_ltree[26])
             return h2;
           for (t4 = 32; t4 < u2; t4++)
-            if (e4.dyn_ltree[2 * t4] !== 0)
+            if (0 !== e4.dyn_ltree[2 * t4])
               return h2;
           return o2;
         }(e3)), Y2(e3, e3.l_desc), Y2(e3, e3.d_desc), a3 = function(e4) {
           var t4;
-          for (X2(e4, e4.dyn_ltree, e4.l_desc.max_code), X2(e4, e4.dyn_dtree, e4.d_desc.max_code), Y2(e4, e4.bl_desc), t4 = c2 - 1; 3 <= t4 && e4.bl_tree[2 * S2[t4] + 1] === 0; t4--)
+          for (X2(e4, e4.dyn_ltree, e4.l_desc.max_code), X2(e4, e4.dyn_dtree, e4.d_desc.max_code), Y2(e4, e4.bl_desc), t4 = c2 - 1; 3 <= t4 && 0 === e4.bl_tree[2 * S2[t4] + 1]; t4--)
             ;
           return e4.opt_len += 3 * (t4 + 1) + 5 + 5 + 4, t4;
-        }(e3), i3 = e3.opt_len + 3 + 7 >>> 3, (s3 = e3.static_len + 3 + 7 >>> 3) <= i3 && (i3 = s3)) : i3 = s3 = r3 + 5, r3 + 4 <= i3 && t3 !== -1 ? J2(e3, t3, r3, n3) : e3.strategy === 4 || s3 === i3 ? (P2(e3, 2 + (n3 ? 1 : 0), 3), K2(e3, z2, C2)) : (P2(e3, 4 + (n3 ? 1 : 0), 3), function(e4, t4, r4, n4) {
+        }(e3), i3 = e3.opt_len + 3 + 7 >>> 3, (s3 = e3.static_len + 3 + 7 >>> 3) <= i3 && (i3 = s3)) : i3 = s3 = r3 + 5, r3 + 4 <= i3 && -1 !== t3 ? J2(e3, t3, r3, n3) : 4 === e3.strategy || s3 === i3 ? (P2(e3, 2 + (n3 ? 1 : 0), 3), K2(e3, z2, C2)) : (P2(e3, 4 + (n3 ? 1 : 0), 3), function(e4, t4, r4, n4) {
           var i4;
           for (P2(e4, t4 - 257, 5), P2(e4, r4 - 1, 5), P2(e4, n4 - 4, 4), i4 = 0; i4 < n4; i4++)
             P2(e4, e4.bl_tree[2 * S2[i4] + 1], 3);
           V2(e4, e4.dyn_ltree, t4 - 1), V2(e4, e4.dyn_dtree, r4 - 1);
         }(e3, e3.l_desc.max_code + 1, e3.d_desc.max_code + 1, a3 + 1), K2(e3, e3.dyn_ltree, e3.dyn_dtree)), W2(e3), n3 && M2(e3);
       }, r2._tr_tally = function(e3, t3, r3) {
-        return e3.pending_buf[e3.d_buf + 2 * e3.last_lit] = t3 >>> 8 & 255, e3.pending_buf[e3.d_buf + 2 * e3.last_lit + 1] = 255 & t3, e3.pending_buf[e3.l_buf + e3.last_lit] = 255 & r3, e3.last_lit++, t3 === 0 ? e3.dyn_ltree[2 * r3]++ : (e3.matches++, t3--, e3.dyn_ltree[2 * (A2[r3] + u2 + 1)]++, e3.dyn_dtree[2 * N2(t3)]++), e3.last_lit === e3.lit_bufsize - 1;
+        return e3.pending_buf[e3.d_buf + 2 * e3.last_lit] = t3 >>> 8 & 255, e3.pending_buf[e3.d_buf + 2 * e3.last_lit + 1] = 255 & t3, e3.pending_buf[e3.l_buf + e3.last_lit] = 255 & r3, e3.last_lit++, 0 === t3 ? e3.dyn_ltree[2 * r3]++ : (e3.matches++, t3--, e3.dyn_ltree[2 * (A2[r3] + u2 + 1)]++, e3.dyn_dtree[2 * N2(t3)]++), e3.last_lit === e3.lit_bufsize - 1;
       }, r2._tr_align = function(e3) {
         P2(e3, 2, 3), L2(e3, m2, z2), function(e4) {
-          e4.bi_valid === 16 ? (U2(e4, e4.bi_buf), e4.bi_buf = 0, e4.bi_valid = 0) : 8 <= e4.bi_valid && (e4.pending_buf[e4.pending++] = 255 & e4.bi_buf, e4.bi_buf >>= 8, e4.bi_valid -= 8);
+          16 === e4.bi_valid ? (U2(e4, e4.bi_buf), e4.bi_buf = 0, e4.bi_valid = 0) : 8 <= e4.bi_valid && (e4.pending_buf[e4.pending++] = 255 & e4.bi_buf, e4.bi_buf >>= 8, e4.bi_valid -= 8);
         }(e3);
       };
     }, { "../utils/common": 41 }], 53: [function(e2, t2, r2) {
@@ -40983,7 +40971,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         !function(r3, n2) {
           if (!r3.setImmediate) {
             var i2, s2, t3, a2, o2 = 1, h2 = {}, u2 = false, l2 = r3.document, e4 = Object.getPrototypeOf && Object.getPrototypeOf(r3);
-            e4 = e4 && e4.setTimeout ? e4 : r3, i2 = {}.toString.call(r3.process) === "[object process]" ? function(e5) {
+            e4 = e4 && e4.setTimeout ? e4 : r3, i2 = "[object process]" === {}.toString.call(r3.process) ? function(e5) {
               process.nextTick(function() {
                 c2(e5);
               });
@@ -41008,7 +40996,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             }) : function(e5) {
               setTimeout(c2, 0, e5);
             }, e4.setImmediate = function(e5) {
-              typeof e5 != "function" && (e5 = new Function("" + e5));
+              "function" != typeof e5 && (e5 = new Function("" + e5));
               for (var t4 = new Array(arguments.length - 1), r4 = 0; r4 < t4.length; r4++)
                 t4[r4] = arguments[r4 + 1];
               var n3 = { callback: e5, args: t4 };
@@ -41052,10 +41040,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             }
           }
           function d2(e5) {
-            e5.source === r3 && typeof e5.data == "string" && e5.data.indexOf(a2) === 0 && c2(+e5.data.slice(a2.length));
+            e5.source === r3 && "string" == typeof e5.data && 0 === e5.data.indexOf(a2) && c2(+e5.data.slice(a2.length));
           }
-        }(typeof self == "undefined" ? e3 === void 0 ? this : e3 : self);
-      }).call(this, typeof commonjsGlobal != "undefined" ? commonjsGlobal : typeof self != "undefined" ? self : typeof window != "undefined" ? window : {});
+        }("undefined" == typeof self ? void 0 === e3 ? this : e3 : self);
+      }).call(this, "undefined" != typeof commonjsGlobal ? commonjsGlobal : "undefined" != typeof self ? self : "undefined" != typeof window ? window : {});
     }, {}] }, {}, [10])(10);
   });
 })(jszip_min);
@@ -56204,7 +56192,12 @@ const AdvancedOptions = {
   ignoreFieldNorm: false,
   fieldNormWeight: 1
 };
-var Config = __spreadValues3(__spreadValues3(__spreadValues3(__spreadValues3({}, BasicOptions), MatchOptions), FuzzyOptions), AdvancedOptions);
+var Config = {
+  ...BasicOptions,
+  ...MatchOptions,
+  ...FuzzyOptions,
+  ...AdvancedOptions
+};
 const SPACE = /[^ ]+/g;
 function norm(weight = 1, mantissa = 3) {
   const cache2 = /* @__PURE__ */ new Map();
@@ -57107,7 +57100,7 @@ function format$1(results, docs, {
 }
 class Fuse {
   constructor(docs, options = {}, index2) {
-    this.options = __spreadValues3(__spreadValues3({}, Config), options);
+    this.options = { ...Config, ...options };
     if (this.options.useExtendedSearch && false) {
       throw new Error(EXTENDED_SEARCH_UNAVAILABLE);
     }
@@ -70124,15 +70117,15 @@ var r = [0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346, 404, 466, 532, 581, 6
 }, n = function(t2) {
   return r[t2];
 }, o = function(t2) {
-  for (var r2 = 0; t2 !== 0; )
+  for (var r2 = 0; 0 !== t2; )
     r2++, t2 >>>= 1;
   return r2;
 }, i = function(r2) {
-  if (typeof r2 != "function")
+  if ("function" != typeof r2)
     throw new Error('"toSJISFunc" is not a valid function.');
   t = r2;
 }, a = function() {
-  return t !== void 0;
+  return void 0 !== t;
 }, u = function(r2) {
   return t(r2);
 };
@@ -70141,13 +70134,13 @@ function s(t2, r2) {
 }
 var f = s(function(t2, r2) {
   r2.L = { bit: 1 }, r2.M = { bit: 0 }, r2.Q = { bit: 3 }, r2.H = { bit: 2 }, r2.isValid = function(t3) {
-    return t3 && t3.bit !== void 0 && t3.bit >= 0 && t3.bit < 4;
+    return t3 && void 0 !== t3.bit && t3.bit >= 0 && t3.bit < 4;
   }, r2.from = function(t3, e2) {
     if (r2.isValid(t3))
       return t3;
     try {
       return function(t4) {
-        if (typeof t4 != "string")
+        if ("string" != typeof t4)
           throw new Error("Param is not a string");
         switch (t4.toLowerCase()) {
           case "l":
@@ -70177,10 +70170,10 @@ function h() {
 }
 h.prototype = { get: function(t2) {
   var r2 = Math.floor(t2 / 8);
-  return (this.buffer[r2] >>> 7 - t2 % 8 & 1) == 1;
+  return 1 == (this.buffer[r2] >>> 7 - t2 % 8 & 1);
 }, put: function(t2, r2) {
   for (var e2 = 0; e2 < r2; e2++)
-    this.putBit((t2 >>> r2 - e2 - 1 & 1) == 1);
+    this.putBit(1 == (t2 >>> r2 - e2 - 1 & 1));
 }, getLengthInBits: function() {
   return this.length;
 }, putBit: function(t2) {
@@ -70206,15 +70199,15 @@ g.prototype.set = function(t2, r2, e2, n2) {
 var d = g, l = s(function(t2, r2) {
   var n2 = e;
   r2.getRowColCoords = function(t3) {
-    if (t3 === 1)
+    if (1 === t3)
       return [];
-    for (var r3 = Math.floor(t3 / 7) + 2, e2 = n2(t3), o2 = e2 === 145 ? 26 : 2 * Math.ceil((e2 - 13) / (2 * r3 - 2)), i2 = [e2 - 7], a2 = 1; a2 < r3 - 1; a2++)
+    for (var r3 = Math.floor(t3 / 7) + 2, e2 = n2(t3), o2 = 145 === e2 ? 26 : 2 * Math.ceil((e2 - 13) / (2 * r3 - 2)), i2 = [e2 - 7], a2 = 1; a2 < r3 - 1; a2++)
       i2[a2] = i2[a2 - 1] - o2;
     return i2.push(6), i2.reverse();
   }, r2.getPositions = function(t3) {
     for (var e2 = [], n3 = r2.getRowColCoords(t3), o2 = n3.length, i2 = 0; i2 < o2; i2++)
       for (var a2 = 0; a2 < o2; a2++)
-        i2 === 0 && a2 === 0 || i2 === 0 && a2 === o2 - 1 || i2 === o2 - 1 && a2 === 0 || e2.push([n3[i2], n3[a2]]);
+        0 === i2 && 0 === a2 || 0 === i2 && a2 === o2 - 1 || i2 === o2 - 1 && 0 === a2 || e2.push([n3[i2], n3[a2]]);
     return e2;
   };
 }), v = (l.getRowColCoords, l.getPositions, e), p = function(t2) {
@@ -70246,7 +70239,7 @@ var d = g, l = s(function(t2, r2) {
     }
   }
   r2.isValid = function(t3) {
-    return t3 != null && t3 !== "" && !isNaN(t3) && t3 >= 0 && t3 <= 7;
+    return null != t3 && "" !== t3 && !isNaN(t3) && t3 >= 0 && t3 <= 7;
   }, r2.from = function(t3) {
     return r2.isValid(t3) ? parseInt(t3, 10) : void 0;
   }, r2.getPenaltyN1 = function(t3) {
@@ -70263,14 +70256,14 @@ var d = g, l = s(function(t2, r2) {
     for (var r3 = t3.size, e3 = 0, o3 = 0; o3 < r3 - 1; o3++)
       for (var i3 = 0; i3 < r3 - 1; i3++) {
         var a3 = t3.get(o3, i3) + t3.get(o3, i3 + 1) + t3.get(o3 + 1, i3) + t3.get(o3 + 1, i3 + 1);
-        a3 !== 4 && a3 !== 0 || e3++;
+        4 !== a3 && 0 !== a3 || e3++;
       }
     return e3 * n2;
   }, r2.getPenaltyN3 = function(t3) {
     for (var r3 = t3.size, e3 = 0, n3 = 0, i3 = 0, a3 = 0; a3 < r3; a3++) {
       n3 = i3 = 0;
       for (var u2 = 0; u2 < r3; u2++)
-        n3 = n3 << 1 & 2047 | t3.get(a3, u2), u2 >= 10 && (n3 === 1488 || n3 === 93) && e3++, i3 = i3 << 1 & 2047 | t3.get(u2, a3), u2 >= 10 && (i3 === 1488 || i3 === 93) && e3++;
+        n3 = n3 << 1 & 2047 | t3.get(a3, u2), u2 >= 10 && (1488 === n3 || 93 === n3) && e3++, i3 = i3 << 1 & 2047 | t3.get(u2, a3), u2 >= 10 && (1488 === i3 || 93 === i3) && e3++;
     }
     return e3 * o2;
   }, r2.getPenaltyN4 = function(t3) {
@@ -70325,7 +70318,7 @@ var d = g, l = s(function(t2, r2) {
 var P = function(t2) {
   return N[t2];
 }, M = function(t2, r2) {
-  return t2 === 0 || r2 === 0 ? 0 : N[B[t2] + B[r2]];
+  return 0 === t2 || 0 === r2 ? 0 : N[B[t2] + B[r2]];
 }, I = s(function(t2, r2) {
   r2.mul = function(t3, r3) {
     for (var e2 = new Uint8Array(t3.length + r3.length - 1), n2 = 0; n2 < t3.length; n2++)
@@ -70336,7 +70329,7 @@ var P = function(t2) {
     for (var e2 = new Uint8Array(t3); e2.length - r3.length >= 0; ) {
       for (var n2 = e2[0], o2 = 0; o2 < r3.length; o2++)
         e2[o2] ^= M(r3[o2], n2);
-      for (var i2 = 0; i2 < e2.length && e2[i2] === 0; )
+      for (var i2 = 0; i2 < e2.length && 0 === e2[i2]; )
         i2++;
       e2 = e2.slice(i2);
     }
@@ -70393,7 +70386,7 @@ var R = C, T = function(t2) {
       return t3;
     try {
       return function(t4) {
-        if (typeof t4 != "string")
+        if ("string" != typeof t4)
           throw new Error("Param is not a string");
         switch (t4.toLowerCase()) {
           case "numeric":
@@ -70413,7 +70406,7 @@ var R = C, T = function(t2) {
     }
   };
 }), z = (K.NUMERIC, K.ALPHANUMERIC, K.BYTE, K.KANJI, K.MIXED, K.getCharCountIndicator, K.getBestModeForData, K.isValid, {}.toString), D = Array.isArray || function(t2) {
-  return z.call(t2) == "[object Array]";
+  return "[object Array]" == z.call(t2);
 }, V = s(function(t2, r2) {
   var e2 = o(7973);
   function i2(t3, r3) {
@@ -70431,7 +70424,7 @@ var R = C, T = function(t2) {
   }, r2.getCapacity = function(t3, r3, e3) {
     if (!T(t3))
       throw new Error("Invalid QR Code version");
-    e3 === void 0 && (e3 = K.BYTE);
+    void 0 === e3 && (e3 = K.BYTE);
     var o2 = 8 * (n(t3) - y(t3, r3));
     if (e3 === K.MIXED)
       return o2;
@@ -70457,7 +70450,7 @@ var R = C, T = function(t2) {
               return n3;
           }
         }(t3, o2);
-      if (t3.length === 0)
+      if (0 === t3.length)
         return 1;
       n2 = t3[0];
     } else
@@ -70568,8 +70561,8 @@ var rt = tt, et = s(function(t2) {
     var a2, u2, s2, f2, h2, c2, g2, d2 = r2.PriorityQueue.make();
     for (d2.push(e2, 0); !d2.empty(); )
       for (s2 in u2 = (a2 = d2.pop()).value, f2 = a2.cost, h2 = t3[u2] || {})
-        h2.hasOwnProperty(s2) && (c2 = f2 + h2[s2], g2 = i2[s2], (i2[s2] === void 0 || g2 > c2) && (i2[s2] = c2, d2.push(s2, c2), o2[s2] = u2));
-    if (n2 !== void 0 && i2[n2] === void 0) {
+        h2.hasOwnProperty(s2) && (c2 = f2 + h2[s2], g2 = i2[s2], (void 0 === i2[s2] || g2 > c2) && (i2[s2] = c2, d2.push(s2, c2), o2[s2] = u2));
+    if (void 0 !== n2 && void 0 === i2[n2]) {
       var l2 = ["Could not find a path from ", e2, " to ", n2, "."].join("");
       throw new Error(l2);
     }
@@ -70594,7 +70587,7 @@ var rt = tt, et = s(function(t2) {
   }, pop: function() {
     return this.queue.shift();
   }, empty: function() {
-    return this.queue.length === 0;
+    return 0 === this.queue.length;
   } } };
   t2.exports = r2;
 }), nt = s(function(t2, r2) {
@@ -70602,7 +70595,7 @@ var rt = tt, et = s(function(t2) {
     return unescape(encodeURIComponent(t3)).length;
   }
   function n2(t3, r3, e3) {
-    for (var n3, o3 = []; (n3 = t3.exec(e3)) !== null; )
+    for (var n3, o3 = []; null !== (n3 = t3.exec(e3)); )
       o3.push({ data: n3[0], index: n3.index, mode: r3, length: n3[0].length });
     return o3;
   }
@@ -70643,7 +70636,7 @@ var rt = tt, et = s(function(t2) {
   }
   r2.fromArray = function(t3) {
     return t3.reduce(function(t4, r3) {
-      return typeof r3 == "string" ? t4.push(u2(r3, null)) : r3.data && t4.push(u2(r3.data, r3.mode)), t4;
+      return "string" == typeof r3 ? t4.push(u2(r3, null)) : r3.data && t4.push(u2(r3.data, r3.mode)), t4;
     }, []);
   }, r2.fromString = function(t3, n3) {
     for (var u3 = function(t4, r3) {
@@ -70695,7 +70688,7 @@ nt.fromArray, nt.fromString, nt.rawSplit;
 function ot(t2, r2, e2) {
   var n2, o2, i2 = t2.size, a2 = j(r2, e2);
   for (n2 = 0; n2 < 15; n2++)
-    o2 = (a2 >> n2 & 1) == 1, n2 < 6 ? t2.set(n2, 8, o2, true) : n2 < 8 ? t2.set(n2 + 1, 8, o2, true) : t2.set(i2 - 15 + n2, 8, o2, true), n2 < 8 ? t2.set(8, i2 - n2 - 1, o2, true) : n2 < 9 ? t2.set(8, 15 - n2 - 1 + 1, o2, true) : t2.set(8, 15 - n2 - 1, o2, true);
+    o2 = 1 == (a2 >> n2 & 1), n2 < 6 ? t2.set(n2, 8, o2, true) : n2 < 8 ? t2.set(n2 + 1, 8, o2, true) : t2.set(i2 - 15 + n2, 8, o2, true), n2 < 8 ? t2.set(8, i2 - n2 - 1, o2, true) : n2 < 9 ? t2.set(8, 15 - n2 - 1 + 1, o2, true) : t2.set(8, 15 - n2 - 1, o2, true);
   t2.set(i2 - 8, 8, 1, true);
 }
 function it(t2, r2, e2) {
@@ -70728,7 +70721,7 @@ function at(t2, r2, n2, o2) {
   if (D(t2))
     i2 = nt.fromArray(t2);
   else {
-    if (typeof t2 != "string")
+    if ("string" != typeof t2)
       throw new Error("Invalid data");
     var a2 = r2;
     if (!a2) {
@@ -70751,7 +70744,7 @@ function at(t2, r2, n2, o2) {
       for (var i3 = n3[o3][0], a3 = n3[o3][1], u3 = -1; u3 <= 7; u3++)
         if (!(i3 + u3 <= -1 || e2 <= i3 + u3))
           for (var s3 = -1; s3 <= 7; s3++)
-            a3 + s3 <= -1 || e2 <= a3 + s3 || (u3 >= 0 && u3 <= 6 && (s3 === 0 || s3 === 6) || s3 >= 0 && s3 <= 6 && (u3 === 0 || u3 === 6) || u3 >= 2 && u3 <= 4 && s3 >= 2 && s3 <= 4 ? t3.set(i3 + u3, a3 + s3, true, true) : t3.set(i3 + u3, a3 + s3, false, true));
+            a3 + s3 <= -1 || e2 <= a3 + s3 || (u3 >= 0 && u3 <= 6 && (0 === s3 || 6 === s3) || s3 >= 0 && s3 <= 6 && (0 === u3 || 6 === u3) || u3 >= 2 && u3 <= 4 && s3 >= 2 && s3 <= 4 ? t3.set(i3 + u3, a3 + s3, true, true) : t3.set(i3 + u3, a3 + s3, false, true));
   }(c2, r2), function(t3) {
     for (var r3 = t3.size, e2 = 8; e2 < r3 - 8; e2++) {
       var n3 = e2 % 2 == 0;
@@ -70761,17 +70754,17 @@ function at(t2, r2, n2, o2) {
     for (var e2 = l.getPositions(r3), n3 = 0; n3 < e2.length; n3++)
       for (var o3 = e2[n3][0], i3 = e2[n3][1], a3 = -2; a3 <= 2; a3++)
         for (var u3 = -2; u3 <= 2; u3++)
-          a3 === -2 || a3 === 2 || u3 === -2 || u3 === 2 || a3 === 0 && u3 === 0 ? t3.set(o3 + a3, i3 + u3, true, true) : t3.set(o3 + a3, i3 + u3, false, true);
+          -2 === a3 || 2 === a3 || -2 === u3 || 2 === u3 || 0 === a3 && 0 === u3 ? t3.set(o3 + a3, i3 + u3, true, true) : t3.set(o3 + a3, i3 + u3, false, true);
   }(c2, r2), ot(c2, n2, 0), r2 >= 7 && function(t3, r3) {
     for (var e2, n3, o3, i3 = t3.size, a3 = V.getEncodedBits(r3), u3 = 0; u3 < 18; u3++)
-      e2 = Math.floor(u3 / 3), n3 = u3 % 3 + i3 - 8 - 3, o3 = (a3 >> u3 & 1) == 1, t3.set(e2, n3, o3, true), t3.set(n3, e2, o3, true);
+      e2 = Math.floor(u3 / 3), n3 = u3 % 3 + i3 - 8 - 3, o3 = 1 == (a3 >> u3 & 1), t3.set(e2, n3, o3, true), t3.set(n3, e2, o3, true);
   }(c2, r2), function(t3, r3) {
     for (var e2 = t3.size, n3 = -1, o3 = e2 - 1, i3 = 7, a3 = 0, u3 = e2 - 1; u3 > 0; u3 -= 2)
-      for (u3 === 6 && u3--; ; ) {
+      for (6 === u3 && u3--; ; ) {
         for (var s3 = 0; s3 < 2; s3++)
           if (!t3.isReserved(o3, u3 - s3)) {
             var f3 = false;
-            a3 < r3.length && (f3 = (r3[a3] >>> i3 & 1) == 1), t3.set(o3, u3 - s3, f3), --i3 === -1 && (a3++, i3 = 7);
+            a3 < r3.length && (f3 = 1 == (r3[a3] >>> i3 & 1)), t3.set(o3, u3 - s3, f3), -1 === --i3 && (a3++, i3 = 7);
           }
         if ((o3 += n3) < 0 || e2 <= o3) {
           o3 -= n3, n3 = -n3;
@@ -70781,10 +70774,10 @@ function at(t2, r2, n2, o2) {
   }(c2, f2), isNaN(o2) && (o2 = E.getBestMask(c2, ot.bind(null, c2, n2))), E.applyMask(o2, c2), ot(c2, n2, o2), { modules: c2, version: r2, errorCorrectionLevel: n2, maskPattern: o2, segments: i2 };
 }
 dist.create = function(t2, r2) {
-  if (t2 === void 0 || t2 === "")
+  if (void 0 === t2 || "" === t2)
     throw new Error("No input text");
   var e2, n2, o2 = f.M;
-  return r2 !== void 0 && (o2 = f.from(r2.errorCorrectionLevel, f.M), e2 = V.from(r2.version), n2 = E.from(r2.maskPattern), r2.toSJISFunc && i(r2.toSJISFunc)), at(t2, e2, o2, n2);
+  return void 0 !== r2 && (o2 = f.from(r2.errorCorrectionLevel, f.M), e2 = V.from(r2.version), n2 = E.from(r2.maskPattern), r2.toSJISFunc && i(r2.toSJISFunc)), at(t2, e2, o2, n2);
 };
 const core = dist;
 function createPath(data2, size2, margin) {

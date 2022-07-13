@@ -1,22 +1,3 @@
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 import { genUUID, useGun, useUser, hashObj, gun, currentRoom, hashText, safeHash, user, useAccount, newWorker } from "./useDict.es.js";
 export { addHashedPersonal, addPersonal, addProfileField, auth, brush, createRoom, currentRoom, decFrom, defaultPeer, dictLang, dictRecord, drauu, drauuOptions, draw, encFor, enterRoom, genUUID, generateCerts, getHashedPersonal, getShortHash, gun, gun2, hasPass, hashObj, hashText, isHash, isMine, isPair, issueCert, joinRoom, leave, leaveRoom, letterFilter, listPersonal, loadCanvas, loadRelays, newWorker, parseHashLink, parseLink, pass, peer, recreateRoom, relay, renderStress, rootRoom, safeHash, safeJSONParse, selectedUser, sortDate, soul, submitRoom, unsafeHash, updateProfile, updateRoomProfile, updateState, useAccount, useColor, useDefs, useDictAuthors, useDictLangs, useDictRecordsBy, useDictRecordsFor, useDraw, useGun, useGun2, usePass, usePassLink, useRelay, useRelays, useRoom, useRooms, useUser, useWord, useWords, user } from "./useDict.es.js";
 import { reactive, YAML, markdownIt, lib, JSZip, ref, computed, ms, slugify, Fuse, watchEffect, GB, useMousePressed, onMounted, useMouseInElement, watch, onBeforeUnmount, gunAvatar, useElementBounding, useClamp, getArrow, SEA, DateTree } from "./vendor.es.js";
@@ -348,7 +329,7 @@ async function downloadPost(post) {
   let { title } = post;
   const { zipPost, addFile, downloadZip } = useZip();
   if (title && !post.raw) {
-    await zipPost(__spreadValues({}, post));
+    await zipPost({ ...post });
   } else {
     title = "file";
     const hash = await hashText(post.raw);
@@ -468,7 +449,7 @@ async function downloadFeed(tag, posts) {
   const fullPosts = {};
   for (let hash in posts) {
     fullPosts[hash] = usePost({ tag, hash }).post;
-    await zipPost(__spreadValues({}, fullPosts[hash]));
+    await zipPost({ ...fullPosts[hash] });
   }
   await downloadZip({ title: `#${tag}` });
   return true;
@@ -497,7 +478,7 @@ function uploadFeed(tag, files) {
           const coverMime = detectMimeType(cover);
           frontmatter.cover = `data:${coverMime};base64,${cover}`;
         }
-        let post = __spreadProps(__spreadValues({}, frontmatter), { content });
+        let post = { ...frontmatter, content };
         addPost(tag, post);
       }
     });
@@ -1131,7 +1112,7 @@ function logEvent(event = "text", data2) {
     return;
   }
   const tree = new DateTree(gun.get("logs"), "minute");
-  let theData = __spreadValues({ event }, data2);
+  let theData = { event, ...data2 };
   tree.get(new Date()).put(theData);
 }
 function formatDate(date) {

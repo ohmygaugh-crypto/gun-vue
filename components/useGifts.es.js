@@ -1,5 +1,5 @@
 import { reactive, computed, useNow } from "./vendor.es.js";
-import { useUser, useGun, hashObj } from "./useDict.es.js";
+import { useUser, useGun, hashObj } from "./useDraw.es.js";
 const giftPath = "#gifts2023";
 function useGift() {
   const { user } = useUser();
@@ -49,4 +49,3 @@ function useGifts() {
   return { my, proposed, gifts };
 }
 export { acceptGift, giftPath, useGift, useGifts };
-//# sourceMappingURL=useGifts.es.js.map

@@ -1,5 +1,5 @@
 import { openBlock, createElementBlock, createVNode, toDisplayString, Fragment, normalizeStyle, createCommentVNode, renderSlot, ref, watchEffect } from "./vendor.es.js";
-import { useColor, useGun, selectedUser } from "./useDict.es.js";
+import { useColor, useGun, selectedUser } from "./useDraw.es.js";
 import __unplugin_components_0 from "./AccountAvatar.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 const _hoisted_1 = ["title"];
@@ -61,6 +61,5 @@ const _sfc_main = {
   }
 };
 _sfc_main.__file = "src/account/AccountBadge.vue";
-var AccountBadge = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__scopeId", "data-v-3f9eb4de"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/account/AccountBadge.vue"]]);
-export { AccountBadge as default };
-//# sourceMappingURL=AccountBadge.es.js.map
+var __unplugin_components_1 = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__scopeId", "data-v-3f9eb4de"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/account/AccountBadge.vue"]]);
+export { __unplugin_components_1 as default };

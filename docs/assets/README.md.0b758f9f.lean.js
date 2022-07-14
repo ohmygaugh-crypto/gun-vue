@@ -1,1 +1,0 @@
-import{_ as s,c as n,o as a,a as p}from"./app.f18c714b.js";const C=JSON.parse('{"title":"Vitepress SSR web-site with @gun-vue components","description":"","frontmatter":{},"headers":[],"relativePath":"README.md"}'),o={name:"README.md"},l=p("",10),e=[l];function t(c,r,D,F,y,i){return a(),n("div",null,e)}var u=s(o,[["render",t]]);export{C as __pageData,u as default};

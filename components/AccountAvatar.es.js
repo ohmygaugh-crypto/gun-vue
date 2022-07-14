@@ -1,4 +1,4 @@
-import { useColor, useGun, useUser } from "./useDict.es.js";
+import { useColor, useGun, useUser } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createBaseVNode, normalizeStyle, createVNode, ref, watch, gunAvatar, computed } from "./vendor.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 const _hoisted_1$1 = {
@@ -76,4 +76,3 @@ const _sfc_main = {
 _sfc_main.__file = "src/account/AccountAvatar.vue";
 var __unplugin_components_0 = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/account/AccountAvatar.vue"]]);
 export { __unplugin_components_0 as default };
-//# sourceMappingURL=AccountAvatar.es.js.map

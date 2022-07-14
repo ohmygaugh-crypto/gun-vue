@@ -57,14 +57,14 @@ const _sfc_main = {
   __name: "AccountAvatar.story",
   setup(__props, { expose }) {
     expose();
-    const AccountAvatar = defineAsyncComponent(() => __vitePreload(() => import("./AccountAvatar.es.js"), true ? ["AccountAvatar.es.js","useDict.es.js","vendor.es.js","plugin-vue_export-helper.es.js"] : void 0));
+    const AccountAvatar = defineAsyncComponent(() => __vitePreload(() => import("./AccountAvatar.es.js"), true ? ["AccountAvatar.es.js","useDraw.es.js","vendor.es.js","plugin-vue_export-helper.es.js"] : void 0));
     const state = reactive({
       pub: "We2MxFrbFH37008fNmreSk9hdHLJNMVhrSMIIbOO5Ao.FbNrdt118-TCYzGYRo94Xa8EUWwwV-7DIopXSE9OZD8",
       size: 200,
       border: 2
     });
     async function generate() {
-      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDict.es.js","vendor.es.js","useGifts.es.js"] : void 0);
+      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDraw.es.js","vendor.es.js","useZip.es.js","useFile.es.js","useMd.es.js","useGifts.es.js","useMates.es.js","useGuests.es.js","useBackground.es.js"] : void 0);
       const pair = await SEA.pair();
       state.pub = pair.pub;
     }
@@ -76,4 +76,3 @@ const _sfc_main = {
 _sfc_main.__file = "src/account/AccountAvatar.story.vue";
 var AccountAvatar_story = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/account/AccountAvatar.story.vue"]]);
 export { AccountAvatar_story as default };
-//# sourceMappingURL=AccountAvatar.story.es.js.map

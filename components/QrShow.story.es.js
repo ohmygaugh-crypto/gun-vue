@@ -50,7 +50,7 @@ const _sfc_main = {
       margin: 6
     });
     async function generate() {
-      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDict.es.js","vendor.es.js","useGifts.es.js"] : void 0);
+      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDraw.es.js","vendor.es.js","useZip.es.js","useFile.es.js","useMd.es.js","useGifts.es.js","useMates.es.js","useGuests.es.js","useBackground.es.js"] : void 0);
       state.data = (await SEA.pair()).pub;
     }
     const __returned__ = { QrShow, state, generate, defineAsyncComponent, reactive };
@@ -61,4 +61,3 @@ const _sfc_main = {
 _sfc_main.__file = "src/qr/QrShow.story.vue";
 var QrShow_story = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/qr/QrShow.story.vue"]]);
 export { QrShow_story as default };
-//# sourceMappingURL=QrShow.story.es.js.map

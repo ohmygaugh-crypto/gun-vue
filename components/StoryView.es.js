@@ -1,33 +1,11 @@
-import { defineStore, reactive, ref, watch, defineComponent, useRouter, useRoute, unref, openBlock, createBlock, withCtx, createElementBlock, createVNode, watchEffect, Icon, useStorage, createTextVNode, computed, createBaseVNode, resolveDynamicComponent, useCssVars, createCommentVNode, Fragment, renderList, _sfc_main$1 as _sfc_main$1$1, onMounted, nextTick, toDisplayString, useResizeObserver, normalizeStyle, clone, omit, useTimeoutFn, onClickOutside, resolveDirective, withDirectives, vModelText, withModifiers, isRef, withKeys, normalizeClass, resolveComponent, shallowRef, getHighlighter, unindent, generateSourceCode, HstCopyIcon, renderSlot, toRefs, mergeProps, Dropdown, applyStateToVariant, HstTextarea, HstCheckbox, HstNumber, HstText, pushScopeId, popScopeId, Transition, h, setCDN, onBeforeUnmount, useEventListener, toRaw, onUnmounted, createStaticVNode } from "./vendor.es.js";
-import { useStoryStore, isMobile, BaseSplitPane, _export_sfc, _sfc_main as _sfc_main$v, useScrollOnActive, BaseListItemLink, base } from "./assets/bundle-main.1a86ec76.js";
+import { defineStore, defineComponent, useRouter, useRoute, watch, unref, openBlock, createBlock, withCtx, createElementBlock, createVNode, ref, watchEffect, Icon, useStorage, createTextVNode, computed, createBaseVNode, resolveDynamicComponent, useCssVars, createCommentVNode, Fragment, renderList, _sfc_main$1 as _sfc_main$1$1, onMounted, nextTick, toDisplayString, useResizeObserver, normalizeStyle, clone, omit, useTimeoutFn, onClickOutside, resolveDirective, withDirectives, vModelText, withModifiers, isRef, withKeys, normalizeClass, resolveComponent, shallowRef, getHighlighter, unindent, generateSourceCode, HstCopyIcon, renderSlot, toRefs, mergeProps, Dropdown, applyStateToVariant, HstTextarea, HstCheckbox, HstNumber, HstText, pushScopeId, popScopeId, Transition, h, setCDN, reactive, onBeforeUnmount, useEventListener, toRaw, onUnmounted, createStaticVNode } from "./vendor.es.js";
+import { useStoryStore, base } from "./story.es.js";
+import { isMobile, BaseSplitPane, _export_sfc, _sfc_main as _sfc_main$v, useScrollOnActive, BaseListItemLink } from "./MobileOverlay.es.js";
 import { BaseEmpty } from "./BaseEmpty.es.js";
 import { isDark, histoireConfig } from "./mapping.es.js";
-import { toRawDeep, SANDBOX_READY, EVENT_SEND, STATE_SYNC, PREVIEW_SETTINGS_SYNC } from "./state.es.js";
-const useEventsStore = defineStore("events", () => {
-  const storyStore = useStoryStore();
-  const events = reactive([]);
-  const unseen = ref(0);
-  function addEvent(event) {
-    events.push(event);
-    unseen.value++;
-  }
-  function reset() {
-    events.length = 0;
-    unseen.value = 0;
-  }
-  watch(() => {
-    var _a;
-    return (_a = storyStore.currentVariant) == null ? void 0 : _a.id;
-  }, () => {
-    reset();
-  });
-  return {
-    addEvent,
-    reset,
-    events,
-    unseen
-  };
-});
+import { SANDBOX_READY, EVENT_SEND, STATE_SYNC, PREVIEW_SETTINGS_SYNC } from "./const.es.js";
+import { useEventsStore } from "./events.es.js";
+import { toRawDeep } from "./state.es.js";
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
 var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
@@ -2261,4 +2239,3 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
   }
 });
 export { _sfc_main as default };
-//# sourceMappingURL=StoryView.es.js.map

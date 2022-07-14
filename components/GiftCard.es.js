@@ -1,7 +1,7 @@
-import { useUser, useColor } from "./useDict.es.js";
+import { useUser, useColor } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createBaseVNode, createVNode, toDisplayString, createCommentVNode, normalizeStyle, computed, useTimeAgo } from "./vendor.es.js";
 import { acceptGift } from "./useGifts.es.js";
-import __unplugin_components_0 from "./AccountAvatar.es.js";
+import __unplugin_components_0$1 from "./AccountAvatar.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 const _hoisted_1$1 = {
   preserveAspectRatio: "xMidYMid meet",
@@ -43,7 +43,7 @@ const _hoisted_9 = {
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _a;
-  const _component_account_avatar = __unplugin_components_0;
+  const _component_account_avatar = __unplugin_components_0$1;
   const _component_la_angle_right = __unplugin_components_1;
   return openBlock(), createElementBlock("div", {
     class: "p-2 rounded-xl bg-light-200 bg-opacity-90 flex shadow-lg flex-wrap items-center border-2",
@@ -104,6 +104,5 @@ const _sfc_main = {
   }
 };
 _sfc_main.__file = "src/gift/GiftCard.vue";
-var GiftCard = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/gift/GiftCard.vue"]]);
-export { GiftCard as default };
-//# sourceMappingURL=GiftCard.es.js.map
+var __unplugin_components_0 = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/gift/GiftCard.vue"]]);
+export { __unplugin_components_0 as default };

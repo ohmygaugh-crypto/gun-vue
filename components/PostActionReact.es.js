@@ -1,26 +1,10 @@
 import { useColor, useUser } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createBaseVNode, withModifiers, createVNode, createCommentVNode, withDirectives, vModelText, toDisplayString, normalizeStyle, computed, ref, withCtx, Fragment, renderList, TransitionGroup, vShow, createBlock } from "./vendor.es.js";
-import { useReaction, useReactions, countRating } from "./useMates.es.js";
-import __unplugin_components_1$2 from "./AccountBadge.es.js";
+import { useReaction, useReactions, countRating } from "./useReactions.es.js";
+import __unplugin_components_2$2 from "./AccountBadge.es.js";
 import { __unplugin_components_2 as __unplugin_components_2$1 } from "./times.es.js";
+import { __unplugin_components_1 as __unplugin_components_1$1 } from "./plus.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
-const _hoisted_1$3 = {
-  preserveAspectRatio: "xMidYMid meet",
-  viewBox: "0 0 32 32",
-  width: "1.2em",
-  height: "1.2em"
-};
-const _hoisted_2$3 = /* @__PURE__ */ createBaseVNode("path", {
-  fill: "currentColor",
-  d: "M5 15v2h22v-2z"
-}, null, -1);
-const _hoisted_3$2 = [
-  _hoisted_2$3
-];
-function render$3(_ctx, _cache) {
-  return openBlock(), createElementBlock("svg", _hoisted_1$3, _hoisted_3$2);
-}
-var __unplugin_components_2 = { name: "la-minus", render: render$3 };
 const _hoisted_1$2 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -29,7 +13,7 @@ const _hoisted_1$2 = {
 };
 const _hoisted_2$2 = /* @__PURE__ */ createBaseVNode("path", {
   fill: "currentColor",
-  d: "M15 5v10H5v2h10v10h2V17h10v-2H17V5z"
+  d: "M5 15v2h22v-2z"
 }, null, -1);
 const _hoisted_3$1 = [
   _hoisted_2$2
@@ -37,7 +21,7 @@ const _hoisted_3$1 = [
 function render$2(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$2, _hoisted_3$1);
 }
-var __unplugin_components_1$1 = { name: "la-plus", render: render$2 };
+var __unplugin_components_2 = { name: "la-minus", render: render$2 };
 const _hoisted_1$1 = {
   key: 1,
   class: "flex items-center"
@@ -117,7 +101,7 @@ const _hoisted_5 = ["onClick"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _a;
   const _component_post_reaction_button = __unplugin_components_0;
-  const _component_account_badge = __unplugin_components_1$2;
+  const _component_account_badge = __unplugin_components_2$2;
   return openBlock(), createElementBlock("div", _hoisted_1, [
     createBaseVNode("div", _hoisted_2, toDisplayString($setup.rating > 0 ? "+" : "") + toDisplayString($setup.rating), 1),
     createVNode(_component_post_reaction_button, {
@@ -188,4 +172,4 @@ const _sfc_main = {
 };
 _sfc_main.__file = "src/post/action/PostActionReact.vue";
 var __unplugin_components_1 = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/post/action/PostActionReact.vue"]]);
-export { __unplugin_components_1, __unplugin_components_1$1 };
+export { __unplugin_components_1 };

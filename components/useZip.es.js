@@ -1,93 +1,7 @@
-import { reactive, ref, SEA, computed, ms, JSZip } from "./vendor.es.js";
-import { useGun, useUser, hashObj, gun, currentRoom, hashText, safeHash, genUUID } from "./useDraw.es.js";
+import { reactive, ref, computed, ms, JSZip } from "./vendor.es.js";
 import { base64FileType, base64Extension, downloadFile } from "./useFile.es.js";
+import { useGun, useUser, hashObj, gun, currentRoom, hashText, safeHash, genUUID } from "./useDraw.es.js";
 import { createMd } from "./useMd.es.js";
-function usePrivateChat(pub, { parse = true } = {}) {
-  const gun2 = useGun();
-  const { user } = useUser();
-  const messages = reactive({});
-  const epub = ref();
-  gun2.user(pub).get("epub").once((d) => epub.value = d);
-  gun2.user(pub).get("chat").get(user.pub).map().once(function(d, k) {
-    parseMessages(d, k, pub, this);
-  });
-  gun2.user().get("chat").get(pub).map().once(function(d, k) {
-    parseMessages(d, k, user.pub, this);
-  });
-  function parseMessages(data, today, author, that) {
-    that.map().on(async (d, k) => {
-      if (d && d.startsWith("SEA")) {
-        const secret = await SEA.secret(epub.value, user.pair());
-        const work = await SEA.work(secret, today);
-        const dec = await SEA.decrypt(d, work);
-        if (!dec || typeof dec != "object")
-          return;
-        messages[k] = {
-          timestamp: dec.timestamp,
-          author,
-          text: dec.text
-        };
-      }
-    });
-  }
-  async function send(message) {
-    if (!message)
-      return;
-    const theDate = new Date();
-    const toSend = {
-      timestamp: theDate.getTime(),
-      text: message
-    };
-    const today = theDate.toLocaleDateString("en-CA");
-    const secret = await SEA.secret(epub.value, user.pair());
-    const work = await SEA.work(secret, today);
-    const enc = await SEA.encrypt(toSend, work);
-    gun2.user().get("chat").get(pub).get(today).set(enc);
-  }
-  return {
-    send,
-    messages
-  };
-}
-function usePrivateChatCount(pub) {
-  const gun2 = useGun();
-  const { user } = useUser();
-  const messages = reactive({});
-  const available = ref(false);
-  gun2.user(pub).get("epub").on((d) => available.value = d);
-  gun2.user(pub).get("chat").get(user.pub).map().map().on((d, k) => {
-    if (d && !d.startsWith("SEA"))
-      return;
-    messages[k] = d;
-  });
-  gun2.user().get("chat").get(pub).map().map().on((d, k) => {
-    if (d && !d.startsWith("SEA"))
-      return;
-    messages[k] = d;
-  });
-  const count = computed(() => {
-    return Object.keys(messages).length;
-  });
-  return { count, available };
-}
-function usePrivateChatList() {
-  const gun2 = useGun();
-  const { user } = useUser();
-  const list = reactive({});
-  if (user.is) {
-    gun2.user().get("chat").map().on((d, k) => {
-      list[k] = d;
-    });
-    gun2.user().get("mates").map().on(async (d, k) => {
-      const mutual = await gun2.user(k).get("mates").get(user.pub);
-      const epub = await gun2.user(k).get("epub");
-      if (mutual && epub) {
-        list[k] = d;
-      }
-    });
-  }
-  return { list };
-}
 function usePost({ hash = "", loadMedia = true } = {}) {
   const gun2 = useGun();
   const post = reactive({});
@@ -237,4 +151,4 @@ function useZip() {
   }
   return { zip, zipPost, addMd, addFile, downloadZip };
 }
-export { addPost, downloadPost, loadFromHash, parsePost, usePost, usePostTimestamp, usePrivateChat, usePrivateChatCount, usePrivateChatList, useZip };
+export { addPost, downloadPost, loadFromHash, parsePost, usePost, usePostTimestamp, useZip };

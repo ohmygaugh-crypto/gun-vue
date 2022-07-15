@@ -46,9 +46,7 @@ const _sfc_main = {
     const state = reactive({
       size: 200
     });
-    async function generate() {
-    }
-    const __returned__ = { UserAvatar, state, generate, defineAsyncComponent, reactive };
+    const __returned__ = { UserAvatar, state, defineAsyncComponent, reactive };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
     return __returned__;
   }

@@ -61,5 +61,5 @@ const _sfc_main = {
   }
 };
 _sfc_main.__file = "src/account/AccountBadge.vue";
-var __unplugin_components_1 = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__scopeId", "data-v-3f9eb4de"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/account/AccountBadge.vue"]]);
-export { __unplugin_components_1 as default };
+var __unplugin_components_2 = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__scopeId", "data-v-3f9eb4de"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/account/AccountBadge.vue"]]);
+export { __unplugin_components_2 as default };

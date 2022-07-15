@@ -9,7 +9,10 @@ const _hoisted_5 = /* @__PURE__ */ createBaseVNode("label", { for: "size" }, "Bo
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_Variant = resolveComponent("Variant");
   const _component_Story = resolveComponent("Story");
-  return openBlock(), createBlock(_component_Story, { title: "Account/Avatar" }, {
+  return openBlock(), createBlock(_component_Story, {
+    title: "Account/Avatar",
+    icon: "la:user"
+  }, {
     controls: withCtx(() => [
       createBaseVNode("div", _hoisted_1, [
         createBaseVNode("div", _hoisted_2, [
@@ -64,7 +67,7 @@ const _sfc_main = {
       border: 2
     });
     async function generate() {
-      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDraw.es.js","vendor.es.js","useZip.es.js","useFile.es.js","useMd.es.js","useGifts.es.js","useMates.es.js","useGuests.es.js","useBackground.es.js"] : void 0);
+      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDraw.es.js","vendor.es.js","usePrivate.es.js","useFile.es.js","useZip.es.js","useMd.es.js","useGifts.es.js","useReactions.es.js","useMates.es.js","useGuests.es.js","useBackground.es.js"] : void 0);
       const pair = await SEA.pair();
       state.pub = pair.pub;
     }

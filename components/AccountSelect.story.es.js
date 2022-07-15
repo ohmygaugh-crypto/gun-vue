@@ -36,7 +36,10 @@ const _hoisted_1 = /* @__PURE__ */ createBaseVNode("div", { class: "p-2 flex fle
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_Variant = resolveComponent("Variant");
   const _component_Story = resolveComponent("Story");
-  return openBlock(), createBlock(_component_Story, { title: "Account/Select" }, {
+  return openBlock(), createBlock(_component_Story, {
+    title: "Account/Select",
+    icon: "la:list"
+  }, {
     controls: withCtx(() => [
       _hoisted_1
     ]),

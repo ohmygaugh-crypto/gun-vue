@@ -1,13 +1,14 @@
 import { useRoom, useUser, currentRoom, useColor, rootRoom, recreateRoom } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createBaseVNode, createVNode, pushScopeId, popScopeId, ref, computed, nextTick, simplemde, reactive, onMounted, watch, Fragment, renderList, createBlock, createCommentVNode, toDisplayString, withDirectives, vModelText, withKeys, normalizeStyle, withCtx } from "./vendor.es.js";
 import { useBackground } from "./useBackground.es.js";
-import { __unplugin_components_6 as __unplugin_components_6$1, __unplugin_components_2 as __unplugin_components_2$3, __unplugin_components_3 as __unplugin_components_3$1, __unplugin_components_4 as __unplugin_components_4$1, __unplugin_components_1 as __unplugin_components_1$4 } from "./exit-outline.es.js";
+import { __unplugin_components_1 as __unplugin_components_1$3 } from "./UiPanel.es.js";
 import { parseMd, useMd } from "./useMd.es.js";
 import { uploadText } from "./useFile.es.js";
 import { __unplugin_components_2 as __unplugin_components_2$1 } from "./trash.es.js";
 import { __unplugin_components_1 as __unplugin_components_1$2 } from "./check.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
-import __unplugin_components_1$3 from "./AccountBadge.es.js";
+import { __unplugin_components_6 as __unplugin_components_6$1, __unplugin_components_2 as __unplugin_components_2$4, __unplugin_components_3 as __unplugin_components_3$1, __unplugin_components_4 as __unplugin_components_4$1 } from "./exit-outline.es.js";
+import __unplugin_components_2$3 from "./AccountBadge.es.js";
 import { __unplugin_components_2 as __unplugin_components_2$2 } from "./times.es.js";
 import "./AccountAvatar.es.js";
 const _hoisted_1$c = {
@@ -422,8 +423,8 @@ const _hoisted_17 = ["innerHTML"];
 function render$1(_ctx, _cache, $props, $setup, $data, $options) {
   var _a, _b, _c;
   const _component_form_title = __unplugin_components_0$1;
-  const _component_account_badge = __unplugin_components_1$3;
-  const _component_la_tools = __unplugin_components_2$3;
+  const _component_account_badge = __unplugin_components_2$3;
+  const _component_la_tools = __unplugin_components_2$4;
   const _component_ion_enter_outline = __unplugin_components_3$1;
   const _component_ion_exit_outline = __unplugin_components_4$1;
   const _component_room_features = __unplugin_components_5;
@@ -570,7 +571,7 @@ const _hoisted_3 = {
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _a, _b, _c, _d;
   const _component_room_page = __unplugin_components_0;
-  const _component_ui_panel = __unplugin_components_1$4;
+  const _component_ui_panel = __unplugin_components_1$3;
   return openBlock(), createElementBlock("div", _hoisted_1, [
     createBaseVNode("button", {
       class: "button",

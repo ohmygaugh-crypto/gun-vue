@@ -5,9 +5,11 @@ import { __unplugin_components_1 } from "./PostActionReact.es.js";
 import { useBackground } from "./useBackground.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 import "./AccountAvatar.es.js";
+import "./useReactions.es.js";
 import "./useMates.es.js";
 import "./AccountBadge.es.js";
 import "./times.es.js";
+import "./plus.es.js";
 const _hoisted_1$1 = { class: "flex" };
 function render$1(_ctx, _cache, $props, $setup, $data, $options) {
   return $setup.user.pub ? (openBlock(), createElementBlock("div", {

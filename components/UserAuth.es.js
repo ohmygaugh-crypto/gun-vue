@@ -2,7 +2,8 @@ import { parseLink, safeJSONParse, useUser } from "./useDraw.es.js";
 import { openBlock, createElementBlock, jsQR, createBaseVNode, createVNode, withDirectives, vModelText, createCommentVNode, withCtx, Transition, ref, watch, SEA } from "./vendor.es.js";
 import { uploadText } from "./useFile.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
-function render$5(_ctx, _cache, $props, $setup, $data, $options) {
+import { __unplugin_components_6, __unplugin_components_8 } from "./qrcode.es.js";
+function render$3(_ctx, _cache, $props, $setup, $data, $options) {
   return openBlock(), createElementBlock("input", {
     id: "qr-input",
     type: "file",
@@ -75,41 +76,7 @@ const _sfc_main$1 = {
   }
 };
 _sfc_main$1.__file = "src/qr/QrLoad.vue";
-var __unplugin_components_4 = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", render$5], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/qr/QrLoad.vue"]]);
-const _hoisted_1$4 = {
-  preserveAspectRatio: "xMidYMid meet",
-  viewBox: "0 0 32 32",
-  width: "1.2em",
-  height: "1.2em"
-};
-const _hoisted_2$4 = /* @__PURE__ */ createBaseVNode("path", {
-  fill: "currentColor",
-  d: "M16 4C10.422 4 5.742 7.832 4.406 13H6.47C7.746 8.945 11.53 6 16 6c5.516 0 10 4.484 10 10s-4.484 10-10 10c-4.469 0-8.254-2.945-9.531-7H4.406c1.336 5.168 6.016 9 11.594 9c6.617 0 12-5.383 12-12S22.617 4 16 4zm-.656 7.281l-1.438 1.438L16.187 15H4v2h12.188l-2.282 2.281l1.438 1.438l4-4L20.03 16l-.687-.719z"
-}, null, -1);
-const _hoisted_3$4 = [
-  _hoisted_2$4
-];
-function render$4(_ctx, _cache) {
-  return openBlock(), createElementBlock("svg", _hoisted_1$4, _hoisted_3$4);
-}
-var __unplugin_components_3 = { name: "la-sign-in-alt", render: render$4 };
-const _hoisted_1$3 = {
-  preserveAspectRatio: "xMidYMid meet",
-  viewBox: "0 0 32 32",
-  width: "1.2em",
-  height: "1.2em"
-};
-const _hoisted_2$3 = /* @__PURE__ */ createBaseVNode("path", {
-  fill: "currentColor",
-  d: "M6 3v26h20V9.594l-.281-.313l-6-6L19.406 3zm2 2h10v6h6v16H8zm12 1.438L22.563 9H20zM16 13l-2 12h2l2-12zm-3.781 2.375l-2.5 3l-.531.625l.53.625l2.5 3l1.563-1.25L11.812 19l1.97-2.375zm7.562 0l-1.562 1.25L20.187 19l-1.968 2.375l1.562 1.25l2.5-3l.532-.625l-.532-.625z"
-}, null, -1);
-const _hoisted_3$3 = [
-  _hoisted_2$3
-];
-function render$3(_ctx, _cache) {
-  return openBlock(), createElementBlock("svg", _hoisted_1$3, _hoisted_3$3);
-}
-var __unplugin_components_8 = { name: "la-file-code", render: render$3 };
+var __unplugin_components_4 = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", render$3], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/qr/QrLoad.vue"]]);
 const _hoisted_1$2 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -118,7 +85,7 @@ const _hoisted_1$2 = {
 };
 const _hoisted_2$2 = /* @__PURE__ */ createBaseVNode("path", {
   fill: "currentColor",
-  d: "M5 5v8h2v2h2v-2h4V5zm8 8v2h2v2h-4v2H5v8h8v-8h6v-2h-2v-2h4v-2h2v2h2v-2h2V5h-8v8zm12 2v2h2v-2zm0 2h-2v2h2zm0 2v2h2v-2zm0 2h-2v-2h-2v2h-5v6h2v-4h4v2h2v-2h1zm-3 4h-2v2h2zm1-8v-2h-2v2zm-12 0v-2H9v2zm-4-2H5v2h2zm8-10v4h-1v2h1v1h2V9h1V7h-1V5zM7 7h4v4H7zm14 0h4v4h-4zM8 8v2h2V8zm14 0v2h2V8zM7 21h4v4H7zm1 1v2h2v-2zm17 3v2h2v-2z"
+  d: "M16 4C10.422 4 5.742 7.832 4.406 13H6.47C7.746 8.945 11.53 6 16 6c5.516 0 10 4.484 10 10s-4.484 10-10 10c-4.469 0-8.254-2.945-9.531-7H4.406c1.336 5.168 6.016 9 11.594 9c6.617 0 12-5.383 12-12S22.617 4 16 4zm-.656 7.281l-1.438 1.438L16.187 15H4v2h12.188l-2.282 2.281l1.438 1.438l4-4L20.03 16l-.687-.719z"
 }, null, -1);
 const _hoisted_3$2 = [
   _hoisted_2$2
@@ -126,7 +93,7 @@ const _hoisted_3$2 = [
 function render$2(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$2, _hoisted_3$2);
 }
-var __unplugin_components_6 = { name: "la-qrcode", render: render$2 };
+var __unplugin_components_3 = { name: "la-sign-in-alt", render: render$2 };
 const _hoisted_1$1 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -282,8 +249,4 @@ const _sfc_main = {
 };
 _sfc_main.__file = "src/user/UserAuth.vue";
 var __unplugin_components_0 = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/user/UserAuth.vue"]]);
-var UserAuth = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  "default": __unplugin_components_0
-}, Symbol.toStringTag, { value: "Module" }));
-export { UserAuth, __unplugin_components_0, __unplugin_components_6, __unplugin_components_8 };
+export { __unplugin_components_0 as default };

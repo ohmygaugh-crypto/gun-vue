@@ -6,9 +6,11 @@ import { isEmoji } from "./useMates.es.js";
 import { usePost } from "./useZip.es.js";
 import { __unplugin_components_1 as __unplugin_components_1$1 } from "./PostActionReact.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
-import { __unplugin_components_2 as __unplugin_components_2$2 } from "./trash.es.js";
-import { __unplugin_components_1 as __unplugin_components_1$2, __unplugin_components_0 as __unplugin_components_0$3, __unplugin_components_1$1 as __unplugin_components_1$3, __unplugin_components_1$2 as __unplugin_components_1$4, __unplugin_components_6 } from "./MateButton.es.js";
-import __unplugin_components_0$4 from "./AccountAvatar.es.js";
+import { __unplugin_components_2 } from "./trash.es.js";
+import { __unplugin_components_1 as __unplugin_components_1$2, __unplugin_components_0 as __unplugin_components_0$4 } from "./angle-up.es.js";
+import { __unplugin_components_1 as __unplugin_components_1$4, __unplugin_components_6 } from "./ChatPrivateCount.es.js";
+import { __unplugin_components_1 as __unplugin_components_1$3 } from "./MateButton.es.js";
+import __unplugin_components_0$5 from "./AccountAvatar.es.js";
 import "./useFile.es.js";
 import "./useMd.es.js";
 import "./AccountBadge.es.js";
@@ -31,11 +33,11 @@ const _hoisted_3$7 = [
 function render$9(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$9, _hoisted_3$7);
 }
-var __unplugin_components_0$2 = { name: "la-external-link-alt", render: render$9 };
+var __unplugin_components_0$3 = { name: "la-external-link-alt", render: render$9 };
 const _hoisted_1$8 = ["href"];
 const _hoisted_2$7 = { class: "mr-1px ml-8px" };
 function render$8(_ctx, _cache, $props, $setup, $data, $options) {
-  const _component_la_external_link_alt = __unplugin_components_0$2;
+  const _component_la_external_link_alt = __unplugin_components_0$3;
   return $setup.domain ? (openBlock(), createElementBlock("a", {
     key: 0,
     class: "underline flex items-center bg-light-300 rounded-xl p-1 shadow-sm hover_shadow-lg transition duration-200ms hover_bg-light-5",
@@ -76,7 +78,7 @@ const _sfc_main$6 = {
   }
 };
 _sfc_main$6.__file = "src/ui/UiLink.vue";
-var __unplugin_components_3$2 = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["render", render$8], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/ui/UiLink.vue"]]);
+var __unplugin_components_4 = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["render", render$8], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/ui/UiLink.vue"]]);
 const _hoisted_1$7 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 24 24",
@@ -93,7 +95,7 @@ const _hoisted_3$6 = [
 function render$7(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$7, _hoisted_3$6);
 }
-var __unplugin_components_2$1 = { name: "mdi-text-long", render: render$7 };
+var __unplugin_components_1 = { name: "mdi-text-long", render: render$7 };
 const _hoisted_1$6 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -110,7 +112,7 @@ const _hoisted_3$5 = [
 function render$6(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$6, _hoisted_3$5);
 }
-var __unplugin_components_1 = { name: "la-youtube", render: render$6 };
+var __unplugin_components_0$2 = { name: "la-youtube", render: render$6 };
 const _hoisted_1$5 = {
   key: 0,
   class: "m-1 flex items-center items-center px-2 py-1 bg-light-700 dark_bg-dark-50 rounded-lg"
@@ -178,9 +180,9 @@ const _hoisted_11 = {
 function render$4(_ctx, _cache, $props, $setup, $data, $options) {
   var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
   const _component_post_link = __unplugin_components_0$1;
-  const _component_la_youtube = __unplugin_components_1;
-  const _component_mdi_text_long = __unplugin_components_2$1;
-  const _component_ui_link = __unplugin_components_3$2;
+  const _component_la_youtube = __unplugin_components_0$2;
+  const _component_mdi_text_long = __unplugin_components_1;
+  const _component_ui_link = __unplugin_components_4;
   const _component_post_action_react = __unplugin_components_1$1;
   return openBlock(), createElementBlock("div", {
     class: "card",
@@ -258,7 +260,7 @@ const _sfc_main$4 = {
   }
 };
 _sfc_main$4.__file = "src/post/PostCard.vue";
-var __unplugin_components_2 = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["render", render$4], ["__scopeId", "data-v-13e9a414"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/post/PostCard.vue"]]);
+var __unplugin_components_9 = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["render", render$4], ["__scopeId", "data-v-13e9a414"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/post/PostCard.vue"]]);
 const _hoisted_1$3 = { class: "p-2 flex flex-wrap bg-light-800 shadow-md rounded-xl gap-2" };
 const _hoisted_2$3 = ["onClick"];
 const _hoisted_3$3 = { class: "text-4xl" };
@@ -266,7 +268,7 @@ const _hoisted_4$3 = /* @__PURE__ */ createBaseVNode("div", { class: "flex-1 w-4
 const _hoisted_5$3 = { class: "text-lg ml-1" };
 function render$3(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_la_angle_up = __unplugin_components_1$2;
-  const _component_la_angle_down = __unplugin_components_0$3;
+  const _component_la_angle_down = __unplugin_components_0$4;
   return openBlock(), createElementBlock("div", _hoisted_1$3, [
     createVNode(TransitionGroup, { name: "fade" }, {
       default: withCtx(() => [
@@ -315,8 +317,8 @@ const _hoisted_4$2 = {
 const _hoisted_5$2 = ["onClick"];
 function render$2(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_post_reaction_tabs = __unplugin_components_0;
-  const _component_la_trash = __unplugin_components_2$2;
-  const _component_post_card = __unplugin_components_2;
+  const _component_la_trash = __unplugin_components_2;
+  const _component_post_card = __unplugin_components_9;
   return openBlock(), createElementBlock("div", _hoisted_1$2, [
     createBaseVNode("div", _hoisted_2$2, toDisplayString($setup.isMe ? "My " : "") + " Posts", 1),
     createBaseVNode("div", _hoisted_3$2, [
@@ -444,7 +446,7 @@ const _hoisted_5 = /* @__PURE__ */ createBaseVNode("div", { class: "flex-1" }, n
 const _hoisted_6 = { class: "p-4 flex flex-col" };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _a, _b;
-  const _component_account_avatar = __unplugin_components_0$4;
+  const _component_account_avatar = __unplugin_components_0$5;
   const _component_mate_button = __unplugin_components_1$3;
   const _component_chat_private_count = __unplugin_components_1$4;
   const _component_account_profile = __unplugin_components_3$1;

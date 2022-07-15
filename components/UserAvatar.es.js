@@ -1,7 +1,7 @@
 import { useUser, useGun, hashText } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createBaseVNode, createCommentVNode, renderSlot, createVNode, normalizeClass, withCtx, computed, ref, watch, createBlock, withModifiers } from "./vendor.es.js";
 import { usePictureUpload } from "./useFile.es.js";
-import { __unplugin_components_2 as __unplugin_components_2$1 } from "./UiLayer.es.js";
+import { __unplugin_components_3 as __unplugin_components_3$1 } from "./UiLayer.es.js";
 import { __unplugin_components_1 as __unplugin_components_1$1 } from "./check.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 import __unplugin_components_0$2 from "./AccountAvatar.es.js";
@@ -50,7 +50,7 @@ function render$2(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_la_image = __unplugin_components_0$1;
   const _component_la_check = __unplugin_components_1$1;
   const _component_la_trash_alt = __unplugin_components_2;
-  const _component_ui_layer = __unplugin_components_2$1;
+  const _component_ui_layer = __unplugin_components_3$1;
   return openBlock(), createElementBlock("div", _hoisted_1$2, [
     !$setup.picture ? (openBlock(), createElementBlock("input", {
       key: 0,

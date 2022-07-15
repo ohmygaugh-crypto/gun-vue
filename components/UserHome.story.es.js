@@ -27,7 +27,7 @@ const _sfc_main = {
   __name: "UserHome.story",
   setup(__props, { expose }) {
     expose();
-    const UserHome = defineAsyncComponent(() => __vitePreload(() => import("./UserHome.es.js"), true ? ["UserHome.es.js","vendor.es.js","useDraw.es.js","RoomCard.es.js","useBackground.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js","exit-outline.es.js","UserCredentials.es.js","useFile.es.js","check.es.js","QrShow.es.js","qrcode.es.js","MateButton.es.js","useMates.es.js","AccountBadge.es.js","usePrivate.es.js","times.es.js","plus.es.js","UserAvatar.es.js","UiLayer.es.js","UserCreate.es.js","UserAuth.es.js"] : void 0));
+    const UserHome = defineAsyncComponent(() => __vitePreload(() => import("./UserHome.es.js"), true ? ["UserHome.es.js","vendor.es.js","useDraw.es.js","UserRooms.es.js","RoomCard.es.js","useBackground.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js","tools.es.js","eye.es.js","angle-up.es.js","ChatPrivateCount.es.js","useMates.es.js","AccountBadge.es.js","usePrivate.es.js","UserProfile.es.js","plus.es.js","times.es.js","check.es.js","pen.es.js","UserPanel.es.js","exit-outline.es.js","lock.es.js","MateButton.es.js","UserAvatar.es.js","useFile.es.js","UiLayer.es.js","UserLogin.es.js","UserCreate.es.js","UserAuth.es.js","qrcode.es.js","UserCredentials.es.js","QrShow.es.js","UserPass.es.js"] : void 0));
     const __returned__ = { UserHome, defineAsyncComponent, reactive };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
     return __returned__;

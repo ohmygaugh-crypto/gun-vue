@@ -27,9 +27,7 @@ const _sfc_main = {
   __name: "UserCredentials.story",
   setup(__props, { expose }) {
     expose();
-    const UserCredentials = defineAsyncComponent(() => __vitePreload(() => import("./UserCredentials.es.js").then(function(n) {
-      return n.UserCredentials;
-    }), true ? ["UserCredentials.es.js","useDraw.es.js","vendor.es.js","useFile.es.js","check.es.js","QrShow.es.js","plugin-vue_export-helper.es.js","qrcode.es.js"] : void 0));
+    const UserCredentials = defineAsyncComponent(() => __vitePreload(() => import("./UserCredentials.es.js"), true ? ["UserCredentials.es.js","useDraw.es.js","vendor.es.js","useFile.es.js","check.es.js","QrShow.es.js","plugin-vue_export-helper.es.js","qrcode.es.js","lock.es.js","UserPass.es.js","eye.es.js"] : void 0));
     const __returned__ = { UserCredentials, defineAsyncComponent, reactive };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
     return __returned__;

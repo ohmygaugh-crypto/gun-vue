@@ -69,5 +69,5 @@ const _sfc_main = {
   }
 };
 _sfc_main.__file = "src/util/UtilGraph.vue";
-var UtilGraph = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/util/UtilGraph.vue"]]);
-export { UtilGraph as default };
+var __unplugin_components_2 = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/util/UtilGraph.vue"]]);
+export { __unplugin_components_2 as default };

@@ -1,7 +1,7 @@
 import { openBlock, createElementBlock, createBaseVNode, withModifiers, createVNode, createCommentVNode, withCtx, Fragment, renderList, Transition, toDisplayString, TransitionGroup, createBlock, normalizeStyle, useMediaQuery, ref, onClickOutside, computed, reactive, toRef } from "./vendor.es.js";
 import { useUser, joinRoom } from "./useDraw.es.js";
 import { useGuests } from "./useGuests.es.js";
-import __unplugin_components_2 from "./AccountBadge.es.js";
+import __unplugin_components_0$1 from "./AccountBadge.es.js";
 import { __unplugin_components_1 } from "./plus.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 import "./AccountAvatar.es.js";
@@ -38,7 +38,7 @@ const _hoisted_9 = { class: "flex flex-wrap" };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_la_users = __unplugin_components_0;
   const _component_la_plus = __unplugin_components_1;
-  const _component_account_badge = __unplugin_components_2;
+  const _component_account_badge = __unplugin_components_0$1;
   return openBlock(), createElementBlock(Fragment, null, [
     createBaseVNode("div", _hoisted_1, [
       createBaseVNode("button", {

@@ -1,7 +1,7 @@
 import { useColor, useUser } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createBaseVNode, withModifiers, createVNode, createCommentVNode, withDirectives, vModelText, toDisplayString, normalizeStyle, computed, ref, withCtx, Fragment, renderList, TransitionGroup, vShow, createBlock } from "./vendor.es.js";
 import { useReaction, useReactions, countRating } from "./useReactions.es.js";
-import __unplugin_components_2$2 from "./AccountBadge.es.js";
+import __unplugin_components_0$1 from "./AccountBadge.es.js";
 import { __unplugin_components_2 as __unplugin_components_2$1 } from "./times.es.js";
 import { __unplugin_components_1 as __unplugin_components_1$1 } from "./plus.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
@@ -101,7 +101,7 @@ const _hoisted_5 = ["onClick"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _a;
   const _component_post_reaction_button = __unplugin_components_0;
-  const _component_account_badge = __unplugin_components_2$2;
+  const _component_account_badge = __unplugin_components_0$1;
   return openBlock(), createElementBlock("div", _hoisted_1, [
     createBaseVNode("div", _hoisted_2, toDisplayString($setup.rating > 0 ? "+" : "") + toDisplayString($setup.rating), 1),
     createVNode(_component_post_reaction_button, {

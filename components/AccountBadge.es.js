@@ -1,6 +1,6 @@
 import { openBlock, createElementBlock, createVNode, toDisplayString, Fragment, normalizeStyle, createCommentVNode, renderSlot, ref, watchEffect } from "./vendor.es.js";
 import { useColor, useGun, selectedUser } from "./useDraw.es.js";
-import __unplugin_components_0 from "./AccountAvatar.es.js";
+import __unplugin_components_0$1 from "./AccountAvatar.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 const _hoisted_1 = ["title"];
 const _hoisted_2 = {
@@ -8,7 +8,7 @@ const _hoisted_2 = {
   class: "mx-2 font-bold text-sm max-w-8ch overflow-ellipsis overflow-hidden whitespace-nowrap"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
-  const _component_account_avatar = __unplugin_components_0;
+  const _component_account_avatar = __unplugin_components_0$1;
   return openBlock(), createElementBlock("div", {
     class: "frame p-2px flex items-center rounded-full bg-light-900 cursor-pointer shadow transition duration-400 ease-in",
     style: normalizeStyle({ backgroundColor: $setup.colorDeep.hex($props.pub), flexDirection: $props.vertical ? "column" : "row" }),
@@ -61,5 +61,5 @@ const _sfc_main = {
   }
 };
 _sfc_main.__file = "src/account/AccountBadge.vue";
-var __unplugin_components_2 = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__scopeId", "data-v-3f9eb4de"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/account/AccountBadge.vue"]]);
-export { __unplugin_components_2 as default };
+var __unplugin_components_0 = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", render], ["__scopeId", "data-v-3f9eb4de"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/account/AccountBadge.vue"]]);
+export { __unplugin_components_0 as default };

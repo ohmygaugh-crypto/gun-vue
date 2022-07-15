@@ -1,7 +1,7 @@
 import "./useDraw.es.js";
 import { openBlock, createElementBlock, createBlock, withCtx, createVNode, createBaseVNode, toDisplayString, Fragment, renderList } from "./vendor.es.js";
 import { useGuests } from "./useGuests.es.js";
-import __unplugin_components_2$1 from "./AccountBadge.es.js";
+import __unplugin_components_0 from "./AccountBadge.es.js";
 import { __unplugin_components_2 } from "./times.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 import "./AccountAvatar.es.js";
@@ -15,7 +15,7 @@ const _hoisted_4 = { class: "font-bold" };
 const _hoisted_5 = { class: "flex flex-wrap gap-3" };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_la_times = __unplugin_components_2;
-  const _component_account_badge = __unplugin_components_2$1;
+  const _component_account_badge = __unplugin_components_0;
   return openBlock(), createElementBlock("div", _hoisted_1, [
     $props.pub ? (openBlock(), createBlock(_component_account_badge, {
       key: 0,

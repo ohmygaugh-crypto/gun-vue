@@ -1,8 +1,8 @@
 import { useUser, selectedUser, safeHash } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createVNode, withCtx, createBlock } from "./vendor.es.js";
-import { __unplugin_components_2 } from "./UiLayer.es.js";
+import { __unplugin_components_3 as __unplugin_components_3$1 } from "./UiLayer.es.js";
 import __unplugin_components_3 from "./AccountHome.es.js";
-import { __unplugin_components_1 as __unplugin_components_1$1 } from "./UiPanel.es.js";
+import { __unplugin_components_2 } from "./UiPanel.es.js";
 import __unplugin_components_1 from "./UserHome.es.js";
 import __unplugin_components_0$1 from "./AccountAvatar.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
@@ -17,24 +17,35 @@ import "./PostActionReact.es.js";
 import "./AccountBadge.es.js";
 import "./plus.es.js";
 import "./trash.es.js";
-import "./MateButton.es.js";
+import "./angle-up.es.js";
+import "./ChatPrivateCount.es.js";
 import "./usePrivate.es.js";
+import "./MateButton.es.js";
+import "./UserRooms.es.js";
 import "./RoomCard.es.js";
-import "./exit-outline.es.js";
-import "./UserCredentials.es.js";
+import "./tools.es.js";
+import "./eye.es.js";
+import "./UserProfile.es.js";
 import "./check.es.js";
-import "./QrShow.es.js";
-import "./qrcode.es.js";
+import "./pen.es.js";
+import "./UserPanel.es.js";
+import "./exit-outline.es.js";
+import "./lock.es.js";
 import "./UserAvatar.es.js";
+import "./UserLogin.es.js";
 import "./UserCreate.es.js";
 import "./UserAuth.es.js";
+import "./qrcode.es.js";
+import "./UserCredentials.es.js";
+import "./QrShow.es.js";
+import "./UserPass.es.js";
 const _hoisted_1 = { class: "z-1000" };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_account_avatar = __unplugin_components_0$1;
   const _component_user_home = __unplugin_components_1;
-  const _component_ui_panel = __unplugin_components_1$1;
+  const _component_ui_panel = __unplugin_components_2;
   const _component_account_home = __unplugin_components_3;
-  const _component_ui_layer = __unplugin_components_2;
+  const _component_ui_layer = __unplugin_components_3$1;
   return openBlock(), createElementBlock("div", _hoisted_1, [
     createVNode(_component_account_avatar, {
       class: "cursor-pointer",

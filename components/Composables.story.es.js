@@ -2260,11 +2260,12 @@ function _sfc_render(_ctx, _cache) {
   return openBlock(), createBlock(_component_Story, {
     title: "Composables",
     "docs-only": "",
-    icon: "la:book-open"
+    icon: "la:book-open",
+    group: "docs"
   });
 }
 if (typeof block0 === "function")
   block0(_sfc_main);
-_sfc_main.__file = "src/composables/Composables.story.vue";
-var Composables_story = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", _sfc_render], ["__scopeId", "data-v-45fa461b"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/composables/Composables.story.vue"]]);
+_sfc_main.__file = "src/docs/Composables.story.vue";
+var Composables_story = /* @__PURE__ */ _export_sfc(_sfc_main, [["render", _sfc_render], ["__scopeId", "data-v-b6a6c49c"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/docs/Composables.story.vue"]]);
 export { Composables_story as default };

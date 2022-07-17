@@ -5,6 +5,7 @@ import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 import "./AccountAvatar.es.js";
 import "./useDraw.es.js";
 import "./useFile.es.js";
+import "./QrLoad.es.js";
 import "./qrcode.es.js";
 const _hoisted_1 = { class: "flex flex-col p-4" };
 const _hoisted_2 = {

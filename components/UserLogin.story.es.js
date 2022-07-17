@@ -27,7 +27,7 @@ const _sfc_main = {
   __name: "UserLogin.story",
   setup(__props, { expose }) {
     expose();
-    const UserLogin = defineAsyncComponent(() => __vitePreload(() => import("./UserLogin.es.js"), true ? ["UserLogin.es.js","vendor.es.js","UserCreate.es.js","AccountAvatar.es.js","useDraw.es.js","plugin-vue_export-helper.es.js","UserAuth.es.js","useFile.es.js","qrcode.es.js"] : void 0));
+    const UserLogin = defineAsyncComponent(() => __vitePreload(() => import("./UserLogin.es.js"), true ? ["UserLogin.es.js","vendor.es.js","UserCreate.es.js","AccountAvatar.es.js","useDraw.es.js","plugin-vue_export-helper.es.js","UserAuth.es.js","useFile.es.js","QrLoad.es.js","qrcode.es.js"] : void 0));
     const __returned__ = { UserLogin, defineAsyncComponent };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
     return __returned__;

@@ -39,6 +39,7 @@ import "./UserAvatar.es.js";
 import "./UserLogin.es.js";
 import "./UserCreate.es.js";
 import "./UserAuth.es.js";
+import "./QrLoad.es.js";
 import "./qrcode.es.js";
 import "./UserCredentials.es.js";
 import "./QrShow.es.js";

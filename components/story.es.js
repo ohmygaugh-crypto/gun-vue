@@ -1,5 +1,5 @@
-import { __vitePreload, histoireConfig } from "./mapping.es.js";
-import { createRouter, defineStore, createWebHistory, createWebHashHistory, ref, computed } from "./vendor.es.js";
+import { createRouter, __vitePreload, defineStore, createWebHistory, createWebHashHistory, ref, computed } from "./vendor.es.js";
+import { histoireConfig } from "./mapping.es.js";
 const base = "/components/";
 function createRouterHistory() {
   switch (histoireConfig.routerMode) {
@@ -21,7 +21,7 @@ const router = createRouter({
     {
       path: "/story/:storyId",
       name: "story",
-      component: () => __vitePreload(() => import("./StoryView.es.js"), true ? ["StoryView.es.js","vendor.es.js","MobileOverlay.es.js","BaseEmpty.es.js","mapping.es.js","const.es.js","events.es.js","state.es.js"] : void 0)
+      component: () => __vitePreload(() => import("./StoryView.es.js"), true ? ["StoryView.es.js","vendor.es.js","MobileOverlay.es.js","BaseEmpty.es.js","mapping.es.js","events.es.js","state.es.js"] : void 0)
     }
   ]
 });

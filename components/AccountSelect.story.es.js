@@ -1,37 +1,5 @@
-import { __vitePreload } from "./mapping.es.js";
-import { resolveComponent, openBlock, createBlock, withCtx, createVNode, createBaseVNode, defineAsyncComponent, reactive } from "./vendor.es.js";
-import { EVENT_SEND } from "./const.es.js";
+import { resolveComponent, openBlock, createBlock, withCtx, createVNode, createBaseVNode, defineAsyncComponent, __vitePreload, reactive, hstEvent } from "./vendor.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
-async function hstEvent(name, argument) {
-  var _a;
-  console.log("[histoire] Event fired", { name, argument });
-  const event = {
-    name,
-    argument: JSON.parse(stringifyEvent(argument))
-  };
-  if (location.href.includes("__sandbox")) {
-    (_a = window.parent) == null ? void 0 : _a.postMessage({
-      type: EVENT_SEND,
-      event
-    });
-  } else {
-    const { useEventsStore } = await __vitePreload(() => import("./events.es.js"), true ? ["events.es.js","vendor.es.js","story.es.js","mapping.es.js"] : void 0);
-    useEventsStore().addEvent(event);
-  }
-}
-function stringifyEvent(e) {
-  const obj = {};
-  for (const k in e) {
-    obj[k] = e[k];
-  }
-  return JSON.stringify(obj, (k, v) => {
-    if (v instanceof Node)
-      return "Node";
-    if (v instanceof Window)
-      return "Window";
-    return v;
-  }, " ");
-}
 const _hoisted_1 = /* @__PURE__ */ createBaseVNode("div", { class: "p-2 flex flex-col gap-4" }, null, -1);
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_Variant = resolveComponent("Variant");
@@ -67,7 +35,7 @@ const _sfc_main = {
   __name: "AccountSelect.story",
   setup(__props, { expose }) {
     expose();
-    const AccountSelect = defineAsyncComponent(() => __vitePreload(() => import("./AccountSelect.es.js"), true ? ["AccountSelect.es.js","useDraw.es.js","vendor.es.js","useGuests.es.js","AccountBadge.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js","times.es.js"] : void 0));
+    const AccountSelect = defineAsyncComponent(() => __vitePreload(() => import("./AccountSelect.es.js"), true ? ["AccountSelect.es.js","useDraw.es.js","vendor.es.js","useGuests.es.js","times.es.js","AccountBadge.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js"] : void 0));
     const state = reactive({
       pub: ""
     });

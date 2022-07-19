@@ -1,5 +1,5 @@
 var _a, _b, _c, _d;
-import { ColorHash, ref, computed, reactive, ms, useStorage, watch, buffer, Gun, urlRegex, SEA, Fuse, watchEffect, base32, useCycleList, toReactive, markRaw, createDrauu, onMounted, nextTick } from "./vendor.es.js";
+import { ColorHash, ref, computed, reactive, ms, useStorage$1 as useStorage, watch, buffer, Gun, urlRegex, SEA, Fuse, watchEffect, base32, useCycleList, toReactive, markRaw, createDrauu, onMounted, nextTick } from "./vendor.es.js";
 const color = {
   light: new ColorHash({
     saturation: [0.05, 0.08, 0.22],
@@ -465,25 +465,6 @@ function letterFilter(str) {
   let clean = str.toLowerCase().matchAll(/\p{L}/gu, "");
   return Array.from(clean).map((el) => el[0]).join("");
 }
-function sortByDate(e) {
-  const arr = Object.entries(e.data);
-  let sorted = arr.sort((a, b) => {
-    if (!a || !b)
-      return 0;
-    let timeA = Date.parse(a[0]);
-    let timeB = Date.parse(b[0]);
-    return timeB - timeA;
-  });
-  postMessage({ sorted, count: arr.length });
-}
-const newWorker = function(funcObj) {
-  var blobURL = URL.createObjectURL(new Blob(["onmessage=", funcObj.toString()], {
-    type: "application/javascript"
-  })), worker = new Worker(blobURL);
-  URL.revokeObjectURL(blobURL);
-  return worker;
-};
-const sortDate = newWorker(sortByDate);
 const rootRoom = {
   "pub": "OUlhoY2Eq8QkZE_iWN3l6J2vvbkX33vowcFdqFoCoEQ.a-B1ImQK4aoiEpdW-38MAPc8oi16DHY57bDJ4dEZpX0",
   "hosts": {
@@ -1009,4 +990,4 @@ function useDraw() {
     loadCanvas
   };
 }
-export { addHashedPersonal, addPersonal, addProfileField, auth, brush, createRoom, currentRoom, decFrom, defaultPeer, dictLang, dictRecord, drauu, drauuOptions, draw, encFor, enterRoom, genUUID, generateCerts, getHashedPersonal, getShortHash, gun, gun2, hasPass, hashObj, hashText, isHash, isMine, isPair, issueCert, joinRoom, leave, leaveRoom, letterFilter, listPersonal, loadCanvas, loadRelays, newWorker, parseHashLink, parseLink, pass, peer, recreateRoom, relay, renderStress, rootRoom, safeHash, safeJSONParse, selectedUser, sortDate, soul, submitRoom, unsafeHash, updateProfile, updateRoomProfile, updateState, useAccount, useColor, useDefs, useDictAuthors, useDictLangs, useDictRecordsBy, useDictRecordsFor, useDraw, useGun, useGun2, usePass, usePassLink, useRelay, useRelays, useRoom, useRooms, useUser, useWord, useWords, user };
+export { addHashedPersonal, addPersonal, addProfileField, auth, brush, createRoom, currentRoom, decFrom, defaultPeer, dictLang, dictRecord, drauu, drauuOptions, draw, encFor, enterRoom, genUUID, generateCerts, getHashedPersonal, getShortHash, gun, gun2, hasPass, hashObj, hashText, isHash, isMine, isPair, issueCert, joinRoom, leave, leaveRoom, letterFilter, listPersonal, loadCanvas, loadRelays, parseHashLink, parseLink, pass, peer, recreateRoom, relay, renderStress, rootRoom, safeHash, safeJSONParse, selectedUser, soul, submitRoom, unsafeHash, updateProfile, updateRoomProfile, updateState, useAccount, useColor, useDefs, useDictAuthors, useDictLangs, useDictRecordsBy, useDictRecordsFor, useDraw, useGun, useGun2, usePass, usePassLink, useRelay, useRelays, useRoom, useRooms, useUser, useWord, useWords, user };

@@ -1,5 +1,4 @@
-import { __vitePreload } from "./mapping.es.js";
-import { resolveComponent, openBlock, createBlock, withCtx, createVNode, defineAsyncComponent } from "./vendor.es.js";
+import { resolveComponent, openBlock, createBlock, withCtx, createVNode, defineAsyncComponent, __vitePreload } from "./vendor.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_Variant = resolveComponent("Variant");
@@ -7,7 +6,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   return openBlock(), createBlock(_component_Story, {
     title: "Util/Graph",
     icon: "mdi:graph-outline",
-    layout: { type: "single", iframe: false }
+    layout: { type: "single", iframe: true }
   }, {
     default: withCtx(() => [
       createVNode(_component_Variant, { title: "Round" }, {

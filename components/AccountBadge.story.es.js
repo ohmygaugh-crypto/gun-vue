@@ -1,5 +1,4 @@
-import { __vitePreload } from "./mapping.es.js";
-import { resolveComponent, openBlock, createBlock, withCtx, createBaseVNode, withDirectives, vModelText, createVNode, normalizeProps, guardReactiveProps, defineAsyncComponent, reactive } from "./vendor.es.js";
+import { resolveComponent, openBlock, createBlock, withCtx, createBaseVNode, withDirectives, vModelText, createVNode, normalizeProps, guardReactiveProps, defineAsyncComponent, __vitePreload, reactive, watchOnce, onMounted } from "./vendor.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 const _hoisted_1 = { class: "p-2 flex flex-col gap-4" };
 const _hoisted_2 = { class: "flex gap-2" };
@@ -9,7 +8,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_Story = resolveComponent("Story");
   return openBlock(), createBlock(_component_Story, {
     title: "Account/Badge",
-    icon: "la:id-badge"
+    icon: "la:id-badge",
+    "setup-app": $setup.mySetup
   }, {
     controls: withCtx(() => [
       createBaseVNode("div", _hoisted_1, [
@@ -25,10 +25,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             [vModelText, $setup.state.size]
           ])
         ]),
-        createBaseVNode("button", {
-          class: "p-2 border-1 rounded-lg",
-          onClick: _cache[1] || (_cache[1] = ($event) => $setup.generate())
-        }, "Generate Key Pair")
+        createVNode($setup["AccountSelect"], {
+          pub: $setup.state.pub,
+          "onUpdate:pub": _cache[1] || (_cache[1] = ($event) => $setup.state.pub = $event)
+        }, null, 8, ["pub"])
       ])
     ]),
     default: withCtx(() => [
@@ -47,16 +47,21 @@ const _sfc_main = {
   setup(__props, { expose }) {
     expose();
     const AccountBadge = defineAsyncComponent(() => __vitePreload(() => import("./AccountBadge.es.js"), true ? ["AccountBadge.es.js","vendor.es.js","useDraw.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js"] : void 0));
+    const AccountSelect = defineAsyncComponent(() => __vitePreload(() => import("./AccountSelect.es.js"), true ? ["AccountSelect.es.js","useDraw.es.js","vendor.es.js","useGuests.es.js","times.es.js","AccountBadge.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js"] : void 0));
     const state = reactive({
       pub: "We2MxFrbFH37008fNmreSk9hdHLJNMVhrSMIIbOO5Ao.FbNrdt118-TCYzGYRo94Xa8EUWwwV-7DIopXSE9OZD8",
       size: 200
     });
-    async function generate() {
-      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDraw.es.js","vendor.es.js","useChat.es.js","usePrivate.es.js","useLog.es.js","useFile.es.js","useZip.es.js","useMd.es.js","useGifts.es.js","useReactions.es.js","useMates.es.js","useGuests.es.js","useSpace.es.js","useBackground.es.js"] : void 0);
-      const pair = await SEA.pair();
-      state.pub = pair.pub;
+    function mySetup() {
+      onMounted(async () => {
+        const { useGuests } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDraw.es.js","vendor.es.js","useChat.es.js","usePrivate.es.js","useLog.es.js","useFile.es.js","useZip.es.js","useMd.es.js","useGifts.es.js","useReactions.es.js","useMates.es.js","useGuests.es.js","useSpace.es.js","useBackground.es.js"] : void 0);
+        const { guests } = useGuests();
+        watchOnce(guests, (g) => {
+          state.pub = Object.keys(guests)[0];
+        });
+      });
     }
-    const __returned__ = { AccountBadge, state, generate, defineAsyncComponent, reactive };
+    const __returned__ = { AccountBadge, AccountSelect, state, mySetup, watchOnce, defineAsyncComponent, reactive, onMounted };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
     return __returned__;
   }

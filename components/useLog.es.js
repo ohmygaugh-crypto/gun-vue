@@ -1,5 +1,5 @@
 import { reactive, computed, ref, JSZip, DateTree, onMounted, watchEffect, onBeforeUnmount, ms } from "./vendor.es.js";
-import { useGun, currentRoom, newWorker, gun } from "./useDraw.es.js";
+import { useGun, currentRoom, gun } from "./useDraw.es.js";
 import { detectMimeType } from "./useFile.es.js";
 import { useZip, usePost, addPost } from "./useZip.es.js";
 import { parseMd } from "./useMd.es.js";
@@ -1069,6 +1069,24 @@ function uploadFeed(tag, files) {
     });
   });
 }
+function sortByDate$1(e) {
+  const arr = Object.entries(e.data);
+  let sorted = arr.sort((a, b) => {
+    if (!a || !b)
+      return 0;
+    let timeA = Date.parse(a[0]);
+    let timeB = Date.parse(b[0]);
+    return timeB - timeA;
+  });
+  postMessage({ sorted, count: arr.length });
+}
+const newWorker = function(funcObj) {
+  var blobURL = URL.createObjectURL(new Blob(["onmessage=", funcObj.toString()], {
+    type: "application/javascript"
+  })), worker = new Worker(blobURL);
+  URL.revokeObjectURL(blobURL);
+  return worker;
+};
 function sortByDate(e) {
   const arr = Object.entries(e.data);
   let sorted = arr.sort((a, b) => {
@@ -1136,4 +1154,4 @@ function formatDate(date) {
     ms: ms(Date.now() - theDate.getTime())
   };
 }
-export { downloadFeed, formatDate, langParts, languages, logEvent, uploadFeed, useLog, usePosts };
+export { downloadFeed, formatDate, langParts, languages, logEvent, newWorker, sortByDate$1 as sortByDate, uploadFeed, useLog, usePosts };

@@ -1,5 +1,4 @@
-import { __vitePreload } from "./mapping.es.js";
-import { resolveComponent, openBlock, createBlock, withCtx, createBaseVNode, withDirectives, vModelText, createVNode, normalizeProps, guardReactiveProps, defineAsyncComponent, reactive } from "./vendor.es.js";
+import { resolveComponent, openBlock, createBlock, withCtx, createBaseVNode, withDirectives, vModelText, createVNode, normalizeProps, guardReactiveProps, defineAsyncComponent, __vitePreload, reactive } from "./vendor.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 const _hoisted_1 = { class: "p-2 flex flex-col gap-4" };
 const _hoisted_2 = { class: "flex gap-2" };

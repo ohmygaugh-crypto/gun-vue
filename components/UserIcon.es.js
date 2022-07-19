@@ -10,6 +10,7 @@ import "./times.es.js";
 import "./useBackground.es.js";
 import "./useReactions.es.js";
 import "./useMates.es.js";
+import "./PostCard.es.js";
 import "./useZip.es.js";
 import "./useFile.es.js";
 import "./useMd.es.js";

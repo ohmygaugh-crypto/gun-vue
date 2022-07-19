@@ -1045,16 +1045,8 @@ A wrapper for <code>Gun.text.random</code></p>
 <ul>
 <li><a href="#module_useWorker" target="_blank">useWorker</a>
 <ul>
-<li><em>static</em>
-<ul>
 <li><a href="#module_useWorker.newWorker" target="_blank">.newWorker</a></li>
-</ul>
-</li>
-<li><em>inner</em>
-<ul>
-<li><a href="#module_useWorker..sortByDate" target="_blank">~sortByDate(e)</a></li>
-</ul>
-</li>
+<li><a href="#module_useWorker.sortByDate" target="_blank">.sortByDate(e)</a></li>
 </ul>
 </li>
 </ul>

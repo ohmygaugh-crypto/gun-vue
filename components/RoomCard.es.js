@@ -1,4 +1,4 @@
-import { useUser, useRoom } from "./useDraw.es.js";
+import { useUser, useRoom, currentRoom } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createBaseVNode, toDisplayString, Fragment, renderList, createBlock, renderSlot, normalizeStyle, computed } from "./vendor.es.js";
 import { useBackground } from "./useBackground.es.js";
 import __unplugin_components_0 from "./AccountAvatar.es.js";
@@ -14,7 +14,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_account_avatar = __unplugin_components_0;
   return openBlock(), createElementBlock("div", {
     class: "rounded-xl shadow-md text-sm bg-cover cursor-pointer hover_shadow-lg transition duration-300ms filter brightness-95 hover_brightness-100 flex flex-wrap overflow-hidden",
-    style: normalizeStyle({ ...$setup.bg })
+    style: normalizeStyle({ ...$setup.bg, border: $setup.room.pub == $setup.currentRoom.pub ? "2px solid currentColor" : "" })
   }, [
     createBaseVNode("div", _hoisted_1, [
       createBaseVNode("div", _hoisted_2, toDisplayString($setup.room.profile.name), 1),
@@ -45,7 +45,7 @@ const _sfc_main = {
     const { user } = useUser();
     const { room } = useRoom(props.pub);
     const bg = computed(() => useBackground({ pub: props.pub, size: 400 }));
-    const __returned__ = { props, user, room, bg, useUser, useRoom, useBackground, computed };
+    const __returned__ = { props, user, room, bg, useUser, useRoom, useBackground, currentRoom, computed };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
     return __returned__;
   }

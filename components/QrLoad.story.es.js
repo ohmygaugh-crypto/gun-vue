@@ -1,5 +1,4 @@
-import { __vitePreload } from "./mapping.es.js";
-import { resolveComponent, openBlock, createBlock, withCtx, createBaseVNode, toDisplayString, createVNode, mergeProps, defineAsyncComponent, reactive } from "./vendor.es.js";
+import { resolveComponent, openBlock, createBlock, withCtx, createBaseVNode, toDisplayString, createVNode, mergeProps, defineAsyncComponent, __vitePreload, reactive } from "./vendor.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
 const _hoisted_1 = { class: "p-4 flex flex-col gap-4" };
 const _hoisted_2 = /* @__PURE__ */ createBaseVNode("div", { class: "font-bold" }, "Output", -1);

@@ -1,7 +1,7 @@
 import { useUser, useColor } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createBaseVNode, createVNode, toDisplayString, createCommentVNode, withDirectives, vModelText, withModifiers, createBlock, normalizeStyle } from "./vendor.es.js";
 import { useMate } from "./useMates.es.js";
-import { __unplugin_components_2 } from "./times.es.js";
+import { __unplugin_components_0 as __unplugin_components_0$1 } from "./times.es.js";
 import { __unplugin_components_1 as __unplugin_components_1$1 } from "./plus.es.js";
 import __unplugin_components_0 from "./AccountBadge.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
@@ -16,7 +16,7 @@ const _hoisted_2 = {
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_account_badge = __unplugin_components_0;
   const _component_la_plus = __unplugin_components_1$1;
-  const _component_la_times = __unplugin_components_2;
+  const _component_la_times = __unplugin_components_0$1;
   return $setup.user.is && $setup.user.pub != $props.pub ? (openBlock(), createElementBlock("div", _hoisted_1, [
     createBaseVNode("button", {
       class: "flex items-center rounded-2xl shadow-xl px-2 text-3xl bg-light-500",

@@ -37,7 +37,7 @@ const _sfc_main = {
   __name: "AccountStars.story",
   setup(__props, { expose }) {
     expose();
-    const AccountStars = defineAsyncComponent(() => __vitePreload(() => import("./AccountStars.es.js"), true ? ["AccountStars.es.js","vendor.es.js","useDraw.es.js","useZip.es.js","useFile.es.js","useMd.es.js","PostCard.es.js","PostActionReact.es.js","useReactions.es.js","useMates.es.js","AccountBadge.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js","times.es.js","plus.es.js"] : void 0));
+    const AccountStars = defineAsyncComponent(() => __vitePreload(() => import("./AccountStars.es.js"), true ? ["AccountStars.es.js","vendor.es.js","useDraw.es.js","useZip.es.js","useFile.es.js","useMd.es.js","PostCard.es.js","PostActionReact.es.js","useReactions.es.js","useMates.es.js","AccountBadge.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js","times.es.js","plus.es.js","PostLink.es.js"] : void 0));
     const AccountSelect = defineAsyncComponent(() => __vitePreload(() => import("./AccountSelect.es.js"), true ? ["AccountSelect.es.js","useDraw.es.js","vendor.es.js","useGuests.es.js","times.es.js","AccountBadge.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js"] : void 0));
     const state = reactive({
       pub: ""

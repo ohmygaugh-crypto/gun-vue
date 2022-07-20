@@ -1,4 +1,4 @@
-import { openBlock, createElementBlock, createBaseVNode, normalizeStyle, computed, ref, gunAvatar, watch, withModifiers, toDisplayString, watchEffect, useDraggable, normalizeClass, createVNode, createCommentVNode, Fragment, renderList, withDirectives, vShow, pushScopeId, popScopeId, createBlock, mergeProps, useDrag, onMounted, onBeforeUnmount, usePinch } from "./vendor.es.js";
+import { openBlock, createElementBlock, createBaseVNode, normalizeStyle, computed, ref, gunAvatar, watch, withModifiers, toDisplayString, watchEffect, useDraggable, createVNode, normalizeClass, createCommentVNode, Fragment, renderList, withDirectives, vShow, pushScopeId, popScopeId, createBlock, mergeProps, useDrag, onMounted, onBeforeUnmount, usePinch } from "./vendor.es.js";
 import { useColor, useGun, useDraw, useUser, useRoom, selectedUser } from "./useDraw.es.js";
 import { useSpace } from "./useSpace.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
@@ -65,7 +65,7 @@ const _sfc_main$3 = {
   }
 };
 _sfc_main$3.__file = "src/space/SpaceGuest.vue";
-var __unplugin_components_3$1 = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", render$e], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/space/SpaceGuest.vue"]]);
+var __unplugin_components_2$1 = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", render$e], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/space/SpaceGuest.vue"]]);
 const _hoisted_1$d = {
   class: "arrow",
   ref: "handle"
@@ -74,7 +74,7 @@ const _hoisted_2$d = ["x1", "y1", "x2", "y2", "stroke"];
 const _hoisted_3$d = ["d", "stroke"];
 const _hoisted_4$4 = ["points", "transform", "fill"];
 const _hoisted_5$2 = { class: "handle" };
-const _hoisted_6$1 = ["cx", "cy", "stroke", "fill"];
+const _hoisted_6$2 = ["cx", "cy", "stroke", "fill"];
 const _hoisted_7$1 = ["transform"];
 function render$d(_ctx, _cache, $props, $setup, $data, $options) {
   return openBlock(), createElementBlock("g", _hoisted_1$d, [
@@ -108,7 +108,7 @@ function render$d(_ctx, _cache, $props, $setup, $data, $options) {
         "stroke-width": "2",
         stroke: $setup.colorDeep.hex($props.link.user),
         fill: $setup.colorDeep.hex($props.link.mate)
-      }, null, 8, _hoisted_6$1),
+      }, null, 8, _hoisted_6$2),
       createBaseVNode("text", {
         class: "text-2xl pointer-events-none",
         transform: `translate(${$props.link.arrow.c1x}, ${$props.link.arrow.c1y}) rotate(${0})`
@@ -135,7 +135,7 @@ const _sfc_main$2 = {
   }
 };
 _sfc_main$2.__file = "src/space/SpaceArrow.vue";
-var __unplugin_components_2$1 = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["render", render$d], ["__scopeId", "data-v-5faf9545"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/space/SpaceArrow.vue"]]);
+var __unplugin_components_1$1 = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["render", render$d], ["__scopeId", "data-v-5faf9545"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/space/SpaceArrow.vue"]]);
 const _hoisted_1$c = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -157,7 +157,7 @@ const _hoisted_4$3 = [
 function render$c(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$c, _hoisted_4$3);
 }
-var __unplugin_components_10 = { name: "carbon-close-outline", render: render$c };
+var __unplugin_components_11 = { name: "carbon-close-outline", render: render$c };
 const _hoisted_1$b = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -174,7 +174,7 @@ const _hoisted_3$b = [
 function render$b(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$b, _hoisted_3$b);
 }
-var __unplugin_components_9 = { name: "carbon-error", render: render$b };
+var __unplugin_components_10 = { name: "carbon-error", render: render$b };
 const _hoisted_1$a = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -191,7 +191,7 @@ const _hoisted_3$a = [
 function render$a(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$a, _hoisted_3$a);
 }
-var __unplugin_components_8 = { name: "carbon-pin", render: render$a };
+var __unplugin_components_9 = { name: "carbon-pin", render: render$a };
 const _hoisted_1$9 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -208,7 +208,7 @@ const _hoisted_3$9 = [
 function render$9(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$9, _hoisted_3$9);
 }
-var __unplugin_components_7 = { name: "carbon-pin-filled", render: render$9 };
+var __unplugin_components_8 = { name: "carbon-pin-filled", render: render$9 };
 const _hoisted_1$8 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -230,7 +230,7 @@ const _hoisted_4$2 = [
 function render$8(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$8, _hoisted_4$2);
 }
-var __unplugin_components_6 = { name: "carbon-delete", render: render$8 };
+var __unplugin_components_7 = { name: "carbon-delete", render: render$8 };
 const _hoisted_1$7 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -247,7 +247,7 @@ const _hoisted_3$7 = [
 function render$7(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$7, _hoisted_3$7);
 }
-var __unplugin_components_5 = { name: "carbon-redo", render: render$7 };
+var __unplugin_components_6 = { name: "carbon-redo", render: render$7 };
 const _hoisted_1$6 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -264,7 +264,7 @@ const _hoisted_3$6 = [
 function render$6(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$6, _hoisted_3$6);
 }
-var __unplugin_components_4 = { name: "carbon-undo", render: render$6 };
+var __unplugin_components_5 = { name: "carbon-undo", render: render$6 };
 const _hoisted_1$5 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -281,7 +281,7 @@ const _hoisted_3$5 = [
 function render$5(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$5, _hoisted_3$5);
 }
-var __unplugin_components_3 = { name: "carbon-checkbox", render: render$5 };
+var __unplugin_components_4 = { name: "carbon-checkbox", render: render$5 };
 const _hoisted_1$4 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -298,7 +298,7 @@ const _hoisted_3$4 = [
 function render$4(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$4, _hoisted_3$4);
 }
-var __unplugin_components_2 = { name: "carbon-radio-button", render: render$4 };
+var __unplugin_components_3 = { name: "carbon-radio-button", render: render$4 };
 const _hoisted_1$3 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -315,7 +315,7 @@ const _hoisted_3$3 = [
 function render$3(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$3, _hoisted_3$3);
 }
-var __unplugin_components_1$1 = { name: "carbon-arrow-up-right", render: render$3 };
+var __unplugin_components_2 = { name: "carbon-arrow-up-right", render: render$3 };
 const _hoisted_1$2 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -332,10 +332,11 @@ const _hoisted_3$2 = [
 function render$2(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$2, _hoisted_3$2);
 }
-var __unplugin_components_0 = { name: "carbon-pen", render: render$2 };
+var __unplugin_components_1 = { name: "carbon-pen", render: render$2 };
 const _withScopeId = (n) => (pushScopeId("data-v-2e8c0e38"), n = n(), popScopeId(), n);
-const _hoisted_1$1 = { class: "is-group flex gap-2 px-2 py-1" };
-const _hoisted_2$1 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ createBaseVNode("svg", {
+const _hoisted_1$1 = { class: "z-400 absolute top-4 left-4 right-4" };
+const _hoisted_2$1 = { class: "is-group flex gap-2 px-2 py-1" };
+const _hoisted_3$1 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ createBaseVNode("svg", {
   class: "-mt-1",
   width: "1em",
   height: "1em",
@@ -347,129 +348,140 @@ const _hoisted_2$1 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ createBa
     fill: "currentColor"
   })
 ], -1));
-const _hoisted_3$1 = [
-  _hoisted_2$1
+const _hoisted_4$1 = [
+  _hoisted_3$1
 ];
-const _hoisted_4$1 = { class: "is-group flex flex-wrap" };
-const _hoisted_5$1 = ["onClick"];
+const _hoisted_5$1 = { class: "is-group flex flex-wrap" };
+const _hoisted_6$1 = ["onClick"];
 function render$1(_ctx, _cache, $props, $setup, $data, $options) {
-  const _component_carbon58pen = __unplugin_components_0;
-  const _component_carbon58arrow_up_right = __unplugin_components_1$1;
-  const _component_carbon58radio_button = __unplugin_components_2;
-  const _component_carbon58checkbox = __unplugin_components_3;
-  const _component_carbon58undo = __unplugin_components_4;
-  const _component_carbon58redo = __unplugin_components_5;
-  const _component_carbon58delete = __unplugin_components_6;
-  const _component_carbon58pin_filled = __unplugin_components_7;
-  const _component_carbon58pin = __unplugin_components_8;
-  const _component_carbon58error = __unplugin_components_9;
-  const _component_carbon58close_outline = __unplugin_components_10;
-  return openBlock(), createElementBlock("div", {
-    class: normalizeClass(["flex flex-wrap text-xl p-2 gap-2 rounded-md bg-main shadow transition-opacity duration-200 dark_border dark_border-gray-400 dark_border-opacity-10 bg-light-300 dark_bg-dark-300 bg-opacity-30 justify-center absolute", $setup.draw.enabled ? "" : $setup.draw.pinned ? "opacity-40 hover_opacity-90" : "opacity-0 pointer-events-none"]),
-    "storage-key": "slidev-drawing-pos",
-    "initial-x": 10,
-    "initial-y": 10
-  }, [
+  const _component_carbon_pen = __unplugin_components_1;
+  const _component_carbon58pen = __unplugin_components_1;
+  const _component_carbon58arrow_up_right = __unplugin_components_2;
+  const _component_carbon58radio_button = __unplugin_components_3;
+  const _component_carbon58checkbox = __unplugin_components_4;
+  const _component_carbon58undo = __unplugin_components_5;
+  const _component_carbon58redo = __unplugin_components_6;
+  const _component_carbon58delete = __unplugin_components_7;
+  const _component_carbon58pin_filled = __unplugin_components_8;
+  const _component_carbon58pin = __unplugin_components_9;
+  const _component_carbon58error = __unplugin_components_10;
+  const _component_carbon58close_outline = __unplugin_components_11;
+  return openBlock(), createElementBlock("div", _hoisted_1$1, [
     createBaseVNode("button", {
-      class: "w-6 flex items-center justify-center",
-      onClick: _cache[0] || (_cache[0] = ($event) => $setup.brush.size = $setup.draw.sizes.next())
+      class: normalizeClass(["text-6xl absolute", { active: $setup.draw.enabled }]),
+      onClick: _cache[0] || (_cache[0] = ($event) => $setup.draw.enabled = !$setup.draw.enabled),
+      style: normalizeStyle({ opacity: $setup.draw.enabled ? 0.2 : 1 })
     }, [
-      createBaseVNode("div", {
-        class: "bg-current rounded-full",
-        style: normalizeStyle({ width: $setup.brush.size + 4 + "px", height: $setup.brush.size + 4 + "px", backgroundColor: $setup.brush.color })
-      }, null, 4)
-    ]),
-    createBaseVNode("div", _hoisted_1$1, [
+      createVNode(_component_carbon_pen)
+    ], 6),
+    $setup.draw.enabled ? (openBlock(), createElementBlock("div", {
+      key: 0,
+      class: normalizeClass(["flex flex-wrap text-xl p-2 gap-2 justify-center rounded-md bg-main shadow transition-opacity duration-200 dark_border dark_border-gray-400 dark_border-opacity-10 bg-light-300 dark_bg-dark-300 bg-opacity-30", $setup.draw.enabled ? "" : $setup.draw.pinned ? "opacity-40 hover_opacity-90" : "opacity-0 pointer-events-none"]),
+      "storage-key": "slidev-drawing-pos",
+      "initial-x": 10,
+      "initial-y": 10
+    }, [
       createBaseVNode("button", {
-        class: normalizeClass({ active: $setup.draw.mode == "stylus" }),
-        onClick: _cache[1] || (_cache[1] = ($event) => $setup.setDrawingMode("stylus"))
+        class: "w-6 flex items-center justify-center",
+        onClick: _cache[1] || (_cache[1] = ($event) => $setup.brush.size = $setup.draw.sizes.next())
       }, [
-        createVNode(_component_carbon58pen)
-      ], 2),
-      createBaseVNode("button", {
-        class: normalizeClass({ active: $setup.draw.mode == "line" }),
-        onClick: _cache[2] || (_cache[2] = ($event) => $setup.setDrawingMode("line"))
-      }, _hoisted_3$1, 2),
-      createBaseVNode("button", {
-        class: normalizeClass({ active: $setup.draw.mode == "arrow" }),
-        onClick: _cache[3] || (_cache[3] = ($event) => $setup.setDrawingMode("arrow"))
-      }, [
-        createVNode(_component_carbon58arrow_up_right)
-      ], 2),
-      createBaseVNode("button", {
-        class: normalizeClass({ active: $setup.draw.mode == "ellipse" }),
-        onClick: _cache[4] || (_cache[4] = ($event) => $setup.setDrawingMode("ellipse"))
-      }, [
-        createVNode(_component_carbon58radio_button)
-      ], 2),
-      createBaseVNode("button", {
-        class: normalizeClass({ active: $setup.draw.mode == "rectangle" }),
-        onClick: _cache[5] || (_cache[5] = ($event) => $setup.setDrawingMode("rectangle"))
-      }, [
-        createVNode(_component_carbon58checkbox)
-      ], 2)
-    ]),
-    createCommentVNode("  TODO: not sure why it's not working! "),
-    createCommentVNode(`<button class="icon-btn" :class="{ shallow: draw.mode != 'eraseLine' }" @click="setDrawingMode('eraseLine')">
+        createBaseVNode("div", {
+          class: "bg-current rounded-full",
+          style: normalizeStyle({ width: $setup.brush.size + 4 + "px", height: $setup.brush.size + 4 + "px", backgroundColor: $setup.brush.color })
+        }, null, 4)
+      ]),
+      createBaseVNode("div", _hoisted_2$1, [
+        createBaseVNode("button", {
+          class: normalizeClass({ active: $setup.draw.mode == "stylus" }),
+          onClick: _cache[2] || (_cache[2] = ($event) => $setup.setDrawingMode("stylus"))
+        }, [
+          createVNode(_component_carbon58pen)
+        ], 2),
+        createBaseVNode("button", {
+          class: normalizeClass({ active: $setup.draw.mode == "line" }),
+          onClick: _cache[3] || (_cache[3] = ($event) => $setup.setDrawingMode("line"))
+        }, _hoisted_4$1, 2),
+        createBaseVNode("button", {
+          class: normalizeClass({ active: $setup.draw.mode == "arrow" }),
+          onClick: _cache[4] || (_cache[4] = ($event) => $setup.setDrawingMode("arrow"))
+        }, [
+          createVNode(_component_carbon58arrow_up_right)
+        ], 2),
+        createBaseVNode("button", {
+          class: normalizeClass({ active: $setup.draw.mode == "ellipse" }),
+          onClick: _cache[5] || (_cache[5] = ($event) => $setup.setDrawingMode("ellipse"))
+        }, [
+          createVNode(_component_carbon58radio_button)
+        ], 2),
+        createBaseVNode("button", {
+          class: normalizeClass({ active: $setup.draw.mode == "rectangle" }),
+          onClick: _cache[6] || (_cache[6] = ($event) => $setup.setDrawingMode("rectangle"))
+        }, [
+          createVNode(_component_carbon58checkbox)
+        ], 2)
+      ]),
+      createCommentVNode("  TODO: not sure why it's not working! "),
+      createCommentVNode(`<button class="icon-btn" :class="{ shallow: draw.mode != 'eraseLine' }" @click="setDrawingMode('eraseLine')">
   <carbon:erase />
   </button> 
 `),
-    createBaseVNode("div", _hoisted_4$1, [
-      (openBlock(true), createElementBlock(Fragment, null, renderList($setup.draw.colors, (color) => {
-        return openBlock(), createElementBlock("button", {
-          key: color,
-          class: normalizeClass($setup.brush.color === color ? "active" : "shallow"),
-          onClick: ($event) => $setup.setBrushColor(color)
-        }, [
-          createBaseVNode("div", {
-            class: normalizeClass(["w-6 h-6 transition-all transform border border-gray-400 border-opacity-50", $setup.brush.color !== color ? "rounded-1/2 scale-85" : "rounded-md"]),
-            style: normalizeStyle($setup.draw.enabled ? { background: color } : { borderColor: color })
-          }, null, 6)
-        ], 10, _hoisted_5$1);
-      }), 128))
-    ]),
-    createBaseVNode("button", {
-      class: normalizeClass({ disabled: !$setup.draw.canUndo }),
-      onClick: _cache[6] || (_cache[6] = ($event) => $setup.drauu.undo())
-    }, [
-      createVNode(_component_carbon58undo)
-    ], 2),
-    createBaseVNode("button", {
-      class: normalizeClass({ disabled: !$setup.draw.canRedo }),
-      onClick: _cache[7] || (_cache[7] = ($event) => $setup.drauu.redo())
-    }, [
-      createVNode(_component_carbon58redo)
-    ], 2),
-    createBaseVNode("button", {
-      class: normalizeClass({ disabled: !$setup.draw.canClear }),
-      onClick: _cache[8] || (_cache[8] = ($event) => $setup.draw.clear())
-    }, [
-      createVNode(_component_carbon58delete)
-    ], 2),
-    createBaseVNode("button", {
-      class: normalizeClass({ shallow: !$setup.draw.pinned }),
-      onClick: _cache[9] || (_cache[9] = ($event) => $setup.draw.pinned = !$setup.draw.pinned)
-    }, [
-      withDirectives(createVNode(_component_carbon58pin_filled, { class: "transform -rotate-45" }, null, 512), [
-        [vShow, $setup.draw.pinned]
+      createBaseVNode("div", _hoisted_5$1, [
+        (openBlock(true), createElementBlock(Fragment, null, renderList($setup.draw.colors, (color) => {
+          return openBlock(), createElementBlock("button", {
+            key: color,
+            class: normalizeClass($setup.brush.color === color ? "active" : "shallow"),
+            onClick: ($event) => $setup.setBrushColor(color)
+          }, [
+            createBaseVNode("div", {
+              class: normalizeClass(["w-6 h-6 transition-all transform border border-gray-400 border-opacity-50", $setup.brush.color !== color ? "rounded-1/2 scale-85" : "rounded-md"]),
+              style: normalizeStyle($setup.draw.enabled ? { background: color } : { borderColor: color })
+            }, null, 6)
+          ], 10, _hoisted_6$1);
+        }), 128))
       ]),
-      withDirectives(createVNode(_component_carbon58pin, null, null, 512), [
-        [vShow, !$setup.draw.pinned]
-      ])
-    ], 2),
-    $setup.draw.enabled ? (openBlock(), createElementBlock("button", {
-      key: 0,
-      class: normalizeClass({ shallow: !$setup.draw.enabled }),
-      onClick: _cache[10] || (_cache[10] = ($event) => $setup.draw.enabled = !$setup.draw.enabled)
-    }, [
-      withDirectives(createVNode(_component_carbon58error, null, null, 512), [
-        [vShow, $setup.draw.pinned]
-      ]),
-      withDirectives(createVNode(_component_carbon58close_outline, null, null, 512), [
-        [vShow, !$setup.draw.pinned]
-      ])
+      createBaseVNode("button", {
+        class: normalizeClass({ disabled: !$setup.draw.canUndo }),
+        onClick: _cache[7] || (_cache[7] = ($event) => $setup.drauu.undo())
+      }, [
+        createVNode(_component_carbon58undo)
+      ], 2),
+      createBaseVNode("button", {
+        class: normalizeClass({ disabled: !$setup.draw.canRedo }),
+        onClick: _cache[8] || (_cache[8] = ($event) => $setup.drauu.redo())
+      }, [
+        createVNode(_component_carbon58redo)
+      ], 2),
+      createBaseVNode("button", {
+        class: normalizeClass({ disabled: !$setup.draw.canClear }),
+        onClick: _cache[9] || (_cache[9] = ($event) => $setup.draw.clear())
+      }, [
+        createVNode(_component_carbon58delete)
+      ], 2),
+      createBaseVNode("button", {
+        class: normalizeClass({ shallow: !$setup.draw.pinned }),
+        onClick: _cache[10] || (_cache[10] = ($event) => $setup.draw.pinned = !$setup.draw.pinned)
+      }, [
+        withDirectives(createVNode(_component_carbon58pin_filled, { class: "transform -rotate-45" }, null, 512), [
+          [vShow, $setup.draw.pinned]
+        ]),
+        withDirectives(createVNode(_component_carbon58pin, null, null, 512), [
+          [vShow, !$setup.draw.pinned]
+        ])
+      ], 2),
+      $setup.draw.enabled ? (openBlock(), createElementBlock("button", {
+        key: 0,
+        class: normalizeClass({ shallow: !$setup.draw.enabled }),
+        onClick: _cache[11] || (_cache[11] = ($event) => $setup.draw.enabled = !$setup.draw.enabled)
+      }, [
+        withDirectives(createVNode(_component_carbon58error, null, null, 512), [
+          [vShow, $setup.draw.pinned]
+        ]),
+        withDirectives(createVNode(_component_carbon58close_outline, null, null, 512), [
+          [vShow, !$setup.draw.pinned]
+        ])
+      ], 2)) : createCommentVNode("v-if", true)
     ], 2)) : createCommentVNode("v-if", true)
-  ], 2);
+  ]);
 }
 var SpaceDraw_vue_vue_type_style_index_0_scoped_true_lang = "";
 const _sfc_main$1 = {
@@ -491,8 +503,8 @@ const _sfc_main$1 = {
   }
 };
 _sfc_main$1.__file = "src/space/SpaceDraw.vue";
-var __unplugin_components_1 = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", render$1], ["__scopeId", "data-v-2e8c0e38"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/space/SpaceDraw.vue"]]);
-const _hoisted_1 = { class: "flex flex-col items-center relative" };
+var __unplugin_components_0 = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", render$1], ["__scopeId", "data-v-2e8c0e38"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/space/SpaceDraw.vue"]]);
+const _hoisted_1 = { class: "flex flex-col items-center" };
 const _hoisted_2 = ["viewBox"];
 const _hoisted_3 = /* @__PURE__ */ createBaseVNode("defs", null, [
   /* @__PURE__ */ createBaseVNode("filter", {
@@ -532,10 +544,9 @@ const _hoisted_12 = ["fill"];
 const _hoisted_13 = { class: "arrows" };
 const _hoisted_14 = { class: "guests" };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
-  const _component_carbon_pen = __unplugin_components_0;
-  const _component_space_draw = __unplugin_components_1;
-  const _component_space_arrow = __unplugin_components_2$1;
-  const _component_space_guest = __unplugin_components_3$1;
+  const _component_space_draw = __unplugin_components_0;
+  const _component_space_arrow = __unplugin_components_1$1;
+  const _component_space_guest = __unplugin_components_2$1;
   return openBlock(), createElementBlock("div", _hoisted_1, [
     !$setup.space.joined && $setup.user.is ? (openBlock(), createElementBlock("div", {
       key: 0,
@@ -543,18 +554,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: _cache[0] || (_cache[0] = ($event) => $setup.join()),
       style: normalizeStyle({ borderColor: $setup.user.color })
     }, "Click here to join the space", 4)) : createCommentVNode("v-if", true),
-    createBaseVNode("button", {
-      class: normalizeClass(["fixed top-4 right-4 text-xl z-1000", { active: $setup.draw.enabled }]),
-      onClick: _cache[1] || (_cache[1] = ($event) => $setup.draw.enabled = !$setup.draw.enabled)
-    }, [
-      createVNode(_component_carbon_pen)
-    ], 2),
     createVNode(_component_space_draw, { class: "z-2000" }),
     (openBlock(), createElementBlock("svg", {
       class: "h-full w-full z-200 bg-dark-100 bg-opacity-5 cursor-pointer",
       ref: "plane",
-      onDblclick: _cache[3] || (_cache[3] = ($event) => $setup.place({ x: 0, y: 0 })),
-      onClick: _cache[4] || (_cache[4] = ($event) => {
+      onDblclick: _cache[2] || (_cache[2] = ($event) => $setup.place({ x: 0, y: 0 })),
+      onClick: _cache[3] || (_cache[3] = ($event) => {
         $setup.place({ x: $setup.pos[0], y: $setup.pos[1] });
         !$setup.user.is ? $setup.user.auth = true : null;
       }),
@@ -622,7 +627,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           return openBlock(), createBlock(_component_space_arrow, {
             link,
             key,
-            onUser: _cache[2] || (_cache[2] = ($event) => $setup.selectedUser.pub = $event)
+            onUser: _cache[1] || (_cache[1] = ($event) => $setup.selectedUser.pub = $event)
           }, null, 8, ["link"]);
         }), 128))
       ]),

@@ -111,6 +111,10 @@ var block0 = (Comp) => {
 </td>
     </tr>
 <tr>
+    <td><a href="#projects" >Projects</a></td>
+    <td></td>
+    </tr>
+<tr>
     <td><a href="#useroom" >useRoom</a></td>
     <td></td>
     </tr>
@@ -1478,6 +1482,9 @@ It should contain a <code>postMessage</code> method to reply to any incoming <co
 </tbody>
 </table>
 <hr />
+<p><a name="module_Projects"></a></p>
+<h2 id="projects" tabindex="-1">Projects <a class="header-anchor" href="#projects" aria-hidden="true">#</a></h2>
+<hr />
 <p><a name="module_useRoom"></a></p>
 <h2 id="useroom" tabindex="-1">useRoom <a class="header-anchor" href="#useroom" aria-hidden="true">#</a></h2>
 <ul>
@@ -1545,7 +1552,7 @@ It should contain a <code>postMessage</code> method to reply to any incoming <co
 <ul>
 <li><em>static</em>
 <ul>
-<li><a href="#module_useSpace.useSpace" target="_blank">.useSpace(spaceName)</a> \u21D2 <code>useSpace</code></li>
+<li><a href="#module_useSpace.useSpace" target="_blank">.useSpace()</a> \u21D2 <code>useSpace</code></li>
 </ul>
 </li>
 <li><em>inner</em>
@@ -1556,26 +1563,11 @@ It should contain a <code>postMessage</code> method to reply to any incoming <co
 </ul>
 </li>
 </ul>
-<h3 id="usespace-spacename-\u21D2-usespace" tabindex="-1">useSpace(spaceName) \u21D2 <code>useSpace</code> <a class="header-anchor" href="#usespace-spacename-\u21D2-usespace" aria-hidden="true">#</a></h3>
+<h3 id="usespace-\u21D2-usespace" tabindex="-1">useSpace() \u21D2 <code>useSpace</code> <a class="header-anchor" href="#usespace-\u21D2-usespace" aria-hidden="true">#</a></h3>
 <p>A space to navigate with mouse clicks</p>
-<table>
-<thead>
-<tr>
-<th>Param</th>
-<th>Type</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>spaceName</td>
-<td><code>String</code></td>
-</tr>
-</tbody>
-</table>
 <p><strong>Example</strong></p>
 <pre><code class="language-js"><div class="htw-relative htw-not-prose __histoire-code"><div class="htw-absolute htw-top-0 htw-right-0 htw-text-xs htw-text-white/40">js</div><pre class="shiki" style="background-color: #0d1117"><code><span class="line"><span style="color: #FF7B72">const</span><span style="color: #C9D1D9"> { </span><span style="color: #79C0FF">space</span><span style="color: #C9D1D9">, </span><span style="color: #79C0FF">plane</span><span style="color: #C9D1D9">, </span><span style="color: #79C0FF">links</span><span style="color: #C9D1D9">, </span><span style="color: #79C0FF">width</span><span style="color: #C9D1D9">, </span><span style="color: #79C0FF">height</span><span style="color: #C9D1D9">, </span><span style="color: #79C0FF">guests</span><span style="color: #C9D1D9">, </span><span style="color: #79C0FF">area</span><span style="color: #C9D1D9">, </span><span style="color: #79C0FF">join</span><span style="color: #C9D1D9"> } </span><span style="color: #FF7B72">=</span><span style="color: #C9D1D9"> </span><span style="color: #D2A8FF">useSpace</span><span style="color: #C9D1D9">({</span></span>
 <span class="line"><span style="color: #C9D1D9">TIMEOUT: </span><span style="color: #79C0FF">10000</span><span style="color: #C9D1D9">,</span></span>
-<span class="line"><span style="color: #C9D1D9">spaceName: </span><span style="color: #A5D6FF">&#39;Space title&#39;</span></span>
 <span class="line"><span style="color: #C9D1D9">})</span></span>
 <span class="line"></span></code></pre></div></code></pre>
 <h3 id="usespace-object" tabindex="-1">useSpace : <code>Object</code> <a class="header-anchor" href="#usespace-object" aria-hidden="true">#</a></h3>

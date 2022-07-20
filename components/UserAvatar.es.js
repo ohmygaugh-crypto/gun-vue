@@ -1,10 +1,10 @@
 import { useUser, useGun, hashText } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createBaseVNode, createCommentVNode, renderSlot, createVNode, normalizeClass, withCtx, computed, ref, watch, createBlock, withModifiers } from "./vendor.es.js";
 import { usePictureUpload } from "./useFile.es.js";
-import { __unplugin_components_3 as __unplugin_components_3$1 } from "./UiLayer.es.js";
-import { __unplugin_components_1 as __unplugin_components_1$1 } from "./check.es.js";
+import { __unplugin_components_3 } from "./UiLayer.es.js";
+import { __unplugin_components_5 } from "./check.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
-import __unplugin_components_0$2 from "./AccountAvatar.es.js";
+import __unplugin_components_0$3 from "./AccountAvatar.es.js";
 import "./times.es.js";
 const _hoisted_1$4 = {
   preserveAspectRatio: "xMidYMid meet",
@@ -22,7 +22,7 @@ const _hoisted_3$3 = [
 function render$4(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$4, _hoisted_3$3);
 }
-var __unplugin_components_2 = { name: "la-trash-alt", render: render$4 };
+var __unplugin_components_0$2 = { name: "la-trash-alt", render: render$4 };
 const _hoisted_1$3 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -48,9 +48,9 @@ const _hoisted_5 = { class: "button fixed text-2xl opacity-40 hover_opacity-100 
 const _hoisted_6 = ["src"];
 function render$2(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_la_image = __unplugin_components_0$1;
-  const _component_la_check = __unplugin_components_1$1;
-  const _component_la_trash_alt = __unplugin_components_2;
-  const _component_ui_layer = __unplugin_components_3$1;
+  const _component_la_check = __unplugin_components_5;
+  const _component_la_trash_alt = __unplugin_components_0$2;
+  const _component_ui_layer = __unplugin_components_3;
   return openBlock(), createElementBlock("div", _hoisted_1$2, [
     !$setup.picture ? (openBlock(), createElementBlock("input", {
       key: 0,
@@ -130,7 +130,7 @@ const _sfc_main$1 = {
   }
 };
 _sfc_main$1.__file = "src/form/FormPicture.vue";
-var __unplugin_components_3 = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", render$2], ["__scopeId", "data-v-5686c708"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/form/FormPicture.vue"]]);
+var __unplugin_components_1$1 = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", render$2], ["__scopeId", "data-v-5686c708"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/form/FormPicture.vue"]]);
 const _hoisted_1$1 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -151,10 +151,10 @@ var __unplugin_components_1 = { name: "la-camera", render: render$1 };
 const _hoisted_1 = { class: "flex flex-col relative items-center justify-center" };
 const _hoisted_2 = { class: "text-2xl" };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
-  const _component_account_avatar = __unplugin_components_0$2;
+  const _component_account_avatar = __unplugin_components_0$3;
   const _component_la_camera = __unplugin_components_1;
-  const _component_la_trash_alt = __unplugin_components_2;
-  const _component_form_picture = __unplugin_components_3;
+  const _component_la_trash_alt = __unplugin_components_0$2;
+  const _component_form_picture = __unplugin_components_1$1;
   return openBlock(), createElementBlock("div", _hoisted_1, [
     createVNode(_component_account_avatar, {
       pub: $setup.user.pub,

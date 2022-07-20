@@ -1,6 +1,6 @@
 import { useUser, createRoom, enterRoom, useRooms } from "./useDraw.es.js";
 import { openBlock, createElementBlock, createBaseVNode, createCommentVNode, withDirectives, vModelText, createVNode, withCtx, Transition, normalizeStyle, reactive, computed, SEA, ref, Fragment, renderList, createBlock } from "./vendor.es.js";
-import { __unplugin_components_5 } from "./RoomCard.es.js";
+import { __unplugin_components_2 } from "./RoomCard.es.js";
 import { __unplugin_components_1 } from "./PostActionReact.es.js";
 import { useBackground } from "./useBackground.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
@@ -87,7 +87,7 @@ const _hoisted_2 = { class: "flex flex-wrap gap-4 my-4" };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_room_form = __unplugin_components_0;
   const _component_post_action_react = __unplugin_components_1;
-  const _component_room_card = __unplugin_components_5;
+  const _component_room_card = __unplugin_components_2;
   return openBlock(), createElementBlock("div", _hoisted_1, [
     createBaseVNode("div", _hoisted_2, [
       createVNode(_component_room_form, {

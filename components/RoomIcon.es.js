@@ -1,39 +1,39 @@
 import { useRoom, useUser, currentRoom, useColor, rootRoom, recreateRoom } from "./useDraw.es.js";
-import { openBlock, createElementBlock, createBaseVNode, createVNode, pushScopeId, popScopeId, ref, computed, nextTick, simplemde, reactive, onMounted, watch, toDisplayString, createBlock, createCommentVNode, withDirectives, vModelText, withKeys, Fragment, renderList, normalizeStyle, withCtx } from "./vendor.es.js";
+import { openBlock, createElementBlock, createBaseVNode, createVNode, pushScopeId, popScopeId, ref, computed, nextTick, reactive, onMounted, watch, toDisplayString, createBlock, createCommentVNode, withDirectives, vModelText, withKeys, Fragment, renderList, normalizeStyle, withCtx } from "./vendor.es.js";
 import { useBackground } from "./useBackground.es.js";
-import { __unplugin_components_2 as __unplugin_components_2$3 } from "./UiPanel.es.js";
+import { __unplugin_components_1 as __unplugin_components_1$2 } from "./UiPanel.es.js";
 import { parseMd, useMd } from "./useMd.es.js";
 import { uploadText } from "./useFile.es.js";
 import { __unplugin_components_2 as __unplugin_components_2$1 } from "./trash.es.js";
-import { __unplugin_components_1 as __unplugin_components_1$2 } from "./check.es.js";
+import { __unplugin_components_5 as __unplugin_components_5$2 } from "./check.es.js";
 import { _export_sfc } from "./plugin-vue_export-helper.es.js";
-import { __unplugin_components_0 as __unplugin_components_0$3 } from "./pen.es.js";
-import { __unplugin_components_5 as __unplugin_components_5$2 } from "./exit-outline.es.js";
-import { __unplugin_components_4 as __unplugin_components_4$1, __unplugin_components_3 as __unplugin_components_3$1 } from "./tools.es.js";
+import { __unplugin_components_6 as __unplugin_components_6$1 } from "./pen.es.js";
+import { __unplugin_components_4 as __unplugin_components_4$1 } from "./exit-outline.es.js";
+import { __unplugin_components_2 as __unplugin_components_2$2, __unplugin_components_3 as __unplugin_components_3$1 } from "./enter-outline.es.js";
 import __unplugin_components_0$4 from "./AccountBadge.es.js";
-import { __unplugin_components_2 as __unplugin_components_2$2 } from "./times.es.js";
+import { __unplugin_components_0 as __unplugin_components_0$3 } from "./times.es.js";
 import "./AccountAvatar.es.js";
-const _hoisted_1$c = {
+const _hoisted_1$d = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
   width: "1.2em",
   height: "1.2em"
 };
-const _hoisted_2$c = /* @__PURE__ */ createBaseVNode("path", {
+const _hoisted_2$d = /* @__PURE__ */ createBaseVNode("path", {
   fill: "currentColor",
   d: "M2.875 6C1.32 6 0 7.254 0 8.813v14.374C0 24.747 1.32 26 2.875 26h26.25C30.68 26 32 24.746 32 23.187V8.813C32 7.255 30.68 6 29.125 6zm0 2h26.25c.516 0 .875.383.875.813v14.374c0 .43-.36.813-.875.813H2.875C2.359 24 2 23.617 2 23.187V8.813c0-.43.36-.812.875-.812zM5 11v10h3v-6.656l3 3.969l3-3.97V21h3V11h-3l-3 4l-3-4zm17 0v5h-3l4.5 5l4.5-5h-3v-5z"
 }, null, -1);
-const _hoisted_3$c = [
-  _hoisted_2$c
+const _hoisted_3$d = [
+  _hoisted_2$d
 ];
-function render$c(_ctx, _cache) {
-  return openBlock(), createElementBlock("svg", _hoisted_1$c, _hoisted_3$c);
+function render$d(_ctx, _cache) {
+  return openBlock(), createElementBlock("svg", _hoisted_1$d, _hoisted_3$d);
 }
-var __unplugin_components_1$1 = { name: "la-markdown", render: render$c };
+var __unplugin_components_1$1 = { name: "la-markdown", render: render$d };
 const _withScopeId = (n) => (pushScopeId("data-v-83e1cfda"), n = n(), popScopeId(), n);
-const _hoisted_1$b = { class: "flex flex-col" };
-const _hoisted_2$b = { class: "flex flex-col text-left mb-30" };
-const _hoisted_3$b = {
+const _hoisted_1$c = { class: "flex flex-col" };
+const _hoisted_2$c = { class: "flex flex-col text-left mb-30" };
+const _hoisted_3$c = {
   id: "myMD",
   ref: "md",
   placeholder: "Main text content (with **markdown** support)"
@@ -47,13 +47,13 @@ const _hoisted_6$1 = {
 const _hoisted_7$1 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ createBaseVNode("div", { class: "ml-2" }, "Load", -1));
 const _hoisted_8$1 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ createBaseVNode("div", { class: "flex-1" }, null, -1));
 const _hoisted_9$1 = /* @__PURE__ */ _withScopeId(() => /* @__PURE__ */ createBaseVNode("div", { class: "ml-2" }, "Reset", -1));
-function render$b(_ctx, _cache, $props, $setup, $data, $options) {
-  const _component_la_check = __unplugin_components_1$2;
+function render$c(_ctx, _cache, $props, $setup, $data, $options) {
+  const _component_la_check = __unplugin_components_5$2;
   const _component_la_markdown = __unplugin_components_1$1;
   const _component_la_trash = __unplugin_components_2$1;
-  return openBlock(), createElementBlock("div", _hoisted_1$b, [
-    createBaseVNode("div", _hoisted_2$b, [
-      createBaseVNode("textarea", _hoisted_3$b, null, 512)
+  return openBlock(), createElementBlock("div", _hoisted_1$c, [
+    createBaseVNode("div", _hoisted_2$c, [
+      createBaseVNode("textarea", _hoisted_3$c, null, 512)
     ]),
     createBaseVNode("div", _hoisted_4$3, [
       createBaseVNode("button", {
@@ -97,7 +97,7 @@ const _sfc_main$4 = {
   setup(__props, { expose, emit }) {
     expose();
     const props = __props;
-    let simplemde$1;
+    let simplemde;
     const add = ref(false);
     const text = computed({
       get() {
@@ -108,15 +108,6 @@ const _sfc_main$4 = {
       }
     });
     nextTick(() => {
-      if (!simplemde$1) {
-        simplemde$1 = new simplemde({
-          element: document.getElementById("myMD")
-        });
-        simplemde$1.value(text.value);
-        simplemde$1.codemirror.on("change", function() {
-          text.value = simplemde$1.value();
-        });
-      }
     });
     function importPostFile(event) {
       uploadText(event, (file) => {
@@ -125,37 +116,36 @@ const _sfc_main$4 = {
         if (content) {
           add.value = true;
           nextTick(() => {
-            simplemde$1.value(content);
           });
         }
       });
     }
-    const __returned__ = { emit, props, simplemde: simplemde$1, add, text, importPostFile, reactive, ref, onMounted, watch, computed, nextTick, SimpleMDE: simplemde, uploadText, parseMd };
+    const __returned__ = { emit, props, simplemde, add, text, importPostFile, reactive, ref, onMounted, watch, computed, nextTick, uploadText, parseMd };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
     return __returned__;
   }
 };
 _sfc_main$4.__file = "src/form/FormText.vue";
-var __unplugin_components_7 = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["render", render$b], ["__scopeId", "data-v-83e1cfda"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/form/FormText.vue"]]);
-const _hoisted_1$a = { class: "flex flex-col" };
-const _hoisted_2$a = {
+var __unplugin_components_7$1 = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["render", render$c], ["__scopeId", "data-v-83e1cfda"], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/form/FormText.vue"]]);
+const _hoisted_1$b = { class: "flex flex-col" };
+const _hoisted_2$b = {
   key: 0,
   class: "flex items-center mr-4 mb-2"
 };
-const _hoisted_3$a = { class: "break-all" };
+const _hoisted_3$b = { class: "break-all" };
 const _hoisted_4$2 = {
   key: 1,
   class: "flex items-center",
   action: "javascript:void(0);"
 };
 const _hoisted_5$1 = { class: "-ml-20 flex" };
-function render$a(_ctx, _cache, $props, $setup, $data, $options) {
-  const _component_la_pen = __unplugin_components_0$3;
-  const _component_la_check = __unplugin_components_1$2;
-  const _component_la_times = __unplugin_components_2$2;
-  return openBlock(), createElementBlock("div", _hoisted_1$a, [
-    !$setup.edit ? (openBlock(), createElementBlock("div", _hoisted_2$a, [
-      createBaseVNode("div", _hoisted_3$a, toDisplayString($props.text), 1),
+function render$b(_ctx, _cache, $props, $setup, $data, $options) {
+  const _component_la_pen = __unplugin_components_6$1;
+  const _component_la_check = __unplugin_components_5$2;
+  const _component_la_times = __unplugin_components_0$3;
+  return openBlock(), createElementBlock("div", _hoisted_1$b, [
+    !$setup.edit ? (openBlock(), createElementBlock("div", _hoisted_2$b, [
+      createBaseVNode("div", _hoisted_3$b, toDisplayString($props.text), 1),
       $props.editable && !$setup.edit ? (openBlock(), createBlock(_component_la_pen, {
         key: 0,
         class: "ml-2 cursor-pointer",
@@ -218,7 +208,24 @@ const _sfc_main$3 = {
   }
 };
 _sfc_main$3.__file = "src/form/FormTitle.vue";
-var __unplugin_components_0$2 = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", render$a], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/form/FormTitle.vue"]]);
+var __unplugin_components_0$2 = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", render$b], ["__file", "/Users/davay/Documents/\u0424\u0420\u0423\u041A\u0422/DeFUCC/gun-vue/components/src/form/FormTitle.vue"]]);
+const _hoisted_1$a = {
+  preserveAspectRatio: "xMidYMid meet",
+  viewBox: "0 0 32 32",
+  width: "1.2em",
+  height: "1.2em"
+};
+const _hoisted_2$a = /* @__PURE__ */ createBaseVNode("path", {
+  fill: "currentColor",
+  d: "M16 3c-3.035 0-5.586 1.965-6.625 4.625l1.844.75C11.977 6.434 13.836 5 16 5c2.754 0 5 2.246 5 5v3H6v16h20V13h-3v-3c0-3.844-3.156-7-7-7zM8 15h16v12H8z"
+}, null, -1);
+const _hoisted_3$a = [
+  _hoisted_2$a
+];
+function render$a(_ctx, _cache) {
+  return openBlock(), createElementBlock("svg", _hoisted_1$a, _hoisted_3$a);
+}
+var __unplugin_components_7 = { name: "la-lock-open", render: render$a };
 const _hoisted_1$9 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 32 32",
@@ -227,7 +234,7 @@ const _hoisted_1$9 = {
 };
 const _hoisted_2$9 = /* @__PURE__ */ createBaseVNode("path", {
   fill: "currentColor",
-  d: "M16 3c-3.035 0-5.586 1.965-6.625 4.625l1.844.75C11.977 6.434 13.836 5 16 5c2.754 0 5 2.246 5 5v3H6v16h20V13h-3v-3c0-3.844-3.156-7-7-7zM8 15h16v12H8z"
+  d: "M13 5c-1.094 0-2 .906-2 2v2H2v18h28V9h-9V7c0-1.094-.906-2-2-2zm0 2h6v2h-6zm-9 4h24v5h-4v-1h-4v1h-8v-1H8v1H4zm0 7h4v1h4v-1h8v1h4v-1h4v7H4z"
 }, null, -1);
 const _hoisted_3$9 = [
   _hoisted_2$9
@@ -235,7 +242,7 @@ const _hoisted_3$9 = [
 function render$9(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$9, _hoisted_3$9);
 }
-var __unplugin_components_6 = { name: "la-lock-open", render: render$9 };
+var __unplugin_components_6 = { name: "la-toolbox", render: render$9 };
 const _hoisted_1$8 = {
   preserveAspectRatio: "xMidYMid meet",
   viewBox: "0 0 256 256",
@@ -349,7 +356,8 @@ function render$2(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_la_broadcast_tower = __unplugin_components_3;
   const _component_ph_users = __unplugin_components_4;
   const _component_ph_books = __unplugin_components_5$1;
-  const _component_la_lock_open = __unplugin_components_6;
+  const _component_la_toolbox = __unplugin_components_6;
+  const _component_la_lock_open = __unplugin_components_7;
   return openBlock(), createElementBlock("div", _hoisted_1$2, [
     (openBlock(), createElementBlock(Fragment, null, renderList($setup.names, (cert, c) => {
       return createBaseVNode("div", {
@@ -364,7 +372,8 @@ function render$2(_ctx, _cache, $props, $setup, $data, $options) {
           c == "rooms" ? (openBlock(), createBlock(_component_ph_house, { key: 2 })) : createCommentVNode("v-if", true),
           c == "topics" ? (openBlock(), createBlock(_component_la_broadcast_tower, { key: 3 })) : createCommentVNode("v-if", true),
           c == "users" ? (openBlock(), createBlock(_component_ph_users, { key: 4 })) : createCommentVNode("v-if", true),
-          c == "dict" ? (openBlock(), createBlock(_component_ph_books, { key: 5 })) : createCommentVNode("v-if", true)
+          c == "dict" ? (openBlock(), createBlock(_component_ph_books, { key: 5 })) : createCommentVNode("v-if", true),
+          c == "projects" ? (openBlock(), createBlock(_component_la_toolbox, { key: 6 })) : createCommentVNode("v-if", true)
         ]),
         createBaseVNode("div", _hoisted_4$1, toDisplayString($setup.names[c]), 1),
         $props.features[c] || c == "users" && $props.features.space || c == "topics" && $props.features.chat ? (openBlock(), createBlock(_component_la_lock_open, {
@@ -390,6 +399,7 @@ const _sfc_main$2 = {
       posts: "Posts",
       users: "Users",
       rooms: "Rooms",
+      projects: "Projects",
       dict: "Dictionary"
     };
     const __returned__ = { props, names, ref };
@@ -426,12 +436,12 @@ function render$1(_ctx, _cache, $props, $setup, $data, $options) {
   var _a, _b, _c;
   const _component_form_title = __unplugin_components_0$2;
   const _component_account_badge = __unplugin_components_0$4;
-  const _component_la_tools = __unplugin_components_4$1;
+  const _component_la_tools = __unplugin_components_2$2;
   const _component_ion_enter_outline = __unplugin_components_3$1;
-  const _component_ion_exit_outline = __unplugin_components_5$2;
+  const _component_ion_exit_outline = __unplugin_components_4$1;
   const _component_room_features = __unplugin_components_5;
-  const _component_la_pen = __unplugin_components_0$3;
-  const _component_form_text = __unplugin_components_7;
+  const _component_la_pen = __unplugin_components_6$1;
+  const _component_form_text = __unplugin_components_7$1;
   return openBlock(), createElementBlock("div", _hoisted_1$1, [
     createBaseVNode("div", {
       class: "pt-32 px-2 md_px-8 bg-cover relative flex flex-col items-center",
@@ -497,12 +507,12 @@ function render$1(_ctx, _cache, $props, $setup, $data, $options) {
       ])
     ], 4),
     createBaseVNode("div", _hoisted_14, [
+      createVNode(_component_room_features, {
+        class: "my-4",
+        features: $setup.room.features,
+        onBrowse: _cache[4] || (_cache[4] = ($event) => _ctx.$emit("browse", $event))
+      }, null, 8, ["features"]),
       createBaseVNode("div", _hoisted_15, [
-        createVNode(_component_room_features, {
-          class: "my-4",
-          features: $setup.room.features,
-          onBrowse: _cache[4] || (_cache[4] = ($event) => _ctx.$emit("browse", $event))
-        }, null, 8, ["features"]),
         $setup.edit.text === false ? (openBlock(), createElementBlock("div", _hoisted_16, [
           createBaseVNode("div", {
             class: "p-8 markdown-body",
@@ -573,7 +583,7 @@ const _hoisted_3 = {
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _a, _b, _c, _d;
   const _component_room_page = __unplugin_components_0;
-  const _component_ui_panel = __unplugin_components_2$3;
+  const _component_ui_panel = __unplugin_components_1$2;
   return openBlock(), createElementBlock("div", _hoisted_1, [
     createBaseVNode("button", {
       class: "button",

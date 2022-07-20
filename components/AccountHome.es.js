@@ -17,6 +17,7 @@ import "./PostActionReact.es.js";
 import "./AccountBadge.es.js";
 import "./times.es.js";
 import "./plus.es.js";
+import "./PostLink.es.js";
 import "./usePrivate.es.js";
 const _hoisted_1$3 = { class: "p-2 flex flex-wrap bg-light-800 shadow-md rounded-xl gap-2" };
 const _hoisted_2$3 = ["onClick"];

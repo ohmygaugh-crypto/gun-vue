@@ -40,7 +40,6 @@ function useSvgMouse(area = ref(null)) {
   };
 }
 function useSpace({
-  spaceName = "space",
   TIMEOUT = 1e4,
   randomness = 0.1
 } = {}) {
@@ -51,9 +50,9 @@ function useSpace({
   const zoom = useClamp(1, 0.5, 2);
   const gun = useGun();
   const space = reactive({
-    title: spaceName,
+    title: "space",
     joined: false,
-    db: computed(() => gun.user(currentRoom.pub).get(spaceName)),
+    db: computed(() => gun.user(currentRoom.pub).get("space")),
     cert: computed(() => {
       var _a;
       return (_a = currentRoom.features) == null ? void 0 : _a.space;
@@ -74,7 +73,7 @@ function useSpace({
       join();
     position[0] = x;
     position[1] = y;
-    space.db.get(user.pub).put(JSON.stringify({ x, y }), null, {
+    space.db.get(user.pub).get("pos").put(JSON.stringify({ x, y }), null, {
       opt: { cert: (_a = currentRoom.features) == null ? void 0 : _a.space }
     });
   }
@@ -109,7 +108,7 @@ function useSpace({
         y: 0
       }
     };
-    space.db.get(pub).on((d, k) => {
+    space.db.get(pub).get("pos").on((d, k) => {
       allGuests[pub].hasPos = true;
       allGuests[pub].pos = typeof d == "string" ? JSON.parse(d) : d;
     });
@@ -120,7 +119,7 @@ function useSpace({
       mates[pub] = mates[pub] || {};
       mates[pub][k] = d;
     });
-    gun.user(pub).get("draw").get("space").on((d) => {
+    space.db.get(pub).get("draw").on((d) => {
       if (!d)
         return;
       allGuests[pub].draw = d;

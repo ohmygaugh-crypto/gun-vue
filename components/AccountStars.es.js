@@ -12,6 +12,7 @@ import "./AccountBadge.es.js";
 import "./AccountAvatar.es.js";
 import "./times.es.js";
 import "./plus.es.js";
+import "./PostLink.es.js";
 const _hoisted_1 = {
   key: 0,
   class: "flex flex-col"

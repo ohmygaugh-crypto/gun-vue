@@ -52,7 +52,7 @@ const _sfc_main = {
       margin: 6
     });
     async function generate() {
-      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDraw.es.js","vendor.es.js","useChat.es.js","usePrivate.es.js","useLog.es.js","useFile.es.js","useZip.es.js","useMd.es.js","useGifts.es.js","useReactions.es.js","useMates.es.js","useGuests.es.js","useSpace.es.js","useBackground.es.js"] : void 0);
+      const { SEA } = await __vitePreload(() => import("./index.es.js"), true ? ["index.es.js","useDraw.es.js","vendor.es.js","useChat.es.js","usePrivate.es.js","useProjects.es.js","useFile.es.js","useZip.es.js","useMd.es.js","useGifts.es.js","useReactions.es.js","useMates.es.js","useProject.es.js","useGuests.es.js","useSpace.es.js","useBackground.es.js"] : void 0);
       state.data = (await SEA.pair()).pub;
     }
     const __returned__ = { QrShow, state, generate, defineAsyncComponent, reactive };

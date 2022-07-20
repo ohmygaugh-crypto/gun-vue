@@ -11,7 +11,7 @@ const _hoisted_1$1 = {
 };
 const _hoisted_2$1 = /* @__PURE__ */ createBaseVNode("path", {
   fill: "currentColor",
-  d: "M12.969 4.281L11.53 5.72L21.812 16l-10.28 10.281l1.437 1.438l11-11l.687-.719l-.687-.719z"
+  d: "M18.719 6.781L17.28 8.22L24.063 15H4v2h20.063l-6.782 6.781l1.438 1.438l8.5-8.5l.687-.719l-.687-.719z"
 }, null, -1);
 const _hoisted_3$1 = [
   _hoisted_2$1
@@ -19,7 +19,7 @@ const _hoisted_3$1 = [
 function render$1(_ctx, _cache) {
   return openBlock(), createElementBlock("svg", _hoisted_1$1, _hoisted_3$1);
 }
-var __unplugin_components_1 = { name: "la-angle-right", render: render$1 };
+var __unplugin_components_1 = { name: "la-arrow-right", render: render$1 };
 const _hoisted_1 = {
   class: "flex items-center gap-2",
   style: { "flex": "1 1 100px" }
@@ -44,7 +44,7 @@ const _hoisted_9 = {
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _a;
   const _component_account_avatar = __unplugin_components_0$1;
-  const _component_la_angle_right = __unplugin_components_1;
+  const _component_la_arrow_right = __unplugin_components_1;
   return openBlock(), createElementBlock("div", {
     class: "p-2 rounded-xl bg-light-200 bg-opacity-90 flex shadow-lg flex-wrap items-center border-2",
     style: normalizeStyle({ backgroundColor: $setup.complete ? $setup.color.hex($props.hash) : "#ccc3", borderColor: !$setup.complete ? $setup.color.hex($props.hash) : "transparent" })
@@ -53,7 +53,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       createVNode(_component_account_avatar, {
         pub: $props.gift.from
       }, null, 8, ["pub"]),
-      createVNode(_component_la_angle_right, { class: "flex-auto" }),
+      createVNode(_component_la_arrow_right, { class: "flex-auto" }),
       createVNode(_component_account_avatar, {
         pub: $props.gift.to
       }, null, 8, ["pub"])

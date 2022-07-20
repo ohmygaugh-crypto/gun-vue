@@ -26,7 +26,7 @@ const _sfc_main = {
   __name: "UserRooms.story",
   setup(__props, { expose }) {
     expose();
-    const UserRooms = defineAsyncComponent(() => __vitePreload(() => import("./UserRooms.es.js"), true ? ["UserRooms.es.js","vendor.es.js","useDraw.es.js","RoomCard.es.js","useBackground.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js","tools.es.js","eye.es.js","angle-up.es.js"] : void 0));
+    const UserRooms = defineAsyncComponent(() => __vitePreload(() => import("./UserRooms.es.js"), true ? ["UserRooms.es.js","vendor.es.js","useDraw.es.js","RoomCard.es.js","useBackground.es.js","AccountAvatar.es.js","plugin-vue_export-helper.es.js","enter-outline.es.js","eye.es.js","angle-up.es.js"] : void 0));
     const __returned__ = { UserRooms, defineAsyncComponent };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
     return __returned__;
